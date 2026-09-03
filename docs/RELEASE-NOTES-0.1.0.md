@@ -1,6 +1,6 @@
 # Last Azlanti Preserver 0.1.0
 
-Initial compilation-qualified release candidate for Pathfinder: Kingmaker 2.1.7b.
+Initial stable release for Pathfinder: Kingmaker 2.1.7b, with compilation and local-contract qualification complete.
 
 Release disposition: the owner explicitly authorized `v0.1.0` as the actual stable release for main-computer testing before human runtime qualification. Runtime and Steam Cloud qualification remain pending; publication is not a claim that those tests passed.
 

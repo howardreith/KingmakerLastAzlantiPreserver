@@ -5,7 +5,7 @@
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
 - Version: `0.1.0`
 - Target: Pathfinder: Kingmaker `2.1.7b`, UMM `0.32.x`, Harmony12, .NET Framework 4.7.2, C# 7.3
-- Branch: `codex/last-azlanti-preserver-0.1.0`
+- Branch: `main` (pull request #1 merged)
 
 ## Implemented
 
@@ -26,11 +26,11 @@
 - Behavior/filesystem tests: 26 passed, 0 failed.
 - Production compilation: passed with 0 warnings and 0 errors.
 - Release DLL SHA-256: `89dc72c1b331a818a7e6112b5c1d6b5d8d51d8027d74e1bc3d3168fb653ada23`
-- Package SHA-256: `d320b8d71512af64ac423e03b3e4108ba6e7478f711a2c6e3e66cf1acba71afe`
+- Package SHA-256: `0d410799101c766955b1c7cb95e3259434468710b6757b5762386ca73a131c14`
 - Package validation: passed with exactly six allowlisted files, assembly identity `KingmakerLastAzlantiPreserver, Version=0.1.0.0`.
 - Transactional install: passed at `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`; installed DLL hash matches the release DLL.
 - Owner-authorized release disposition: publish actual stable/latest `v0.1.0` for main-computer testing before runtime qualification, with the unqualified status disclosed in release notes and manifest.
 - Runtime qualification: **not performed**.
 - Steam Cloud compatibility: **unqualified pending separate human test**.
 
-Generated machine-readable evidence under `artifacts/` is intentionally ignored because it includes local paths. Git commit/push/draft-PR evidence is reported at handoff and does not alter the qualified package.
+Generated machine-readable evidence under `artifacts/` is intentionally ignored because it includes local paths. Merge, tag, and release evidence is reported at handoff and does not alter the qualified package.
