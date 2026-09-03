@@ -63,4 +63,23 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass `
 
 The installer validates the archive, refuses to run while Kingmaker is active, extracts to a system temporary directory, moves only `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`, verifies the installed DLL hash, and rolls back from the temporary copy on failure.
 
-Do not publish a GitHub release until `docs/SMOKE-TEST.md` is completed with a disposable campaign. A draft PR is appropriate while runtime qualification remains pending.
+## GitHub release publication
+
+The guarded publisher follows the owner's other Kingmaker repositories: it requires clean, fully pushed `main`, runs the complete qualification twice, requires identical DLL/package provenance, validates the final ZIP, writes `SHA256SUMS.txt` and `release-manifest.json`, pushes an annotated `v<version>` tag, and uploads those three assets.
+
+Prepare locally without creating a tag or release:
+
+```powershell
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\Publish-Release.ps1 -PrepareOnly
+```
+
+Version 0.1.0 has an explicit owner authorization to publish as an actual stable release before the main-computer runtime test. That exception requires both deliberate switches:
+
+```powershell
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\Publish-Release.ps1 `
+  -Publish -ConfirmOwnerAuthorizedUnqualifiedRelease
+```
+
+This release authorization does not change the evidence boundary: `docs/SMOKE-TEST.md` remains incomplete, runtime qualification remains **not performed**, and Steam Cloud remains unqualified. Future releases should ordinarily complete and record human runtime qualification before publication.

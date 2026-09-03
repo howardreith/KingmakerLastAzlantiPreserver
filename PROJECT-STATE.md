@@ -29,6 +29,7 @@
 - Package SHA-256: `d320b8d71512af64ac423e03b3e4108ba6e7478f711a2c6e3e66cf1acba71afe`
 - Package validation: passed with exactly six allowlisted files, assembly identity `KingmakerLastAzlantiPreserver, Version=0.1.0.0`.
 - Transactional install: passed at `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`; installed DLL hash matches the release DLL.
+- Owner-authorized release disposition: publish actual stable/latest `v0.1.0` for main-computer testing before runtime qualification, with the unqualified status disclosed in release notes and manifest.
 - Runtime qualification: **not performed**.
 - Steam Cloud compatibility: **unqualified pending separate human test**.
 
