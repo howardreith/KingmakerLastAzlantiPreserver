@@ -76,7 +76,7 @@ function Invoke-ReleaseQualification([string] $Root, [string] $BuildConfiguratio
         -Test `
         -VerifyContracts `
         -Package `
-        -Configuration $BuildConfiguration
+        -Configuration $BuildConfiguration | Out-Host
     return Read-Qualification $Root
 }
 
