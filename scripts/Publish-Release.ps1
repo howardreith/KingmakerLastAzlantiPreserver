@@ -71,12 +71,19 @@ function Read-Qualification([string] $Root) {
 }
 
 function Invoke-ReleaseQualification([string] $Root, [string] $BuildConfiguration) {
-    & (Join-Path $PSScriptRoot 'Qualify.ps1') `
-        -Build `
-        -Test `
-        -VerifyContracts `
-        -Package `
-        -Configuration $BuildConfiguration | Out-Host
+    $windowsPowerShell = Join-Path $PSHOME 'powershell.exe'
+    Assert-FileExists $windowsPowerShell 'Windows PowerShell executable'
+    Invoke-Native $windowsPowerShell @(
+        '-NoLogo',
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', (Join-Path $PSScriptRoot 'Qualify.ps1'),
+        '-Build',
+        '-Test',
+        '-VerifyContracts',
+        '-Package',
+        '-Configuration', $BuildConfiguration
+    ) | Out-Host
     return Read-Qualification $Root
 }
 
