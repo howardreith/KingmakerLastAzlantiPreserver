@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.props" Condition="Exists('$(MSBuildToolsPath)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{EE270366-C548-4BAB-8CF0-C42765C2F149}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>KingmakerLastAzlantiPreserver.Tests</RootNamespace>
+    <AssemblyName>KingmakerLastAzlantiPreserver.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
+    <OutputPath>..\..\artifacts\tests\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>..\..\artifacts\obj\$(Configuration)\KingmakerLastAzlantiPreserver.Tests\</IntermediateOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="bin\**;obj\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj">
+      <Project>{83AD99DA-AC72-4C51-B082-E45B9BC40C60}</Project>
+      <Name>KingmakerLastAzlantiPreserver</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

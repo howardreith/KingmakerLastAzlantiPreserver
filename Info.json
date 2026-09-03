@@ -1,0 +1,11 @@
+{
+  "Id": "KingmakerLastAzlantiPreserver",
+  "DisplayName": "Last Azlanti Preserver",
+  "Author": "Howie Reith",
+  "Version": "0.1.0",
+  "ManagerVersion": "0.32.0",
+  "GameVersion": "2.1.7",
+  "AssemblyName": "KingmakerLastAzlantiPreserver.dll",
+  "EntryMethod": "KingmakerLastAzlantiPreserver.Main.Load",
+  "Requirements": []
+}
