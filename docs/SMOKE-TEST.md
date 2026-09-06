@@ -95,4 +95,4 @@ Steam Cloud remains a separate qualification scenario. Only after the local disp
 
 ## Qualification outcome
 
-Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED** and do not publish v0.1.1.
+Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result.

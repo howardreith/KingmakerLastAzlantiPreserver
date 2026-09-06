@@ -7,7 +7,7 @@
 - Preserved native callbacks and cancellation behavior while clearing the UI-only operation at load, Start Again, Main Menu, later game-over, disable/unload, and failure boundaries.
 - Split core and optional UI Harmony ownership, status, compatibility reporting, and failure cleanup so optional unavailability cannot remove core protection.
 - Added exact desktop/controller 2.1.7b UI contract and Harmony-isolation verification, expanded behavior tests, settings migration coverage, and settings-preserving transactional installation.
-- Prepared the 0.1.1 package and manual runtime checklist; GUI and Steam Cloud qualification remain pending until observed.
+- Published under the owner's explicit pre-runtime authorization; GUI and Steam Cloud qualification remain pending until personally observed, and publication is not a claim that either passed.
 
 ## 0.1.0 - 2026-09-03
 

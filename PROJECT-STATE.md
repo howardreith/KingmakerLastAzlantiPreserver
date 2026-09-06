@@ -43,6 +43,8 @@
 
 - Runtime qualification: **MANUAL RUNTIME TEST REQUIRED / not performed**.
 - Steam Cloud compatibility: **unqualified pending separate deliberate test**.
-- Candidate may be qualified, packaged, installed, committed, pushed, and opened as a draft pull request. Do not merge, tag, or publish v0.1.1 until the disposable-campaign GUI procedure is observed and accepted.
+- Owner-authorized pre-runtime release: **approved for v0.1.1 on 2026-09-06**. The owner explicitly requested finalization, merge, tag, and stable publication before personally installing and performing the disposable-campaign GUI checks.
+- That authorization changes the publication disposition only. It is not runtime evidence, does not mark the release runtime-qualified, and does not qualify Steam Cloud.
+- The guarded publisher retains the stricter accepted-runtime path and has a separate, explicit v0.1.1 owner-authorized path that records `runtime_qualified: false` in release provenance.
 
 Generated machine-readable evidence under `artifacts/` is intentionally ignored because it includes local paths. Installation is recorded separately from runtime testing.

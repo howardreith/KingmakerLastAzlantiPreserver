@@ -4,7 +4,8 @@ param(
     [string] $ReleaseNotesPath = 'docs\RELEASE-NOTES-0.1.1.md',
     [switch] $PrepareOnly,
     [switch] $Publish,
-    [switch] $ConfirmRuntimeQualifiedRelease
+    [switch] $ConfirmRuntimeQualifiedRelease,
+    [switch] $ConfirmOwnerAuthorizedPreRuntimeRelease
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
@@ -98,9 +99,18 @@ function Invoke-ReleaseQualification([string] $Root, [string] $BuildConfiguratio
 
 if ($PrepareOnly -and $Publish) { throw '-PrepareOnly and -Publish cannot be combined.' }
 if (-not $PrepareOnly -and -not $Publish) { throw 'Specify either -PrepareOnly or -Publish.' }
-if ($Publish -and -not $ConfirmRuntimeQualifiedRelease) {
-    throw 'Publishing 0.1.1 requires -ConfirmRuntimeQualifiedRelease after the disposable-campaign runtime procedure passes.'
+if ($ConfirmRuntimeQualifiedRelease -and $ConfirmOwnerAuthorizedPreRuntimeRelease) {
+    throw 'Choose either the accepted-runtime path or the owner-authorized pre-runtime path, never both.'
 }
+if ($PrepareOnly -and ($ConfirmRuntimeQualifiedRelease -or $ConfirmOwnerAuthorizedPreRuntimeRelease)) {
+    throw 'Release-disposition confirmation switches are valid only with -Publish.'
+}
+if ($Publish -and -not ($ConfirmRuntimeQualifiedRelease -xor $ConfirmOwnerAuthorizedPreRuntimeRelease)) {
+    throw 'Publishing 0.1.1 requires exactly one explicit disposition: -ConfirmRuntimeQualifiedRelease or -ConfirmOwnerAuthorizedPreRuntimeRelease.'
+}
+
+$runtimeQualifiedRelease = [bool] ($Publish -and $ConfirmRuntimeQualifiedRelease)
+$ownerAuthorizedPreRuntimeRelease = [bool] ($Publish -and $ConfirmOwnerAuthorizedPreRuntimeRelease)
 
 $root = Get-RepositoryRoot
 Assert-CommandAvailable 'git'
@@ -153,13 +163,25 @@ try {
     if ($customNotes -notmatch '(?i)0\.1\.1' -or $customNotes -notmatch '(?i)not runtime-qualified|runtime qualification.*remain|runtime-qualified') {
         throw 'Release notes must identify version 0.1.1 and state its runtime qualification disposition.'
     }
-    if ($Publish -and $customNotes -match '(?i)not runtime-qualified|runtime qualification.*remain(?:s)? pending') {
+    if ($runtimeQualifiedRelease -and $customNotes -match '(?i)not runtime-qualified|runtime qualification.*remain(?:s)? pending') {
         throw 'Update the v0.1.1 release notes with the accepted runtime result before publication.'
+    }
+    if ($ownerAuthorizedPreRuntimeRelease -and
+        ($customNotes -notmatch '(?i)owner-authorized' -or $customNotes -notmatch '(?i)not runtime-qualified')) {
+        throw 'The owner-authorized pre-runtime path requires release notes that explicitly record authorization and the unqualified runtime state.'
     }
 
     $projectState = Get-Content -LiteralPath (Join-Path $root 'PROJECT-STATE.md') -Raw
-    if ($Publish -and $projectState -notmatch 'Runtime qualification: \*\*passed\*\*') {
+    if ($runtimeQualifiedRelease -and $projectState -notmatch 'Runtime qualification: \*\*passed\*\*') {
         throw 'PROJECT-STATE.md does not record a passed v0.1.1 disposable-campaign runtime qualification.'
+    }
+    if ($ownerAuthorizedPreRuntimeRelease -and
+        $projectState -notmatch 'Owner-authorized pre-runtime release: \*\*approved for v0\.1\.1') {
+        throw 'PROJECT-STATE.md does not record the explicit owner authorization for a pre-runtime v0.1.1 release.'
+    }
+    if ($ownerAuthorizedPreRuntimeRelease -and
+        $projectState -notmatch 'Runtime qualification: \*\*MANUAL RUNTIME TEST REQUIRED') {
+        throw 'The pre-runtime publication path requires PROJECT-STATE.md to retain the pending manual-runtime boundary.'
     }
 
     $tag = 'v0.1.1'
@@ -192,8 +214,12 @@ try {
         $first.AssemblyMvid -cne $second.AssemblyMvid) {
         throw 'Two clean release qualifications did not produce identical provenance.'
     }
-    if ($Publish -and $second.RuntimeQualification -notmatch '^RUNTIME-QUALIFIED') {
+    if ($runtimeQualifiedRelease -and $second.RuntimeQualification -notmatch '^RUNTIME-QUALIFIED') {
         throw 'The final qualification summary does not carry an accepted runtime-qualification record.'
+    }
+    if ($ownerAuthorizedPreRuntimeRelease -and
+        $second.RuntimeQualification -notmatch '^(MANUAL RUNTIME TEST REQUIRED|NOT RUNTIME-QUALIFIED)') {
+        throw 'The final qualification summary does not retain the required pre-runtime disposition.'
     }
 
     $releaseDirectory = Join-Path $root 'artifacts\release\0.1.1'
@@ -229,12 +255,21 @@ try {
         test_count = $second.TestCount
         deterministic_qualifications = 2
         package_validated = $true
-        runtime_qualified = [bool] $Publish
-        owner_authorized_release_before_runtime_test = $false
+        runtime_qualified = $runtimeQualifiedRelease
+        owner_authorized_release_before_runtime_test = $ownerAuthorizedPreRuntimeRelease
     }
     Write-JsonFile $manifestPath $manifest
 
     $generatedNotesPath = Join-Path $releaseDirectory 'release-notes-0.1.1.md'
+    $runtimeDisposition = if ($runtimeQualifiedRelease) {
+        '**Runtime qualification passed before publication.** Steam Cloud remains a separately recorded scenario.'
+    }
+    elseif ($ownerAuthorizedPreRuntimeRelease) {
+        '**Owner-authorized pre-runtime release:** on 2026-09-06 the owner explicitly requested v0.1.1 publication before installation and disposable-campaign GUI testing. This release is **not runtime-qualified**; Steam Cloud is also unqualified.'
+    }
+    else {
+        '**Runtime qualification has not yet been performed.** Preparation is not a runtime compatibility claim and creates no tag or release.'
+    }
     $verificationNotes = @(
         '## Installation',
         '',
@@ -258,7 +293,7 @@ try {
         '',
         ('Qualified loader contracts: {0} and {1}.' -f $second.UnityModManagerIdentity, $second.HarmonyIdentity),
         '',
-        $(if ($Publish) { '**Runtime qualification passed before publication.** Steam Cloud remains a separately recorded scenario.' } else { '**Runtime qualification has not yet been performed.** Preparation is not a runtime compatibility claim and creates no tag or release.' })
+        $runtimeDisposition
     ) -join [Environment]::NewLine
     ($customNotes + [Environment]::NewLine + [Environment]::NewLine + $verificationNotes) |
         Set-Content -LiteralPath $generatedNotesPath -Encoding UTF8

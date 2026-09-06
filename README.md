@@ -57,6 +57,6 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
 
 The v0.1.0 core was owner-observed working in one disposable standalone Beneath the Stolen Lands Last Azlanti run: death reached the normal results screen, the retained save loaded successfully from Main Menu, and the game-over **Load Last Save**/**Load Game** controls remained disabled. That is positive evidence for the core in that scenario, not full runtime or Steam Cloud qualification.
 
-The v0.1.1 UI enhancement remains **MANUAL RUNTIME TEST REQUIRED** until the disposable-campaign procedure in [docs/SMOKE-TEST.md](docs/SMOKE-TEST.md) is completed. Automated compilation, tests, exact contracts, Harmony ownership, packaging, managed assembly loading, or main-menu startup do not constitute that GUI result. Steam Cloud remains a separate scenario.
+The v0.1.1 UI enhancement remains **MANUAL RUNTIME TEST REQUIRED** until the disposable-campaign procedure in [docs/SMOKE-TEST.md](docs/SMOKE-TEST.md) is completed. Automated compilation, tests, exact contracts, Harmony ownership, packaging, managed assembly loading, publication, or main-menu startup do not constitute that GUI result. The owner explicitly authorized publishing v0.1.1 before personally performing that test; this release is therefore not yet a runtime compatibility claim. Steam Cloud remains a separate unqualified scenario.
 
 See [docs/RECONNAISSANCE.md](docs/RECONNAISSANCE.md) for the exact 2.1.7b call graph and [docs/RECOVERY.md](docs/RECOVERY.md) for recovery invariants.

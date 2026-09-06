@@ -11,4 +11,6 @@ Scoped game-over loading controls for Pathfinder: Kingmaker 2.1.7b.
 
 The v0.1.0 core was owner-observed preserving a save in one disposable standalone scenario, but its two results-screen loading controls stayed disabled and required returning to Main Menu. v0.1.1 addresses only that scoped UI gap.
 
-Automated compilation, 62 behavior/filesystem/settings tests, exact canonical core/UI contracts, Harmony ownership isolation, and package validation are required for the candidate. v0.1.1 is **not runtime-qualified** until the disposable-campaign GUI checklist passes; Steam Cloud remains separately unqualified. Preparation or local installation is not a runtime compatibility claim and does not authorize publication.
+Automated compilation, 62 behavior/filesystem/settings tests, exact canonical core/UI contracts, Harmony ownership isolation, and package validation are required for the release. v0.1.1 is **not runtime-qualified** until the disposable-campaign GUI checklist passes; Steam Cloud remains separately unqualified.
+
+This is an **owner-authorized pre-runtime release**: on 2026-09-06 the owner explicitly requested merge, tag, and stable publication before personally installing and testing v0.1.1. That authorization permits publication but is not a runtime compatibility claim and does not represent a passed GUI or Steam Cloud test.

@@ -70,16 +70,16 @@ The installer validates the archive, refuses to run while Kingmaker is active, r
 
 ## Pull request and publication
 
-Feature work belongs on `codex/game-over-load-controls-v0.1.1` and is prepared as a draft pull request. Do not merge, tag, or publish as part of automated qualification or installation.
+Feature work belongs on `codex/game-over-load-controls-v0.1.1` and reaches `main` through its pull request. Automated qualification or installation alone never authorizes a merge, tag, or publication.
 
-The guarded publisher requires clean, fully pushed `main`, two identical complete qualifications, both contract reports, package validation, a recorded passed disposable-campaign runtime qualification, and the deliberate `-ConfirmRuntimeQualifiedRelease` switch. Prepare artifacts without a tag or GitHub release:
+The guarded publisher requires clean, fully pushed `main`, two identical complete qualifications, both contract reports, and package validation. Prepare artifacts without a tag or GitHub release:
 
 ```powershell
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Publish-Release.ps1 -PrepareOnly
 ```
 
-Only after runtime evidence is accepted may publication be requested:
+The normal publication path additionally requires accepted disposable-campaign runtime evidence and the deliberate runtime confirmation:
 
 ```powershell
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
@@ -87,4 +87,12 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -Publish -ConfirmRuntimeQualifiedRelease
 ```
 
-The historical owner exception that allowed v0.1.0 publication before its main-computer runtime test does not transfer to v0.1.1. Steam Cloud remains separately qualified even after the required local GUI pass.
+On 2026-09-06, the owner explicitly authorized v0.1.1 merge, tag, and stable publication before personally installing and running the GUI checklist. That one-version disposition uses a separate deliberate switch:
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\Publish-Release.ps1 `
+  -Publish -ConfirmOwnerAuthorizedPreRuntimeRelease
+```
+
+This path requires the committed release notes and project state to retain both the owner authorization and **MANUAL RUNTIME TEST REQUIRED** status. It records `runtime_qualified: false` and `owner_authorized_release_before_runtime_test: true` in the release manifest. It does not transfer to a future version. Steam Cloud remains separately qualified even after the required local GUI pass.
