@@ -38,5 +38,20 @@ namespace KingmakerLastAzlantiPreserver.Tests
                 }
             }
         }
+
+        public static void Throws<TException>(Action action, string message = null)
+            where TException : Exception
+        {
+            try
+            {
+                action();
+            }
+            catch (TException)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(message ?? "Expected exception " + typeof(TException).FullName + ".");
+        }
     }
 }

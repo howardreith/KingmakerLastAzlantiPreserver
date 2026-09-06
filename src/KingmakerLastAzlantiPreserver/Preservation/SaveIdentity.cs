@@ -34,6 +34,14 @@ namespace KingmakerLastAzlantiPreserver.Preservation
                 string.Equals(GameId, other.GameId, StringComparison.Ordinal);
         }
 
+        public bool ExactlyEquals(SaveIdentity other)
+        {
+            if (ReferenceEquals(other, null)) return false;
+            return string.Equals(FullPath, other.FullPath, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(GameId, other.GameId, StringComparison.Ordinal) &&
+                IsIronMan == other.IsIronMan;
+        }
+
         public override bool Equals(object obj) => Equals(obj as SaveIdentity);
 
         public override int GetHashCode()

@@ -7,7 +7,11 @@ namespace KingmakerLastAzlantiPreserver.Integration
 {
     public sealed class CompatibilityDetector
     {
-        public string Detect(HarmonyInstance harmony, KingmakerContracts contracts)
+        public string Detect(
+            HarmonyInstance coreHarmony,
+            KingmakerContracts contracts,
+            HarmonyInstance gameOverLoadHarmony,
+            GameOverLoadContracts gameOverLoadContracts)
         {
             List<string> warnings = new List<string>();
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -22,8 +26,21 @@ namespace KingmakerLastAzlantiPreserver.Integration
                 }
             }
 
-            AddForeignPatchWarnings(harmony, contracts.GameOverActivate, "game-over hook", warnings);
-            AddForeignPatchWarnings(harmony, contracts.DeleteSave, "save-deletion hook", warnings);
+            AddForeignPatchWarnings(coreHarmony, contracts.GameOverActivate, "core game-over hook", warnings);
+            AddForeignPatchWarnings(coreHarmony, contracts.DeleteSave, "core save-deletion hook", warnings);
+            if (gameOverLoadHarmony != null && gameOverLoadContracts != null)
+            {
+                IReadOnlyList<MethodBase> targets = gameOverLoadContracts.PatchTargets;
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    AddForeignPatchWarnings(
+                        gameOverLoadHarmony,
+                        targets[index],
+                        "optional game-over loading target " + GameOverLoadContracts.FormatMethod(targets[index]),
+                        warnings);
+                }
+            }
+
             return string.Join(" ", warnings.ToArray());
         }
 
@@ -67,11 +84,17 @@ namespace KingmakerLastAzlantiPreserver.Integration
             if (patches == null) return;
             foreach (string owner in patches.Owners)
             {
-                if (!string.Equals(owner, ProductMetadata.Id, StringComparison.Ordinal))
+                if (!IsOurOwner(owner))
                 {
                     warnings.Add("Another Harmony owner patches the " + label + ": " + owner + ". Compatibility is unqualified.");
                 }
             }
+        }
+
+        private static bool IsOurOwner(string owner)
+        {
+            return string.Equals(owner, ProductMetadata.CoreHarmonyId, StringComparison.Ordinal) ||
+                string.Equals(owner, ProductMetadata.GameOverLoadHarmonyId, StringComparison.Ordinal);
         }
     }
 }

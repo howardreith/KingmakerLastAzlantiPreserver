@@ -1,10 +1,10 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Release')][string] $Configuration = 'Release',
-    [string] $ReleaseNotesPath = 'docs\RELEASE-NOTES-0.1.0.md',
+    [string] $ReleaseNotesPath = 'docs\RELEASE-NOTES-0.1.1.md',
     [switch] $PrepareOnly,
     [switch] $Publish,
-    [switch] $ConfirmOwnerAuthorizedUnqualifiedRelease
+    [switch] $ConfirmRuntimeQualifiedRelease
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
@@ -41,15 +41,20 @@ function Test-Native([string] $FilePath, [string[]] $Arguments = @()) {
 function Read-Qualification([string] $Root) {
     $qualification = Get-Content -LiteralPath (Join-Path $Root 'artifacts\qualification\qualification-summary.json') -Raw | ConvertFrom-Json
     $contracts = Get-Content -LiteralPath (Join-Path $Root 'artifacts\qualification\contracts.json') -Raw | ConvertFrom-Json
+    $uiContracts = Get-Content -LiteralPath (Join-Path $Root 'artifacts\qualification\game-over-load-contracts.json') -Raw | ConvertFrom-Json
     $validation = Get-Content -LiteralPath (Join-Path $Root 'artifacts\qualification\package-validation.json') -Raw | ConvertFrom-Json
     if ($qualification.status -ne 'non-runtime-qualification-passed' -or
         $qualification.test_result -ne 'passed' -or
-        [int] $qualification.test_count -ne 26 -or
+        [int] $qualification.test_count -lt 62 -or
         [int] $qualification.compiler_warning_count -ne 0 -or
         [int] $qualification.compiler_error_count -ne 0 -or
         $qualification.package_validation -ne 'passed' -or
         $contracts.status -ne 'passed' -or
         $contracts.patch_ownership -ne 'verified-after-application' -or
+        $uiContracts.status -ne 'passed' -or
+        -not [bool] $uiContracts.harmony_ownership.core_owned_after_application -or
+        -not [bool] $uiContracts.harmony_ownership.optional_owned_after_application -or
+        -not [bool] $uiContracts.harmony_ownership.core_owned_after_optional_unpatch -or
         $validation.status -ne 'passed') {
         throw 'Release qualification evidence is incomplete or failed.'
     }
@@ -66,6 +71,10 @@ function Read-Qualification([string] $Root) {
         AssemblyMvid = [string] $qualification.assembly_csharp_mvid
         GameOverHook = [string] $qualification.game_over_hook
         DeletionHook = [string] $qualification.deletion_hook
+        GameOverUiHook = [string] $qualification.game_over_ui_hook
+        ControllerUiHook = [string] $qualification.controller_ui_hook
+        UnityModManagerIdentity = [string] $qualification.unity_mod_manager_identity
+        HarmonyIdentity = [string] $qualification.legacy_harmony_identity
         RuntimeQualification = [string] $qualification.runtime_qualification
     }
 }
@@ -88,8 +97,9 @@ function Invoke-ReleaseQualification([string] $Root, [string] $BuildConfiguratio
 }
 
 if ($PrepareOnly -and $Publish) { throw '-PrepareOnly and -Publish cannot be combined.' }
-if ($Publish -and -not $ConfirmOwnerAuthorizedUnqualifiedRelease) {
-    throw 'Publishing 0.1.0 before runtime qualification requires -ConfirmOwnerAuthorizedUnqualifiedRelease.'
+if (-not $PrepareOnly -and -not $Publish) { throw 'Specify either -PrepareOnly or -Publish.' }
+if ($Publish -and -not $ConfirmRuntimeQualifiedRelease) {
+    throw 'Publishing 0.1.1 requires -ConfirmRuntimeQualifiedRelease after the disposable-campaign runtime procedure passes.'
 }
 
 $root = Get-RepositoryRoot
@@ -127,9 +137,9 @@ try {
 
     $info = Get-Content -LiteralPath (Join-Path $root 'Info.json') -Raw | ConvertFrom-Json
     if ($info.Id -ne 'KingmakerLastAzlantiPreserver' -or
-        $info.Version -ne '0.1.0' -or
+        $info.Version -ne '0.1.1' -or
         $info.AssemblyName -ne 'KingmakerLastAzlantiPreserver.dll') {
-        throw 'Info.json does not match the authorized 0.1.0 release identity.'
+        throw 'Info.json does not match the 0.1.1 release identity.'
     }
 
     $notesPath = if ([IO.Path]::IsPathRooted($ReleaseNotesPath)) {
@@ -140,18 +150,20 @@ try {
     }
     Assert-FileExists $notesPath 'Release notes'
     $customNotes = (Get-Content -LiteralPath $notesPath -Raw).Trim()
-    if ($customNotes -notmatch '(?i)0\.1\.0' -or $customNotes -notmatch '(?i)not runtime-qualified|runtime qualification.*remain') {
-        throw 'Release notes must identify version 0.1.0 and disclose pending runtime qualification.'
+    if ($customNotes -notmatch '(?i)0\.1\.1' -or $customNotes -notmatch '(?i)not runtime-qualified|runtime qualification.*remain|runtime-qualified') {
+        throw 'Release notes must identify version 0.1.1 and state its runtime qualification disposition.'
+    }
+    if ($Publish -and $customNotes -match '(?i)not runtime-qualified|runtime qualification.*remain(?:s)? pending') {
+        throw 'Update the v0.1.1 release notes with the accepted runtime result before publication.'
     }
 
     $projectState = Get-Content -LiteralPath (Join-Path $root 'PROJECT-STATE.md') -Raw
-    if ($projectState -notmatch 'Owner-authorized release disposition:.*v0\.1\.0' -or
-        $projectState -notmatch 'Runtime qualification: \*\*not performed\*\*') {
-        throw 'PROJECT-STATE.md does not record the owner-authorized release disposition and runtime boundary.'
+    if ($Publish -and $projectState -notmatch 'Runtime qualification: \*\*passed\*\*') {
+        throw 'PROJECT-STATE.md does not record a passed v0.1.1 disposable-campaign runtime qualification.'
     }
 
-    $tag = 'v0.1.0'
-    $title = 'Last Azlanti Preserver v0.1.0'
+    $tag = 'v0.1.1'
+    $title = 'Last Azlanti Preserver v0.1.1'
     $existingRelease = $null
     if (Test-Native 'gh' @('release', 'view', $tag, '--repo', [string] $repository.nameWithOwner)) {
         $existingRelease = Get-NativeOutput 'gh' @(
@@ -180,13 +192,16 @@ try {
         $first.AssemblyMvid -cne $second.AssemblyMvid) {
         throw 'Two clean release qualifications did not produce identical provenance.'
     }
+    if ($Publish -and $second.RuntimeQualification -notmatch '^RUNTIME-QUALIFIED') {
+        throw 'The final qualification summary does not carry an accepted runtime-qualification record.'
+    }
 
-    $releaseDirectory = Join-Path $root 'artifacts\release\0.1.0'
+    $releaseDirectory = Join-Path $root 'artifacts\release\0.1.1'
     Assert-PathWithin $releaseDirectory $root 'Release staging directory'
     if (Test-Path -LiteralPath $releaseDirectory) { Remove-Item -LiteralPath $releaseDirectory -Recurse -Force }
     [IO.Directory]::CreateDirectory($releaseDirectory) | Out-Null
 
-    $assetName = 'KingmakerLastAzlantiPreserver-0.1.0.zip'
+    $assetName = 'KingmakerLastAzlantiPreserver-0.1.1.zip'
     $releasePackage = Join-Path $releaseDirectory $assetName
     Copy-Item -LiteralPath $second.PackagePath -Destination $releasePackage
     & (Join-Path $PSScriptRoot 'Validate-Package.ps1') `
@@ -214,18 +229,18 @@ try {
         test_count = $second.TestCount
         deterministic_qualifications = 2
         package_validated = $true
-        runtime_qualified = $false
-        owner_authorized_release_before_runtime_test = $true
+        runtime_qualified = [bool] $Publish
+        owner_authorized_release_before_runtime_test = $false
     }
     Write-JsonFile $manifestPath $manifest
 
-    $generatedNotesPath = Join-Path $releaseDirectory 'release-notes-0.1.0.md'
+    $generatedNotesPath = Join-Path $releaseDirectory 'release-notes-0.1.1.md'
     $verificationNotes = @(
         '## Installation',
         '',
         "1. Download **$assetName** from **Assets** below.",
         '2. In Unity Mod Manager, select Pathfinder: Kingmaker and drag the ZIP into the **Mods** tab.',
-        '3. Confirm **Last Azlanti Preserver 0.1.0** is enabled and protection reports **AVAILABLE**.',
+        '3. Confirm **Last Azlanti Preserver 0.1.1** is enabled and both core protection and game-over loading controls report **AVAILABLE**.',
         '',
         "Do not download GitHub's generated **Source code** archives; they are not the installable UMM package.",
         '',
@@ -239,9 +254,11 @@ try {
         '',
         ('Assembly-CSharp MVID: `{0}`' -f $second.AssemblyMvid),
         '',
-        'The release was qualified twice from clean main with 26/26 tests, exact local contract verification, verified Harmony ownership, zero compiler warnings/errors, deterministic DLL/package hashes, and strict package validation.',
+        ('The release was qualified twice from clean main with {0}/{0} tests, exact core and game-over UI contract verification, isolated core/optional Harmony ownership, zero compiler warnings/errors, deterministic DLL/package hashes, and strict package validation.' -f $second.TestCount),
         '',
-        '**Runtime qualification has not yet been performed.** The owner explicitly authorized this actual release for main-computer testing; this statement is not a runtime compatibility claim.'
+        ('Qualified loader contracts: {0} and {1}.' -f $second.UnityModManagerIdentity, $second.HarmonyIdentity),
+        '',
+        $(if ($Publish) { '**Runtime qualification passed before publication.** Steam Cloud remains a separately recorded scenario.' } else { '**Runtime qualification has not yet been performed.** Preparation is not a runtime compatibility claim and creates no tag or release.' })
     ) -join [Environment]::NewLine
     ($customNotes + [Environment]::NewLine + [Environment]::NewLine + $verificationNotes) |
         Set-Content -LiteralPath $generatedNotesPath -Encoding UTF8

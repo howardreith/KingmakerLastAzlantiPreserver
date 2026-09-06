@@ -2,7 +2,7 @@
 
 ## Purpose and location
 
-The snapshot is a last-resort guard against an unexpected alternate deletion path or interrupted marked game-over sequence. It is not a save slot and not rollback history.
+The snapshot is a last-resort guard against an unexpected alternate deletion path or interrupted marked game-over sequence. It is not a save slot, rollback history, or evidence that game-over loading may be enabled.
 
 At runtime the root is derived from `Kingmaker.Utility.ApplicationPaths.persistentDataPath` (falling back to Unity's `Application.persistentDataPath`) and is displayed in UMM:
 
@@ -32,11 +32,11 @@ Metadata records original full path/name, length, source last-write UTC, source/
 
 Automatic restore is evaluated only while completing the exact in-memory game-over context that created the matching operation GUID marker. It requires valid metadata/marker identity, exact original path under the save root, valid snapshot length/hash, and an absent original. Restore copies to a non-save `.tmp` file in the save root, flushes and validates it, then uses `File.Move` to create the original path; this operation fails rather than overwriting if another writer creates the original. The marker is cleared only after success. A restored save list is explicitly refreshed.
 
-The expected path is simpler: deletion is intercepted, the original exists at completion, and the marker is cleared while the current snapshot remains.
+The expected path is simpler: deletion is intercepted, the original exists at completion, and the marker is cleared while the current snapshot remains. Only this live native source—not the snapshot—can support a v0.1.1 UI outcome. The synchronous recovery/deletion context is closed before any UI-only preserved-operation record is created; that record can neither suppress deletion nor restore bytes.
 
 After a process interruption, automatic restoration is deliberately not attempted because the disappearance cannot be bounded as tightly after restart. The UMM action is enabled only when a pending marker and validated snapshot exist and the recorded original is absent. The player must tick the explicit confirmation box. If the original exists, the action is disabled and never overwrites it.
 
-Manual load-screen deletion never enters the game-over prefix, never creates a marker, and therefore cannot invoke automatic or guarded resurrection. Stale markers are cleared when their original is observed alive.
+Manual load-screen deletion never enters the game-over prefix, never creates a marker, and therefore cannot invoke automatic or guarded resurrection. If deletion occurs from a game-over-opened native load window, it remains destructive and causes live UI eligibility to fail. Stale markers are cleared when their original is observed alive.
 
 ## Guarded fallback procedure
 

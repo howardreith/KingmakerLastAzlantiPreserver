@@ -118,8 +118,24 @@ namespace KingmakerLastAzlantiPreserver.Integration
 
         public bool IsOnlyOneSaveEnabled()
         {
-            SettingsRoot.SettingsListScreen settings = SettingsRoot.Instance;
-            return settings != null && settings.OnlyOneSave != null && settings.OnlyOneSave.CurrentValue;
+            bool enabled;
+            return TryGetOnlyOneSaveEnabled(out enabled) && enabled;
+        }
+
+        public bool TryGetOnlyOneSaveEnabled(out bool enabled)
+        {
+            enabled = false;
+            try
+            {
+                SettingsRoot.SettingsListScreen settings = SettingsRoot.Instance;
+                if (settings == null || settings.OnlyOneSave == null) return false;
+                enabled = settings.OnlyOneSave.CurrentValue;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public void RefreshSaveList()

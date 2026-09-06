@@ -18,7 +18,7 @@ Copy-Item -LiteralPath (Join-Path $root 'licenses\FIRST-AZLANTI-MIT.txt') -Desti
 
 $packageDirectory = Join-Path $root 'artifacts\packages'
 [IO.Directory]::CreateDirectory($packageDirectory) | Out-Null
-$zipPath = Join-Path $packageDirectory 'KingmakerLastAzlantiPreserver-0.1.0.zip'
+$zipPath = Join-Path $packageDirectory 'KingmakerLastAzlantiPreserver-0.1.1.zip'
 Assert-PathWithin $zipPath $root 'Package path'
 if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
 

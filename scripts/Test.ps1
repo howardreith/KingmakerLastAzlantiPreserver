@@ -7,8 +7,19 @@ $project = Join-Path $root 'tests\KingmakerLastAzlantiPreserver.Tests\KingmakerL
 Invoke-MSBuild @($project, '/nologo', '/m', '/t:Rebuild', "/p:Configuration=$Configuration", '/p:Platform=AnyCPU')
 $runner = Join-Path $root "artifacts\tests\$Configuration\KingmakerLastAzlantiPreserver.Tests.exe"
 Assert-FileExists $runner 'Deterministic test runner'
-$output = & $runner 2>&1
-$exitCode = $LASTEXITCODE
+$configurationPaths = Get-KingmakerConfiguration
+$priorReferenceDirs = $env:KMLAP_TEST_REFERENCE_DIRS
+try {
+    $env:KMLAP_TEST_REFERENCE_DIRS = @(
+        $configurationPaths.UnityModManagerDir
+        $configurationPaths.ManagedDir
+    ) -join [IO.Path]::PathSeparator
+    $output = & $runner 2>&1
+    $exitCode = $LASTEXITCODE
+}
+finally {
+    $env:KMLAP_TEST_REFERENCE_DIRS = $priorReferenceDirs
+}
 $output | ForEach-Object { Write-Host $_ }
 $summary = @($output | Where-Object { $_ -match '^RESULT total=(\d+) passed=(\d+) failed=(\d+)$' }) | Select-Object -Last 1
 if (-not $summary) { throw 'Test runner did not emit its deterministic RESULT line.' }
