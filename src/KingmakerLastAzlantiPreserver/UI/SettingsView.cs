@@ -11,6 +11,7 @@ namespace KingmakerLastAzlantiPreserver.UI
         private readonly RuntimeStatus status;
         private readonly Func<RecoveryDecision> getRecoveryDecision;
         private readonly Func<string, bool, RecoveryDecision> restore;
+        private readonly Action settingsChanged;
         private bool recoveryConfirmed;
         private RecoveryDecision cachedRecoveryDecision;
         private DateTime nextRecoveryRefreshUtc;
@@ -19,30 +20,51 @@ namespace KingmakerLastAzlantiPreserver.UI
             Settings settings,
             RuntimeStatus status,
             Func<RecoveryDecision> getRecoveryDecision,
-            Func<string, bool, RecoveryDecision> restore)
+            Func<string, bool, RecoveryDecision> restore,
+            Action settingsChanged)
         {
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.status = status ?? throw new ArgumentNullException(nameof(status));
             this.getRecoveryDecision = getRecoveryDecision ?? throw new ArgumentNullException(nameof(getRecoveryDecision));
             this.restore = restore ?? throw new ArgumentNullException(nameof(restore));
+            this.settingsChanged = settingsChanged ?? throw new ArgumentNullException(nameof(settingsChanged));
         }
 
         public void Draw()
         {
             RuntimeStatusSnapshot snapshot = status.Snapshot();
             GUILayout.Label(ProductMetadata.Name + " " + ProductMetadata.Version);
+            bool oldPreservation = settings.PreserveLastAzlantiSaveOnGameOver;
+            bool oldLoadControls = settings.EnableGameOverLoadControls;
             settings.PreserveLastAzlantiSaveOnGameOver = GUILayout.Toggle(
                 settings.PreserveLastAzlantiSaveOnGameOver,
                 "Preserve Last Azlanti save on game over");
+            bool oldGuiEnabled = GUI.enabled;
+            GUI.enabled = oldGuiEnabled && snapshot.CoreContractsInstalled && settings.PreserveLastAzlantiSaveOnGameOver;
+            settings.EnableGameOverLoadControls = GUILayout.Toggle(
+                settings.EnableGameOverLoadControls,
+                "Allow loading the preserved save from the game-over screen");
+            GUI.enabled = oldGuiEnabled;
             settings.MaintainHiddenRecoverySnapshot = GUILayout.Toggle(
                 settings.MaintainHiddenRecoverySnapshot,
                 "Maintain hidden recovery snapshot");
             settings.VerboseDiagnostics = GUILayout.Toggle(settings.VerboseDiagnostics, "Verbose diagnostics");
+            if (oldPreservation != settings.PreserveLastAzlantiSaveOnGameOver ||
+                oldLoadControls != settings.EnableGameOverLoadControls)
+            {
+                settingsChanged();
+                snapshot = status.Snapshot();
+            }
 
             GUILayout.Space(6f);
-            GUILayout.Label("Protection: " + (snapshot.ProtectionAvailable ? "AVAILABLE" : "UNAVAILABLE"));
+            GUILayout.Label("Core preservation: " + FormatState(snapshot.CoreProtectionState));
+            GUILayout.Label("Game-over loading controls: " + FormatState(snapshot.GameOverLoadControlsState));
             GUILayout.Label("Game-over hook: " + snapshot.GameOverHook);
             GUILayout.Label("Deletion hook: " + snapshot.DeletionHook);
+            GUILayout.Label("Game-over UI hook: " + snapshot.GameOverLoadHook);
+            GUILayout.Label("Controller UI hook: " + snapshot.ControllerLoadHook);
+            GUILayout.Label("Game-over loading detail: " + snapshot.GameOverLoadControlsDetail);
+            GUILayout.Label("Latest game-over loading eligibility: " + snapshot.LatestGameOverLoadEligibility);
             GUILayout.Label("Last Azlanti save recognized: " + (snapshot.LastAzlantiRecognized ? "yes" : "no"));
             GUILayout.Label("Recovery directory: " + snapshot.RecoveryDirectory);
             GUILayout.Label("Latest recovery: " + snapshot.LatestRecoveryResult);
@@ -85,6 +107,11 @@ namespace KingmakerLastAzlantiPreserver.UI
         {
             cachedRecoveryDecision = getRecoveryDecision();
             nextRecoveryRefreshUtc = DateTime.UtcNow.AddMinutes(1);
+        }
+
+        private static string FormatState(RuntimeFeatureState state)
+        {
+            return state.ToString().ToUpperInvariant();
         }
     }
 }

@@ -15,6 +15,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
         private readonly PreservationContextTracker contextTracker;
         private readonly PreservationPolicy policy;
         private readonly RecoverySnapshotService recovery;
+        private readonly IGameOverPreservationOutcomeSink outcomeSink;
         private readonly RuntimeStatus status;
         private readonly IModLogger logger;
 
@@ -25,6 +26,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             PreservationContextTracker contextTracker,
             PreservationPolicy policy,
             RecoverySnapshotService recovery,
+            IGameOverPreservationOutcomeSink outcomeSink,
             RuntimeStatus status,
             IModLogger logger)
         {
@@ -34,12 +36,14 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             this.contextTracker = contextTracker ?? throw new ArgumentNullException(nameof(contextTracker));
             this.policy = policy ?? throw new ArgumentNullException(nameof(policy));
             this.recovery = recovery ?? throw new ArgumentNullException(nameof(recovery));
+            this.outcomeSink = outcomeSink ?? throw new ArgumentNullException(nameof(outcomeSink));
             this.status = status ?? throw new ArgumentNullException(nameof(status));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public PreservationContext BeginGameOver()
         {
+            TryBeginUiOperation();
             if (!settings.PreserveLastAzlantiSaveOnGameOver)
             {
                 status.SetInterceptionResult("Preservation disabled; vanilla game-over behavior is unchanged.");
@@ -127,9 +131,10 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             return true;
         }
 
-        public void CompleteGameOver(PreservationContext context, string source)
+        public void CompleteGameOver(PreservationContext context, string source, bool allowUiOutcome)
         {
             if (context == null || !contextTracker.IsCurrent(context)) return;
+            bool deletionWasSuppressed = context.InterceptionCount > 0;
             try
             {
                 CompleteRecovery(context, source);
@@ -139,11 +144,22 @@ namespace KingmakerLastAzlantiPreserver.Preservation
                 contextTracker.End(context);
                 logger.Verbose("Cleared game-over context from " + source + ".");
             }
+
+            if (allowUiOutcome && deletionWasSuppressed)
+            {
+                TryRecordUiOutcome(context);
+            }
         }
 
         public void CompleteCurrentIfAny(string source)
         {
-            CompleteGameOver(contextTracker.Current, source);
+            CompleteGameOver(contextTracker.Current, source, false);
+        }
+
+        public void LeaveGameOver(string source)
+        {
+            CompleteCurrentIfAny(source);
+            TryClearUiOperation(source);
         }
 
         public void WatchdogCleanup()
@@ -157,6 +173,45 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             if (orphaned == null) return;
             CompleteRecovery(orphaned, "exception/stale-context watchdog");
             logger.Warning("Cleared an orphaned game-over context from the UMM update watchdog.");
+        }
+
+        private void TryBeginUiOperation()
+        {
+            try
+            {
+                outcomeSink.BeginGameOverOperation();
+            }
+            catch (Exception exception)
+            {
+                status.SetError("Game-over loading outcome reset failed: " + exception.Message);
+                logger.Exception("Reset optional game-over loading outcome", exception);
+            }
+        }
+
+        private void TryRecordUiOutcome(PreservationContext context)
+        {
+            try
+            {
+                outcomeSink.RecordSuppressedGameOver(context.OperationId, context.SaveIdentity, DateTime.UtcNow);
+            }
+            catch (Exception exception)
+            {
+                status.SetError("Game-over loading outcome verification failed: " + exception.Message);
+                logger.Exception("Verify optional game-over loading outcome", exception);
+            }
+        }
+
+        private void TryClearUiOperation(string reason)
+        {
+            try
+            {
+                outcomeSink.ClearGameOverOperation(reason);
+            }
+            catch (Exception exception)
+            {
+                status.SetError("Game-over loading outcome cleanup failed: " + exception.Message);
+                logger.Exception("Clear optional game-over loading outcome", exception);
+            }
         }
 
         private void CompleteRecovery(PreservationContext context, string source)

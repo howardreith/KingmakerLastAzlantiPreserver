@@ -48,7 +48,7 @@ namespace KingmakerLastAzlantiPreserver.Patches
             try
             {
                 GameOverPreservationCoordinator current = GetCoordinator();
-                if (current != null) current.CompleteGameOver(state, "Activate postfix");
+                if (current != null) current.CompleteGameOver(state, "Activate postfix", true);
             }
             catch (Exception exception)
             {
@@ -61,7 +61,7 @@ namespace KingmakerLastAzlantiPreserver.Patches
             try
             {
                 GameOverPreservationCoordinator current = GetCoordinator();
-                if (current != null) current.CompleteCurrentIfAny("Deactivate safety cleanup");
+                if (current != null) current.LeaveGameOver("Deactivate safety cleanup");
             }
             catch (Exception exception)
             {

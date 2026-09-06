@@ -5,6 +5,7 @@ namespace KingmakerLastAzlantiPreserver
     public sealed class Settings : UnityModManager.ModSettings
     {
         public bool PreserveLastAzlantiSaveOnGameOver = true;
+        public bool EnableGameOverLoadControls = true;
         public bool MaintainHiddenRecoverySnapshot = true;
         public bool VerboseDiagnostics;
 

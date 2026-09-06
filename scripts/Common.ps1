@@ -94,7 +94,7 @@ function Assert-RepositorySafety {
     if ($info.Id -ne 'KingmakerLastAzlantiPreserver' -or
         $info.AssemblyName -ne 'KingmakerLastAzlantiPreserver.dll' -or
         $info.EntryMethod -ne 'KingmakerLastAzlantiPreserver.Main.Load' -or
-        $info.Version -ne '0.1.0') {
+        $info.Version -ne '0.1.1') {
         throw 'Info.json product identity is inconsistent.'
     }
 

@@ -252,3 +252,5 @@ finally {
     }
     [AppDomain]::CurrentDomain.remove_AssemblyResolve($resolver)
 }
+
+& (Join-Path $PSScriptRoot 'Verify-GameOverLoadContracts.ps1') -GamePathProps $GamePathProps -OutputPath 'artifacts\qualification\game-over-load-contracts.json'

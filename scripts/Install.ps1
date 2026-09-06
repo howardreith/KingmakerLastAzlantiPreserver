@@ -4,7 +4,7 @@ param([string] $PackagePath)
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-RepositoryRoot
 $configuration = Get-KingmakerConfiguration
-if (-not $PackagePath) { $PackagePath = Join-Path $root 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.0.zip' }
+if (-not $PackagePath) { $PackagePath = Join-Path $root 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.1.zip' }
 $PackagePath = [IO.Path]::GetFullPath($PackagePath)
 & (Join-Path $PSScriptRoot 'Validate-Package.ps1') -PackagePath $PackagePath
 
@@ -33,13 +33,37 @@ try {
     $backup = Join-Path $temporary 'previous-installation'
     Assert-PathWithin $backup $temporary 'Install rollback directory'
     $oldMoved = $false
+    $settingsName = 'Settings.xml'
+    $settingsHash = $null
     try {
         [IO.Directory]::CreateDirectory($configuration.ModsDir) | Out-Null
         if (Test-Path -LiteralPath $target) {
+            $targetItem = Get-Item -LiteralPath $target
+            if (-not $targetItem.PSIsContainer -or
+                (($targetItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
+                throw 'Installed Preserver target is not an ordinary directory.'
+            }
+            $existingSettings = Join-Path $target $settingsName
+            if (Test-Path -LiteralPath $existingSettings) {
+                $settingsItem = Get-Item -LiteralPath $existingSettings
+                if ($settingsItem.PSIsContainer -or
+                    (($settingsItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
+                    throw 'Installed Preserver settings are not an ordinary file.'
+                }
+                $settingsHash = Get-Sha256 $existingSettings
+            }
             Move-Item -LiteralPath $target -Destination $backup
             $oldMoved = $true
         }
         Move-Item -LiteralPath $source -Destination $target
+        if ($settingsHash) {
+            $backupSettings = Join-Path $backup $settingsName
+            Assert-FileExists $backupSettings 'Preserved UMM settings'
+            Copy-Item -LiteralPath $backupSettings -Destination (Join-Path $target $settingsName)
+            if ((Get-Sha256 (Join-Path $target $settingsName)) -ne $settingsHash) {
+                throw 'Installed UMM settings hash differs from the preserved copy.'
+            }
+        }
         $installedDll = Join-Path $target 'KingmakerLastAzlantiPreserver.dll'
         Assert-FileExists $installedDll 'Installed mod DLL'
         if ((Get-Sha256 $installedDll) -ne $sourceHash) { throw 'Installed DLL hash differs from the validated package.' }
@@ -50,7 +74,14 @@ try {
         if ($oldMoved -and (Test-Path -LiteralPath $backup)) { Move-Item -LiteralPath $backup -Destination $target }
         throw "Installation failed; rollback was attempted: $($failure.Exception.Message)"
     }
-    $result = [ordered]@{ status='passed'; target=$target; dll_sha256=$sourceHash; package=$PackagePath }
+    $result = [ordered]@{
+        status = 'passed'
+        target = $target
+        dll_sha256 = $sourceHash
+        package = $PackagePath
+        settings_preserved = [bool] $settingsHash
+        settings_sha256 = $settingsHash
+    }
     Write-JsonFile (Join-Path $root 'artifacts\qualification\install.json') $result
     Write-Host "Installed only: $target"
     Write-Host "DLL SHA-256: $sourceHash"

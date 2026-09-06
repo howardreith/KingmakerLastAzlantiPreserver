@@ -1,79 +1,98 @@
-1. Back up the entire Kingmaker Saved Games directory outside the Owlcat directory.
-2. Disable or remove the original FirstAzlanti mod.
-3. Use a disposable new campaign.
-4. Initially disable Steam Cloud, then test Steam Cloud separately later.
-5. Never use the owners real campaign for destructive qualification.
-
 # Human runtime smoke test
 
-Record Kingmaker version, UMM version, mod package SHA-256, enabled mods, test timestamp, and every observed result. Keep saves/logs/screenshots outside Git; do not commit them. A failed step means runtime qualification has not passed.
+Compilation and installation are not runtime qualification. Use only a disposable standalone Beneath the Stolen Lands campaign; never use a valued save for destructive checks.
 
-## Preparation
+## Safety prerequisites
+
+Do not launch Kingmaker for this procedure unless all of these are true:
+
+1. GUI interaction is available through an existing repository-authorized mechanism.
+2. Kingmaker is closed before installation and the qualified v0.1.1 package is the only intended mod payload change.
+3. Steam Cloud behavior is known safe for this local-only pass; otherwise keep Cloud qualification separate and do not silently change account settings.
+4. A disposable standalone campaign can be created or explicitly identified by name and identity. Do not use Continue/latest-save to choose it.
+5. Any independent backup remains outside the Owlcat save directory and outside Git.
+6. FirstAzlanti and duplicate preservation mods are disabled; do not delete an unexpected mod without owner direction.
+
+Record Kingmaker version, UMM version, mod/package/DLL hashes, enabled mods, Cloud state, disposable run identity, test timestamp, available input devices, and every observed result. Keep saves, logs, screenshots, and recovery data outside Git. A failed or unobserved required step means runtime qualification has not passed.
+
+## 1. Main-menu startup boundary
 
 1. Exit Kingmaker and confirm no `Kingmaker` process remains.
-2. Run `scripts/Install.ps1 -WhatIf`; verify it names only `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`.
-3. Run `scripts/Install.ps1`; verify UMM shows version 0.1.0 and no red status.
-4. Open the mod panel. Confirm protection is `AVAILABLE`, both resolved hooks have the documented exact names, preservation/recovery are enabled, and no FirstAzlanti warning appears.
-5. Keep the independent full save-directory backup untouched throughout qualification.
+2. Run `scripts/Install.ps1 -WhatIf` and confirm it names only `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`.
+3. Install the qualified candidate and verify UMM reports version 0.1.1. Do not load a valued save.
+4. Launch only to the main menu and open the UMM panel.
+5. Confirm core preservation reports **AVAILABLE** separately from game-over loading controls **AVAILABLE**. Record the exact desktop/controller targets and latest eligibility reason; at the main menu, ineligibility is expected.
+6. Confirm both preservation settings and hidden recovery are enabled, no red status appears, and no FirstAzlanti conflict is reported.
 
-## A. Baseline behavior
+This startup check proves only that the candidate loaded. It does not qualify preservation or game-over controls.
 
-If the owner elects to run the destructive vanilla control, disable this mod, create a separate disposable Last Azlanti campaign, reach its autosave, trigger protagonist death/party wipe, return to the main menu, and record whether vanilla deletes the save. Destroy no real save. This optional control must never be performed against the owner's campaign.
+## 2. Disposable run and native autosave
 
-## B. Core Last Azlanti preservation
+1. Create a new standalone Beneath the Stolen Lands / Tenebrous Depths run with Last Azlanti / Only One Save enabled, or explicitly select a pre-authorized disposable run. Do not use Continue as a shortcut.
+2. Reach a legitimate native autosave and wait until saving completes.
+3. Confirm manual saving and quicksaving remain unavailable.
+4. Record that exactly one native game-visible slot exists. If external file evidence is part of the authorized fixture, record its filename, length, timestamp, and SHA-256 without copying it into Git.
+5. Confirm UMM recognizes the live IronMan save. A hidden snapshot must not appear in Kingmaker's load list.
 
-1. Enable the mod and create a new disposable campaign with Kingmaker's Last Azlanti / Only One Save option.
-2. Reach a legitimate autosave, then wait until saving has completed.
-3. Confirm ordinary manual save and quicksave remain unavailable.
-4. In `Saved Games`, record the one live filename, byte length, last-write UTC, and `Get-FileHash -Algorithm SHA256` result.
-5. Confirm UMM reports that a Last Azlanti save is recognized.
-6. Kill the protagonist or trigger a party wipe.
-7. Confirm the normal game-over presentation remains visible and there is no automatic reload.
-8. Return to the main menu.
-9. Confirm the same one save appears and no second save exists.
-10. Load it and confirm it resumes at the last legitimate autosave, not a new checkpoint.
-11. Repeat death, return-to-menu, and reload at least three times. Record each live filename/count/hash transition and UMM interception/recovery result.
+## 3. Load Last Save from game over
 
-## C. Save discipline
+1. Intentionally die with the disposable party and reach the normal results screen.
+2. Confirm Start Again remains enabled and unchanged.
+3. Confirm Load Last Save is visibly enabled, navigable, and selectable.
+4. Confirm Load Game is visibly enabled, navigable, and selectable.
+5. Confirm Main Menu remains enabled and unchanged, and that no other button or save slot appeared.
+6. Select Load Last Save.
+7. Confirm Kingmaker immediately uses its native loading flow and loads the preserved one-slot save without visiting Main Menu or showing a custom recovery entry.
+8. Confirm no automatic load occurred before the explicit action and no second game-visible save exists.
 
-1. Confirm exactly one game-visible save remains for the disposable campaign.
-2. Confirm no quicksave/manual-save command or alternate-slot loophole became available.
-3. Inspect the UMM-displayed recovery directory and confirm its `snapshot.bin` does not appear in Kingmaker's load screen.
-4. Progress to another legitimate autosave and confirm Kingmaker overwrites/updates its one normal slot as before.
-5. Confirm no chronological recovery files accumulate: one `snapshot.bin` and one `metadata.json` exist for that source identity, with no retained stage/previous directory.
+## 4. Load Game, cancel, and return
 
-## D. Manual deletion
+1. Repeat the death scenario and select Load Game.
+2. Confirm Kingmaker's native load-game window opens and the current Last Azlanti save is visible and loadable.
+3. Use the native cancel/back action. Merely opening the window is not a successful load.
+4. Confirm the same results screen remains valid and both loading controls revalidate correctly.
+5. Open Load Game again and load the disposable save through the native flow.
+6. Confirm cancellation did not create a save, leave a custom slot, or steal focus.
 
-1. From the normal load-game UI, deliberately delete a disposable Last Azlanti save.
-2. Confirm the UI deletion completes and the save disappears.
-3. Restart/refresh the load screen and confirm it is not automatically resurrected.
-4. Confirm no pending game-over marker was created and UMM's guarded restore action is disabled.
+## 5. Repetition and input paths
 
-## E. Non-Last-Azlanti regression
+1. Complete a second death/load cycle to prove a prior operation neither blocks nor grants the next operation.
+2. Verify mouse selection for both controls.
+3. Verify normal keyboard navigation and confirm for both controls.
+4. If a controller is available, verify controller navigation and confirm for both controls. Otherwise record controller behavior as **UNTESTED**, not passed.
+
+## 6. Setting and core-disable boundaries
+
+1. On a fresh disposable death, disable only **Allow loading the preserved save from the game-over screen** before reaching the results screen. Confirm both controls retain vanilla Last Azlanti disabled behavior while core preservation still leaves the save loadable from Main Menu.
+2. Re-enable the setting, reach another disposable results screen, confirm the controls elevate, then disable that setting while the screen is still open. Confirm only the two owned loading controls return to vanilla state and neither action remains usable.
+3. Confirm core preservation remains **AVAILABLE** throughout those UI-setting changes.
+4. On a separate disposable run, disable core preservation or the mod and confirm vanilla Last Azlanti game-over behavior is unchanged. Never perform this step against a save that matters.
+
+## 7. Explicit deletion from the game-over load window
+
+1. Use another explicitly identified disposable save and reach Load Game from its game-over screen.
+2. Explicitly delete that save through the native confirmation UI.
+3. Confirm deletion remains destructive: the live entry disappears and is not restored from the hidden snapshot.
+4. Cancel back to results and confirm no stale permission can load the deleted save; the feature-owned loading state must be revoked.
+5. Refresh/reopen the load screen and confirm no pending marker or recovery action resurrects the explicit deletion.
+
+## 8. Non-Last-Azlanti regression
 
 1. Create or load a separate ordinary disposable campaign.
-2. Confirm manual saves, quicksaves, autosaves, loading, overwriting, and deletion behave exactly as with the mod disabled.
-3. Confirm UMM reports no currently recognized Last Azlanti save for that campaign and no snapshot/marker is created by ordinary deletion.
+2. Reach its ordinary game-over screen and confirm it is unchanged.
+3. Confirm manual saves, quicksaves, autosaves, loading, overwrite, and explicit deletion retain native behavior.
+4. Confirm no preservation operation, UI grant, marker, or snapshot is created by an ordinary deletion.
 
-## F. Restart and recovery
+## 9. Diagnostics and recovery discipline
 
-1. In a fresh disposable Last Azlanti campaign, die, return to the main menu, and exit Kingmaker normally.
-2. Restart Kingmaker and confirm the preserved save remains available and loadable.
-3. For fallback testing, work against a copied disposable save only. Preserve the original elsewhere first.
-4. Produce/retain a mod-created pending game-over marker using the documented disposable sequence; never manufacture a marker for a real save.
-5. With Kingmaker closed, remove only the copied disposable live file so the recorded path is absent.
-6. Restart, open UMM, and confirm the recovery action is enabled only after metadata/hash/path validation.
-7. Confirm it does nothing until the explicit confirmation checkbox is selected.
-8. Confirm restoration creates only the recorded missing original, never overwrites an existing file, clears the marker, and yields exactly one loadable game-visible save.
+1. Confirm no new exceptions, repeated per-frame log spam, focus stealing, save-list corruption, extra save, or stale enabled control occurs across all cycles.
+2. Confirm the recovery directory retains at most one current `snapshot.bin` and `metadata.json` for the disposable identity, with no stage/previous history.
+3. Do not manufacture recovery markers. The guarded fallback procedure in `docs/RECOVERY.md` is a separate destructive test against a copied disposable fixture only.
 
-## G. Compatibility
+## 10. Steam Cloud
 
-1. After isolated testing passes, enable the owner's normal gameplay mods, excluding FirstAzlanti or any duplicate Last Azlanti preservation mod.
-2. Repeat one disposable death/reload cycle.
-3. Confirm no red UMM status, compatibility warning requiring investigation, or save-system exception appears.
-4. Re-enable Steam Cloud separately, create another disposable campaign, repeat at least three death/reload cycles plus a full restart, and record cloud/local filenames and results.
-5. Report Steam Cloud as **qualified** only if that separate observed test passes; otherwise report it as failed or unqualified.
+Steam Cloud remains a separate qualification scenario. Only after the local disposable checks pass may the owner deliberately enable/test Cloud with a new disposable run, repeated death/load cycles, and a full restart while recording local/cloud behavior. Report Cloud as **UNQUALIFIED** unless that exact scenario is observed.
 
 ## Qualification outcome
 
-Compilation qualification does not imply runtime qualification. Mark version 0.1.0 runtime-qualified only after every required non-optional step above passes with recorded disposable-campaign evidence. Do not publish a GitHub release beforehand.
+Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result.
