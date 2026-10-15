@@ -74,6 +74,6 @@ The v0.1.1 UI enhancement remains **MANUAL RUNTIME TEST REQUIRED** until the dis
 
 Version 0.1.2 is an owner-authorized stable release (authorized 2026-10-15) published without a new human playtest. Its preservation and game-over loading code is the v0.1.1 code; its only functional change is recovery-format compatibility, which is covered by automated filesystem tests, including restoring the verbatim recovery files written by the published v0.1.1 DLL. The same **MANUAL RUNTIME TEST REQUIRED** boundary applies to 0.1.2, and it is not a runtime compatibility claim either.
 
-Version 0.1.3 changes only the settings panel's presentation and status reporting. Its panel states, warnings, and recovery controls are covered by automated tests, but the panel has not been displayed in a running game; its layout and the existing **MANUAL RUNTIME TEST REQUIRED** boundary remain.
+Version 0.1.3 is an owner-authorized stable release (authorized 2026-10-15) published before the new panel was inspected in-game. It changes only the settings panel's presentation and status reporting. Its panel states, warnings, and recovery controls are covered by automated tests, but the panel has not been displayed in a running game; its layout and the existing **MANUAL RUNTIME TEST REQUIRED** boundary remain.
 
 See [docs/RECONNAISSANCE.md](docs/RECONNAISSANCE.md) for the exact 2.1.7b call graph and [docs/RECOVERY.md](docs/RECOVERY.md) for recovery invariants.

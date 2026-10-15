@@ -5,7 +5,7 @@
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
 - Public display name/author since v0.1.2: `Mr. Bard's Second to Last Azlanti` / `Mr. Bard` (UMM ID, assembly, entry point, Harmony owners, install folder, settings, and recovery path unchanged)
 - Release version: `0.1.2` (owner-authorized stable release; previous release `v0.1.1`)
-- Candidate version: `0.1.3` (unreleased; settings-panel presentation cleanup; not authorized for publication)
+- Candidate version: `0.1.3` (settings-panel presentation cleanup; owner-authorized stable release on 2026-10-15, not runtime-qualified)
 - Target: Pathfinder: Kingmaker `2.1.7b`, owner-approved UMM `0.33.0`, installed `0Harmony12`/Harmony `1.2.0.1`, .NET Framework 4.7.2, C# 7.3
 - v0.1.1 feature branch: `codex/game-over-load-controls-v0.1.1` (accepted base `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`)
 - v0.1.2 branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
@@ -73,6 +73,7 @@
 - Steam Cloud compatibility: **unqualified pending separate deliberate test**.
 - Owner-authorized pre-runtime release: **approved for v0.1.1 on 2026-09-06**. The owner explicitly requested finalization, merge, tag, and stable publication before personally installing and performing the disposable-campaign GUI checks.
 - Owner-authorized pre-runtime release: **approved for v0.1.2 on 2026-10-15**. The owner explicitly authorized the recovery-compatibility correction, merge, tag, and stable publication of v0.1.2 without an additional human playtest.
+- Owner-authorized pre-runtime release: **approved for v0.1.3 on 2026-10-15**. The owner explicitly authorized merging, tagging, and stable publication of the v0.1.3 settings-panel cleanup before inspecting the new panel in-game; the in-game panel check (SMOKE-TEST step 1.7) follows publication.
 - Each authorization changes the publication disposition of its own version only. It is not runtime evidence, does not mark the release runtime-qualified, and does not qualify Steam Cloud.
 - The guarded publisher retains the stricter accepted-runtime path and has a separate, explicit per-version owner-authorized path that records `runtime_qualified: false` in release provenance.
 

@@ -1,10 +1,11 @@
 # Changelog
 
-## 0.1.3 - Unreleased
+## 0.1.3 - 2026-10-15
 
 - Cleaner Unity Mod Manager settings panel: three plainly labelled settings, a one-line note that Last Azlanti's normal saving restrictions remain unchanged, and a short Ready/Off/Unavailable status for save protection, game-over loading, and the recovery backup. The duplicate name/version heading is gone.
 - Verbose diagnostics, hooks, patch/eligibility/recognition details, the recovery directory, latest results, and the full compatibility report moved into a collapsed **Troubleshooting** section. Real problems stay visible as short messages that name the affected feature; other mods patching the same code is shown as unverified compatibility, not a conflict. Recovery controls appear only when a pending or blocked recovery needs attention, with the same validation and explicit confirmation.
-- Settings, their saved keys and defaults, save preservation, game-over loading, recovery, and manual deletion are unchanged. Not runtime-qualified.
+- Settings, their saved keys and defaults, save preservation, game-over loading, recovery, and manual deletion are unchanged.
+- Owner-authorized stable release, **not runtime-qualified**: the new panel has not yet been inspected in a running game, and the **MANUAL RUNTIME TEST REQUIRED** boundary still applies.
 
 ## 0.1.2 - 2026-10-15
 

@@ -7,7 +7,7 @@
 - locally installed Pathfinder: Kingmaker 2.1.7b
 - owner-approved Unity Mod Manager 0.33.0 with the installed legacy `0Harmony12, Version=1.2.0.1` surface
 
-The v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 and the v0.1.3 candidate use the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
+The v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 and v0.1.3 use the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
 
 Discover the Steam app manifest or configure a non-Steam installation explicitly:
 
@@ -87,7 +87,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -Publish -ConfirmRuntimeQualifiedRelease
 ```
 
-The owner can instead authorize one specific version for stable publication before the GUI checklist (v0.1.1 on 2026-09-06; v0.1.2 on 2026-10-15). That per-version disposition uses a separate deliberate switch:
+The owner can instead authorize one specific version for stable publication before the GUI checklist (v0.1.1 on 2026-09-06; v0.1.2 on 2026-10-15; v0.1.3 on 2026-10-15). That per-version disposition uses a separate deliberate switch:
 
 ```powershell
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
@@ -110,3 +110,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
 ```
 
 The published v0.1.0 and v0.1.1 tags, releases, assets, and checksums stay unchanged.
+
+### v0.1.3
+
+v0.1.3 is published from clean `main` with the same owner-authorized pre-runtime command. The published v0.1.0, v0.1.1, and v0.1.2 tags, releases, assets, and checksums stay unchanged.
