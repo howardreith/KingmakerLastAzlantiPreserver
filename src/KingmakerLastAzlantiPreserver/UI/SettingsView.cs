@@ -2,19 +2,16 @@ using System;
 using KingmakerLastAzlantiPreserver.Integration;
 using KingmakerLastAzlantiPreserver.Recovery;
 using UnityEngine;
+using UnityModManagerNet;
 
 namespace KingmakerLastAzlantiPreserver.UI
 {
     public sealed class SettingsView
     {
-        private readonly Settings settings;
-        private readonly RuntimeStatus status;
-        private readonly Func<RecoveryDecision> getRecoveryDecision;
-        private readonly Func<string, bool, RecoveryDecision> restore;
-        private readonly Action settingsChanged;
-        private bool recoveryConfirmed;
-        private RecoveryDecision cachedRecoveryDecision;
-        private DateTime nextRecoveryRefreshUtc;
+        private static readonly Color NoticeColor = new Color(1f, 0.82f, 0.35f);
+        private static readonly Color ProblemColor = new Color(1f, 0.5f, 0.45f);
+        private readonly SettingsPanel panel;
+        private GUIStyle wrappedLabel;
 
         public SettingsView(
             Settings settings,
@@ -23,95 +20,93 @@ namespace KingmakerLastAzlantiPreserver.UI
             Func<string, bool, RecoveryDecision> restore,
             Action settingsChanged)
         {
-            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            this.status = status ?? throw new ArgumentNullException(nameof(status));
-            this.getRecoveryDecision = getRecoveryDecision ?? throw new ArgumentNullException(nameof(getRecoveryDecision));
-            this.restore = restore ?? throw new ArgumentNullException(nameof(restore));
-            this.settingsChanged = settingsChanged ?? throw new ArgumentNullException(nameof(settingsChanged));
+            panel = new SettingsPanel(settings, status, getRecoveryDecision, restore, settingsChanged);
         }
 
         public void Draw()
         {
-            RuntimeStatusSnapshot snapshot = status.Snapshot();
-            GUILayout.Label(ProductMetadata.Name + " " + ProductMetadata.Version);
-            bool oldPreservation = settings.PreserveLastAzlantiSaveOnGameOver;
-            bool oldLoadControls = settings.EnableGameOverLoadControls;
-            settings.PreserveLastAzlantiSaveOnGameOver = GUILayout.Toggle(
-                settings.PreserveLastAzlantiSaveOnGameOver,
-                "Preserve Last Azlanti save on game over");
-            bool oldGuiEnabled = GUI.enabled;
-            GUI.enabled = oldGuiEnabled && snapshot.CoreContractsInstalled && settings.PreserveLastAzlantiSaveOnGameOver;
-            settings.EnableGameOverLoadControls = GUILayout.Toggle(
-                settings.EnableGameOverLoadControls,
-                "Allow loading the preserved save from the game-over screen");
-            GUI.enabled = oldGuiEnabled;
-            settings.MaintainHiddenRecoverySnapshot = GUILayout.Toggle(
-                settings.MaintainHiddenRecoverySnapshot,
-                "Maintain hidden recovery snapshot");
-            settings.VerboseDiagnostics = GUILayout.Toggle(settings.VerboseDiagnostics, "Verbose diagnostics");
-            if (oldPreservation != settings.PreserveLastAzlantiSaveOnGameOver ||
-                oldLoadControls != settings.EnableGameOverLoadControls)
-            {
-                settingsChanged();
-                snapshot = status.Snapshot();
-            }
+            // State that changes the control layout is refreshed only on Layout so every pass of one
+            // IMGUI event draws the same controls; user actions take effect from the next pass.
+            Event current = Event.current;
+            if (current == null || current.type == EventType.Layout) panel.RefreshRecoveryIfDue();
+            SettingsPanelModel model = panel.Build();
+            if (wrappedLabel == null) wrappedLabel = new GUIStyle(GUI.skin.label) { wordWrap = true };
+
+            for (int index = 0; index < model.Settings.Count; index++) DrawToggle(model.Settings[index]);
+            GUILayout.Label(model.Explanation, wrappedLabel);
 
             GUILayout.Space(6f);
-            GUILayout.Label("Core preservation: " + FormatState(snapshot.CoreProtectionState));
-            GUILayout.Label("Game-over loading controls: " + FormatState(snapshot.GameOverLoadControlsState));
-            GUILayout.Label("Game-over hook: " + snapshot.GameOverHook);
-            GUILayout.Label("Deletion hook: " + snapshot.DeletionHook);
-            GUILayout.Label("Game-over UI hook: " + snapshot.GameOverLoadHook);
-            GUILayout.Label("Controller UI hook: " + snapshot.ControllerLoadHook);
-            GUILayout.Label("Game-over loading detail: " + snapshot.GameOverLoadControlsDetail);
-            GUILayout.Label("Latest game-over loading eligibility: " + snapshot.LatestGameOverLoadEligibility);
-            GUILayout.Label("Last Azlanti save recognized: " + (snapshot.LastAzlantiRecognized ? "yes" : "no"));
-            GUILayout.Label("Recovery directory: " + snapshot.RecoveryDirectory);
-            GUILayout.Label("Latest recovery: " + snapshot.LatestRecoveryResult);
-            GUILayout.Label("Latest interception: " + snapshot.LatestInterceptionResult);
-            GUILayout.Label("Latest error: " + snapshot.LatestError);
-            if (!string.IsNullOrEmpty(snapshot.CompatibilityWarning))
+            for (int index = 0; index < model.Status.Count; index++) GUILayout.Label(model.Status[index].Text, wrappedLabel);
+            if (!string.IsNullOrEmpty(model.Context)) GUILayout.Label(model.Context, wrappedLabel);
+            for (int index = 0; index < model.Alerts.Count; index++)
             {
-                GUILayout.Space(4f);
-                GUILayout.Label("COMPATIBILITY WARNING: " + snapshot.CompatibilityWarning);
+                DrawLine(model.Alerts[index].Text, model.Alerts[index].Tone);
             }
 
-            GUILayout.Space(8f);
-            if (cachedRecoveryDecision == null || DateTime.UtcNow >= nextRecoveryRefreshUtc)
+            if (model.Recovery != null) DrawRecovery(model.Recovery);
+
+            GUILayout.Space(6f);
+            if (GUILayout.Button(model.TroubleshootingButtonLabel, GUILayout.ExpandWidth(false))) panel.ToggleTroubleshooting();
+            if (model.Troubleshooting != null) DrawTroubleshooting(model.Troubleshooting);
+        }
+
+        private void DrawRecovery(RecoveryPanel recovery)
+        {
+            GUILayout.Space(6f);
+            GUILayout.Label(RecoveryPanel.Heading, UnityModManager.UI.bold ?? GUI.skin.label);
+            for (int index = 0; index < recovery.Lines.Count; index++)
             {
-                RefreshRecoveryDecision();
+                DrawLine(recovery.Lines[index], index == 0 ? recovery.Tone : PanelTone.Normal);
             }
 
-            if (GUILayout.Button("Refresh guarded recovery status")) RefreshRecoveryDecision();
-            RecoveryDecision recoveryDecision = cachedRecoveryDecision;
-            GUILayout.Label("Guarded recovery: " + recoveryDecision.Message);
-            recoveryConfirmed = GUILayout.Toggle(
-                recoveryConfirmed,
-                "I confirm restoration of the recorded disposable/missing save path");
+            if (recovery.ShowConfirmation)
+            {
+                bool confirmed = GUILayout.Toggle(recovery.Confirmed, RecoveryPanel.ConfirmationLabel);
+                if (confirmed != recovery.Confirmed) panel.SetRecoveryConfirmed(confirmed);
+            }
+
+            GUILayout.BeginHorizontal();
+            if (recovery.ShowConfirmation)
+            {
+                bool oldEnabled = GUI.enabled;
+                GUI.enabled = oldEnabled && recovery.RestoreEnabled;
+                if (GUILayout.Button(RecoveryPanel.RestoreButtonLabel, GUILayout.ExpandWidth(false))) panel.RestoreRecovery();
+                GUI.enabled = oldEnabled;
+            }
+
+            if (GUILayout.Button(RecoveryPanel.CheckAgainButtonLabel, GUILayout.ExpandWidth(false))) panel.RefreshRecovery();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+        private void DrawTroubleshooting(TroubleshootingPanel troubleshooting)
+        {
+            DrawToggle(troubleshooting.VerboseDiagnostics);
+            for (int index = 0; index < troubleshooting.Details.Count; index++)
+            {
+                PanelDetail detail = troubleshooting.Details[index];
+                GUILayout.Label(detail.Label + ": " + detail.Value, wrappedLabel);
+            }
+
+            if (GUILayout.Button(TroubleshootingPanel.RefreshButtonLabel, GUILayout.ExpandWidth(false))) panel.RefreshRecovery();
+        }
+
+        private void DrawToggle(PanelToggle toggle)
+        {
             bool oldEnabled = GUI.enabled;
-            GUI.enabled = oldEnabled && recoveryConfirmed && recoveryDecision.CanRestore;
-            if (GUILayout.Button("Restore validated pending recovery"))
-            {
-                RecoveryDecision result = restore(recoveryDecision.RecoveryId, recoveryConfirmed);
-                status.SetRecoveryResult(result.Message);
-                if (result.Kind == RecoveryDecisionKind.Rejected) status.SetError(result.Message);
-                cachedRecoveryDecision = result;
-                nextRecoveryRefreshUtc = DateTime.UtcNow.AddMinutes(1);
-                recoveryConfirmed = false;
-            }
-
+            GUI.enabled = oldEnabled && toggle.Enabled;
+            bool value = GUILayout.Toggle(toggle.Value, toggle.Label);
             GUI.enabled = oldEnabled;
+            if (value != toggle.Value) panel.SetSetting(toggle.Setting, value);
         }
 
-        private void RefreshRecoveryDecision()
+        private void DrawLine(string text, PanelTone tone)
         {
-            cachedRecoveryDecision = getRecoveryDecision();
-            nextRecoveryRefreshUtc = DateTime.UtcNow.AddMinutes(1);
-        }
-
-        private static string FormatState(RuntimeFeatureState state)
-        {
-            return state.ToString().ToUpperInvariant();
+            Color oldColor = GUI.contentColor;
+            if (tone == PanelTone.Notice) GUI.contentColor = NoticeColor;
+            else if (tone == PanelTone.Problem) GUI.contentColor = ProblemColor;
+            GUILayout.Label(text, wrappedLabel);
+            GUI.contentColor = oldColor;
         }
     }
 }

@@ -7,7 +7,7 @@
 - locally installed Pathfinder: Kingmaker 2.1.7b
 - owner-approved Unity Mod Manager 0.33.0 with the installed legacy `0Harmony12, Version=1.2.0.1` surface
 
-The v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 uses the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
+The v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 and the v0.1.3 candidate use the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
 
 Discover the Steam app manifest or configure a non-Steam installation explicitly:
 
@@ -33,7 +33,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Package.ps1 -Configuration Release
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Validate-Package.ps1 `
-  -PackagePath .\artifacts\packages\KingmakerLastAzlantiPreserver-0.1.2.zip
+  -PackagePath .\artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip
 ```
 
 One non-runtime qualification command:
@@ -52,7 +52,7 @@ The core verifier writes `contracts.json`. The chained optional verifier writes 
 The one permitted candidate archive is:
 
 ```text
-artifacts/packages/KingmakerLastAzlantiPreserver-0.1.2.zip
+artifacts/packages/KingmakerLastAzlantiPreserver-0.1.3.zip
 ```
 
 It contains exactly one top-level `KingmakerLastAzlantiPreserver/` directory and six allowlisted files. Package validation also requires the exact branded manifest (`DisplayName` **Mr. Bard's Second to Last Azlanti**, `Author` **Mr. Bard**) together with the unchanged `Id`, `AssemblyName`, and `EntryMethod`; the expected values live in `Get-ExpectedProductManifest` in `scripts/Common.ps1`. It excludes PDBs, game/UMM/Harmony DLLs, source, settings, saves, logs, paths, and recovery data.
@@ -70,7 +70,7 @@ The installer validates the archive, refuses to run while Kingmaker is active, r
 
 ## Pull request and publication
 
-Feature work belongs on a mission-specific branch (v0.1.1: `codex/game-over-load-controls-v0.1.1`; v0.1.2: `codex/mr-bard-branding`) and reaches `main` through its pull request. Automated qualification or installation alone never authorizes a merge, tag, or publication.
+Feature work belongs on a mission-specific branch (v0.1.1: `codex/game-over-load-controls-v0.1.1`; v0.1.2: `codex/mr-bard-branding`; v0.1.3: `claude/settings-panel-cleanup-v0.1.3`) and reaches `main` through its pull request. Automated qualification or installation alone never authorizes a merge, tag, or publication.
 
 The guarded publisher requires clean, fully pushed `main`, two identical complete qualifications, both contract reports, and package validation. Prepare artifacts without a tag or GitHub release:
 

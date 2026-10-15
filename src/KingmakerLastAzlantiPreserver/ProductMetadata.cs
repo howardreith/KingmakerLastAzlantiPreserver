@@ -6,7 +6,7 @@ namespace KingmakerLastAzlantiPreserver
         public const string CoreHarmonyId = Id + ".Core";
         public const string GameOverLoadHarmonyId = Id + ".GameOverLoadControls";
         public const string Name = "Mr. Bard's Second to Last Azlanti";
-        public const string Version = "0.1.2";
+        public const string Version = "0.1.3";
         public const string SupportedAssemblySha256 = "3b6450ffec440e296e586f71c711b195aed144b28d53e1cbb29406d18fef5afb";
         public const string SupportedAssemblyMvid = "07fa1e4d-8618-41b3-9b8d-faa17d3b26f7";
     }

@@ -4,7 +4,7 @@
 
 The snapshot is a last-resort guard against an unexpected alternate deletion path or interrupted marked game-over sequence. It is not a save slot, rollback history, or evidence that game-over loading may be enabled.
 
-At runtime the root is derived from `Kingmaker.Utility.ApplicationPaths.persistentDataPath` (falling back to Unity's `Application.persistentDataPath`) and is displayed in UMM:
+At runtime the root is derived from `Kingmaker.Utility.ApplicationPaths.persistentDataPath` (falling back to Unity's `Application.persistentDataPath`) and is displayed under **Show troubleshooting** in the UMM panel:
 
 ```text
 <Kingmaker persistent data>/LastAzlantiPreserver/Recovery
@@ -45,7 +45,7 @@ Automatic restore is evaluated only while completing the exact in-memory game-ov
 
 The expected path is simpler: deletion is intercepted, the original exists at completion, and the marker is cleared while the current snapshot remains. Only this live native source—not the snapshot—can support a v0.1.1 UI outcome. The synchronous recovery/deletion context is closed before any UI-only preserved-operation record is created; that record can neither suppress deletion nor restore bytes.
 
-After a process interruption, automatic restoration is deliberately not attempted because the disappearance cannot be bounded as tightly after restart. The UMM action is enabled only when a pending marker and validated snapshot exist and the recorded original is absent. The player must tick the explicit confirmation box. If the original exists, the action is disabled and never overwrites it.
+After a process interruption, automatic restoration is deliberately not attempted because the disappearance cannot be bounded as tightly after restart. The UMM panel shows its **Recovery** section only when the latest pending marker needs attention. The **Restore save** action exists only when a pending marker and validated snapshot exist and the recorded original is absent, and it stays disabled until the player ticks the explicit confirmation box; a confirmation applies only to the recovery it was given for. A pending recovery that fails validation is shown as blocked, with its reason, and offers no restore action. If the original exists, nothing is offered and nothing is overwritten; the state remains visible under **Show troubleshooting**. Opening the panel or expanding troubleshooting only reads the cached status, which is re-evaluated at most once a minute or on an explicit refresh.
 
 Manual load-screen deletion never enters the game-over prefix, never creates a marker, and therefore cannot invoke automatic or guarded resurrection. If deletion occurs from a game-over-opened native load window, it remains destructive and causes live UI eligibility to fail. Stale markers are cleared when their original is observed alive.
 
@@ -53,11 +53,11 @@ Manual load-screen deletion never enters the game-over prefix, never creates a m
 
 Use only a disposable copied save:
 
-1. Open UMM and note the recovery status/path.
-2. Verify the recorded original is absent and UMM reports a validated pending recovery.
+1. Open UMM, select **Show troubleshooting**, and note the guarded recovery status and recovery directory.
+2. Verify the recorded original is absent and the **Recovery** section reports that a verified backup can restore it.
 3. Ensure no live file exists at that exact path.
-4. Tick the confirmation checkbox.
-5. Press **Restore validated pending recovery**.
+4. Tick **I confirm: restore this save to its original location**.
+5. Press **Restore save**.
 6. Return to/reopen the load screen and verify exactly one save appears.
 
 If validation reports metadata/hash/path failure, do not alter the snapshot manually. Preserve the recovery directory for diagnosis and restore the user's independent backup instead.

@@ -279,7 +279,7 @@ try {
         '',
         "1. Download **$assetName** from **Assets** below.",
         '2. In Unity Mod Manager, select Pathfinder: Kingmaker and drag the ZIP into the **Mods** tab.',
-        ('3. Confirm **{0} {1}** is enabled and its Unity Mod Manager panel reports **Core preservation: AVAILABLE** and **Game-over loading controls: AVAILABLE**.' -f [string] $info.DisplayName, $version),
+        ('3. Confirm **{0} {1}** is enabled and its Unity Mod Manager panel reports **Save protection: Ready** and **Game-over loading: Ready**.' -f [string] $info.DisplayName, $version),
         '',
         "Do not download GitHub's generated **Source code** archives; they are not the installable UMM package.",
         '',

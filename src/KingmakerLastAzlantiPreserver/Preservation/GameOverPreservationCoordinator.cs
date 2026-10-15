@@ -43,6 +43,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
 
         public PreservationContext BeginGameOver()
         {
+            status.ClearDefeatIssues();
             TryBeginUiOperation();
             if (!settings.PreserveLastAzlantiSaveOnGameOver)
             {
@@ -56,7 +57,16 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             if (!activeSaveResolver.TryResolveForGameOver(out saveInfo, out identity, out error))
             {
                 status.SetLastAzlantiRecognized(false);
-                status.SetError("Game-over save recognition failed: " + error);
+                // Without Only One Save this is an ordinary campaign's game over, not a preservation failure.
+                if (activeSaveResolver.IsOnlyOneSaveEnabled())
+                {
+                    status.SetError("Game-over save recognition failed: " + error, RuntimeIssue.SavePreservationFailed);
+                }
+                else
+                {
+                    status.SetError("Game-over save recognition failed: " + error);
+                }
+
                 logger.Warning("Protection did not establish a context: " + error);
                 return null;
             }
@@ -76,7 +86,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             status.SetRecoveryResult(snapshot.Message);
             if (!snapshot.Succeeded)
             {
-                status.SetError(snapshot.Message);
+                status.SetError(snapshot.Message, RuntimeIssue.RecoveryBackupFailed);
                 return context;
             }
 
@@ -91,7 +101,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             {
                 string message = "Snapshot exists, but its pending marker could not be created: " + exception.Message;
                 status.SetRecoveryResult(message);
-                status.SetError(message);
+                status.SetError(message, RuntimeIssue.RecoveryBackupFailed);
                 logger.Exception("Create game-over recovery marker", exception);
             }
 
@@ -183,7 +193,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             }
             catch (Exception exception)
             {
-                status.SetError("Game-over loading outcome reset failed: " + exception.Message);
+                status.SetError("Game-over loading outcome reset failed: " + exception.Message, RuntimeIssue.GameOverLoadingFailed);
                 logger.Exception("Reset optional game-over loading outcome", exception);
             }
         }
@@ -196,7 +206,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             }
             catch (Exception exception)
             {
-                status.SetError("Game-over loading outcome verification failed: " + exception.Message);
+                status.SetError("Game-over loading outcome verification failed: " + exception.Message, RuntimeIssue.GameOverLoadingFailed);
                 logger.Exception("Verify optional game-over loading outcome", exception);
             }
         }
@@ -209,7 +219,7 @@ namespace KingmakerLastAzlantiPreserver.Preservation
             }
             catch (Exception exception)
             {
-                status.SetError("Game-over loading outcome cleanup failed: " + exception.Message);
+                status.SetError("Game-over loading outcome cleanup failed: " + exception.Message, RuntimeIssue.GameOverLoadingFailed);
                 logger.Exception("Clear optional game-over loading outcome", exception);
             }
         }

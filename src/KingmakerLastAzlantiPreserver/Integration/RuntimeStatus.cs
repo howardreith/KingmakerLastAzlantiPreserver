@@ -1,3 +1,5 @@
+using System;
+
 namespace KingmakerLastAzlantiPreserver.Integration
 {
     public enum RuntimeFeatureState
@@ -7,9 +9,24 @@ namespace KingmakerLastAzlantiPreserver.Integration
         Unavailable
     }
 
+    // Problems the player should see without opening diagnostics. Detail text stays in LatestError.
+    [Flags]
+    public enum RuntimeIssue
+    {
+        None = 0,
+        SavePreservationFailed = 1,
+        RecoveryBackupFailed = 2,
+        GameOverLoadingFailed = 4,
+        CleanupFailed = 8
+    }
+
     public sealed class RuntimeStatus
     {
+        private const RuntimeIssue DefeatIssues =
+            RuntimeIssue.SavePreservationFailed | RuntimeIssue.RecoveryBackupFailed | RuntimeIssue.GameOverLoadingFailed;
+
         private readonly object gate = new object();
+        private bool modEnabled;
         private RuntimeFeatureState coreProtectionState = RuntimeFeatureState.Disabled;
         private RuntimeFeatureState gameOverLoadControlsState = RuntimeFeatureState.Disabled;
         private bool coreContractsInstalled;
@@ -25,13 +42,15 @@ namespace KingmakerLastAzlantiPreserver.Integration
         private string latestRecoveryResult = "none";
         private string latestInterceptionResult = "none";
         private string latestError = "none";
-        private string compatibilityWarning = string.Empty;
+        private RuntimeIssue issues;
+        private CompatibilityReport compatibility = CompatibilityReport.None;
 
         public RuntimeStatusSnapshot Snapshot()
         {
             lock (gate)
             {
                 return new RuntimeStatusSnapshot(
+                    modEnabled,
                     coreProtectionState,
                     gameOverLoadControlsState,
                     coreContractsInstalled,
@@ -47,8 +66,14 @@ namespace KingmakerLastAzlantiPreserver.Integration
                     latestRecoveryResult,
                     latestInterceptionResult,
                     latestError,
-                    compatibilityWarning);
+                    issues,
+                    compatibility);
             }
+        }
+
+        public void SetModEnabled(bool value)
+        {
+            lock (gate) modEnabled = value;
         }
 
         public void SetCoreProtection(
@@ -113,15 +138,31 @@ namespace KingmakerLastAzlantiPreserver.Integration
             lock (gate) latestError = string.IsNullOrWhiteSpace(value) ? "none" : value;
         }
 
-        public void SetCompatibilityWarning(string value)
+        public void SetError(string value, RuntimeIssue issue)
         {
-            lock (gate) compatibilityWarning = value ?? string.Empty;
+            lock (gate)
+            {
+                latestError = string.IsNullOrWhiteSpace(value) ? "none" : value;
+                issues |= issue;
+            }
+        }
+
+        // A new game over replaces the outcome of the previous one; persistent issues remain.
+        public void ClearDefeatIssues()
+        {
+            lock (gate) issues &= ~DefeatIssues;
+        }
+
+        public void SetCompatibility(CompatibilityReport value)
+        {
+            lock (gate) compatibility = value ?? CompatibilityReport.None;
         }
     }
 
     public sealed class RuntimeStatusSnapshot
     {
         public RuntimeStatusSnapshot(
+            bool modEnabled,
             RuntimeFeatureState coreProtectionState,
             RuntimeFeatureState gameOverLoadControlsState,
             bool coreContractsInstalled,
@@ -137,8 +178,10 @@ namespace KingmakerLastAzlantiPreserver.Integration
             string latestRecoveryResult,
             string latestInterceptionResult,
             string latestError,
-            string compatibilityWarning)
+            RuntimeIssue issues,
+            CompatibilityReport compatibility)
         {
+            ModEnabled = modEnabled;
             CoreProtectionState = coreProtectionState;
             GameOverLoadControlsState = gameOverLoadControlsState;
             CoreContractsInstalled = coreContractsInstalled;
@@ -154,9 +197,11 @@ namespace KingmakerLastAzlantiPreserver.Integration
             LatestRecoveryResult = latestRecoveryResult;
             LatestInterceptionResult = latestInterceptionResult;
             LatestError = latestError;
-            CompatibilityWarning = compatibilityWarning;
+            Issues = issues;
+            Compatibility = compatibility ?? CompatibilityReport.None;
         }
 
+        public bool ModEnabled { get; }
         public RuntimeFeatureState CoreProtectionState { get; }
         public RuntimeFeatureState GameOverLoadControlsState { get; }
         public bool CoreContractsInstalled { get; }
@@ -173,6 +218,8 @@ namespace KingmakerLastAzlantiPreserver.Integration
         public string LatestRecoveryResult { get; }
         public string LatestInterceptionResult { get; }
         public string LatestError { get; }
-        public string CompatibilityWarning { get; }
+        public RuntimeIssue Issues { get; }
+        public CompatibilityReport Compatibility { get; }
+        public string CompatibilityWarning => Compatibility.Detail;
     }
 }

@@ -336,6 +336,7 @@ namespace KingmakerLastAzlantiPreserver
 
         private void RefreshFeatureStatuses()
         {
+            status.SetModEnabled(enabled);
             RuntimeFeatureState coreState = !enabled
                 ? RuntimeFeatureState.Disabled
                 : (!corePatchesInstalled
@@ -389,12 +390,13 @@ namespace KingmakerLastAzlantiPreserver
         private void RefreshCompatibilityWarning()
         {
             if (coreHarmony == null || contracts == null) return;
-            string warning = compatibilityDetector.Detect(
+            CompatibilityReport report = compatibilityDetector.Detect(
                 coreHarmony,
                 contracts,
                 gameOverLoadHarmony,
                 gameOverLoadContracts);
-            status.SetCompatibilityWarning(warning);
+            status.SetCompatibility(report);
+            string warning = report.Detail;
             if (!string.Equals(warning, lastCompatibilityWarning, StringComparison.Ordinal) && !string.IsNullOrEmpty(warning))
             {
                 logger.Warning("COMPATIBILITY WARNING: " + warning);
@@ -441,9 +443,9 @@ namespace KingmakerLastAzlantiPreserver
             coreFailure = "The mod is disabled.";
             gameOverLoadFailure = "The mod is disabled.";
             lastCompatibilityWarning = string.Empty;
-            status.SetCompatibilityWarning(string.Empty);
+            status.SetCompatibility(CompatibilityReport.None);
             RefreshFeatureStatuses();
-            if (!string.IsNullOrEmpty(cleanupFailure)) status.SetError(cleanupFailure.Trim());
+            if (!string.IsNullOrEmpty(cleanupFailure)) status.SetError(cleanupFailure.Trim(), RuntimeIssue.CleanupFailed);
         }
 
         private string TryCleanup(string operation, Action cleanup)

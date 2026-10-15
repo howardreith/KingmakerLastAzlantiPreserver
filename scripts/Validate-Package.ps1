@@ -56,7 +56,7 @@ try {
         }
         finally { $headerStream.Dispose() }
         $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($temporaryDll)
-        if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.2.0') {
+        if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.3.0') {
             throw "Packaged assembly identity is invalid: $($assemblyName.FullName)"
         }
     }

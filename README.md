@@ -6,6 +6,8 @@ Since version 0.1.1, a separately gated enhancement is available for the standal
 
 Version 0.1.2 changes the name, author, and version shown in Unity Mod Manager and makes pending recoveries portable across mod releases: a recovery is now accepted by its supported recovery format rather than by the exact mod version that wrote it (see [docs/RECOVERY.md](docs/RECOVERY.md)). The technical mod ID, DLL, install folder, settings, recovery location, and preservation/loading behavior are unchanged from v0.1.1.
 
+Version 0.1.3 simplifies the Unity Mod Manager settings panel: plain-language settings and status, with technical diagnostics moved into a collapsed **Troubleshooting** section. Settings, preservation, loading, and recovery behavior are unchanged from v0.1.2.
+
 The mod does not enable manual saving or quicksaving, add slots, change autosave timing or selection, alter difficulty or death rules, create a visible recovery save, skip the game-over screen, or reload automatically. Ordinary campaigns and deliberate deletion from the native load-game UI pass through unchanged.
 
 ## Core preservation
@@ -24,14 +26,17 @@ Only the two native loading controls are elevated. Their labels, visibility, lay
 
 ## Settings and status
 
-The UMM panel provides:
+The UMM panel shows three settings, each enabled by default:
 
-- **Preserve Last Azlanti save on game over** (enabled by default)
-- **Allow loading the preserved save from the game-over screen** (enabled by default)
-- **Maintain hidden recovery snapshot** (enabled by default)
-- **Verbose diagnostics** (disabled by default)
-- separate core-preservation and game-over-loading status, exact resolved hooks, the latest eligibility reason, compatibility information, and recovery state
-- a confirmation-gated recovery action usable only for a missing recorded original with a valid pending marker
+- **Keep your Last Azlanti save after defeat**: core preservation
+- **Allow loading from the game-over screen**: the optional game-over loading controls (needs the first setting)
+- **Keep a hidden recovery backup**: the hidden recovery snapshot (needs the first setting)
+
+Below them, a short status reports whether save protection, game-over loading, and the recovery backup are **Ready**, **Off**, or **Unavailable**, and whether the current Last Azlanti save is recognized. At the main menu, no recognized save is normal. Problems that need attention stay visible in short messages naming the affected feature: an unavailable feature, a failure at the last defeat, the original FirstAzlanti mod being loaded, or other mods patching the same game code (reported as unverified compatibility, not as a conflict).
+
+A **Recovery** section appears only when a pending recovery needs attention. Its **Restore save** action exists only for a missing recorded original with a valid pending marker and validated snapshot, and stays disabled until the explicit confirmation is ticked. A recovery that fails validation is shown as blocked, with its reason, and offers no restore action.
+
+**Show troubleshooting** expands **Verbose diagnostics** (disabled by default), the raw core/game-over-loading states and patch installation, exact resolved hooks, Last Azlanti save recognition, the latest eligibility, interception, recovery, and error results, the recovery directory and guarded recovery state, the full compatibility report, and a recovery-status refresh. Expanding it is not a setting and changes nothing.
 
 Disabling the game-over loading setting restores only control state owned by that enhancement; it does not disable preservation.
 
@@ -46,13 +51,13 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Install.ps1
 ```
 
-Or install `KingmakerLastAzlantiPreserver-0.1.2.zip` with Unity Mod Manager. The archive has one top-level `KingmakerLastAzlantiPreserver` directory. Disable/remove the original FirstAzlanti mod before using this mod; do not test both together.
+Or install `KingmakerLastAzlantiPreserver-0.1.3.zip` with Unity Mod Manager. The archive has one top-level `KingmakerLastAzlantiPreserver` directory. Disable/remove the original FirstAzlanti mod before using this mod; do not test both together.
 
 ### Upgrading from Last Azlanti Preserver 0.1.0 or 0.1.1
 
 The UMM ID (`KingmakerLastAzlantiPreserver`), DLL name, entry point, and `Mods/KingmakerLastAzlantiPreserver` folder are unchanged, so Unity Mod Manager treats this as the same mod and lists it under the new name instead of adding a second entry. The package contains no `Settings.xml`; the settings fields are unchanged, so an existing `Settings.xml` in that folder keeps applying. `scripts/Install.ps1` additionally hash-verifies that an existing `Settings.xml` is preserved.
 
-Recovery data written by 0.1.0 or 0.1.1 uses the same recovery format 1 that 0.1.2 reads, so a valid pending recovery created before the upgrade can still be restored from the UMM panel afterwards, with every integrity, identity, and no-overwrite check unchanged. As with any mod update, close Kingmaker first and keep your own backup of saves you care about; the recovery snapshot is a last-resort guard, not a backup.
+Recovery data written by 0.1.0 or 0.1.1 uses the same recovery format 1 that 0.1.2 and later read, so a valid pending recovery created before the upgrade can still be restored from the UMM panel afterwards, with every integrity, identity, and no-overwrite check unchanged. As with any mod update, close Kingmaker first and keep your own backup of saves you care about; the recovery snapshot is a last-resort guard, not a backup.
 
 ## Qualification and evidence boundary
 
@@ -68,5 +73,7 @@ The v0.1.0 core was owner-observed working in one disposable standalone Beneath 
 The v0.1.1 UI enhancement remains **MANUAL RUNTIME TEST REQUIRED** until the disposable-campaign procedure in [docs/SMOKE-TEST.md](docs/SMOKE-TEST.md) is completed. Automated compilation, tests, exact contracts, Harmony ownership, packaging, managed assembly loading, publication, or main-menu startup do not constitute that GUI result. The owner explicitly authorized publishing v0.1.1 before personally performing that test; this release is therefore not yet a runtime compatibility claim. Steam Cloud remains a separate unqualified scenario.
 
 Version 0.1.2 is an owner-authorized stable release (authorized 2026-10-15) published without a new human playtest. Its preservation and game-over loading code is the v0.1.1 code; its only functional change is recovery-format compatibility, which is covered by automated filesystem tests, including restoring the verbatim recovery files written by the published v0.1.1 DLL. The same **MANUAL RUNTIME TEST REQUIRED** boundary applies to 0.1.2, and it is not a runtime compatibility claim either.
+
+Version 0.1.3 changes only the settings panel's presentation and status reporting. Its panel states, warnings, and recovery controls are covered by automated tests, but the panel has not been displayed in a running game; its layout and the existing **MANUAL RUNTIME TEST REQUIRED** boundary remain.
 
 See [docs/RECONNAISSANCE.md](docs/RECONNAISSANCE.md) for the exact 2.1.7b call graph and [docs/RECOVERY.md](docs/RECOVERY.md) for recovery invariants.
