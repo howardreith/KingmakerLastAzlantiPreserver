@@ -1,6 +1,6 @@
 # Repository instructions
 
-- This repository contains only the standalone **Last Azlanti Preserver** mod. From v0.1.2 (unreleased branding candidate) its display name is **Mr. Bard's Second to Last Azlanti** (author **Mr. Bard**).
+- This repository contains only the standalone **Last Azlanti Preserver** mod. From v0.1.2 its display name is **Mr. Bard's Second to Last Azlanti** (author **Mr. Bard**).
 - The public brand is display text only. Never rename the UMM `Id`, DLL/assembly name, `EntryMethod`, namespaces, Harmony owner IDs, `Mods/KingmakerLastAzlantiPreserver` folder, settings, or `LastAzlantiPreserver/Recovery` path to match it.
 - Never copy code into another Kingmaker mod or modify an installed mod other than `KingmakerLastAzlantiPreserver`.
 - Treat the locally installed Kingmaker 2.1.7b assemblies as the runtime contract source of truth.

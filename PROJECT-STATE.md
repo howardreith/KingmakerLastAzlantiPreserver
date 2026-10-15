@@ -4,10 +4,10 @@
 
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
 - Public display name/author since v0.1.2: `Mr. Bard's Second to Last Azlanti` / `Mr. Bard` (UMM ID, assembly, entry point, Harmony owners, install folder, settings, and recovery path unchanged)
-- Candidate version: `0.1.2` (branding-only, unreleased; latest published release `v0.1.1`)
+- Release version: `0.1.2` (owner-authorized stable release; previous release `v0.1.1`)
 - Target: Pathfinder: Kingmaker `2.1.7b`, owner-approved UMM `0.33.0`, installed `0Harmony12`/Harmony `1.2.0.1`, .NET Framework 4.7.2, C# 7.3
 - v0.1.1 feature branch: `codex/game-over-load-controls-v0.1.1` (accepted base `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`)
-- v0.1.2 branding branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
+- v0.1.2 branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
 
 ## Implemented candidate
 
@@ -33,12 +33,12 @@
 - Production compilation: passed with 0 warnings and 0 errors.
 - Final DLL/package hashes and local candidate installation are recorded in ignored qualification evidence and the private implementation handoff after final qualification.
 
-## v0.1.2 branding candidate
+## v0.1.2 release scope
 
-- Scope: UMM `DisplayName`/`Author`, `ProductMetadata.Name`/`Version`, assembly title/product/version, version-bound package/install/validation scripts, documentation, and Nexus copy. No preservation, recovery, Harmony, settings, or game-over loading logic changed.
-- Recovery metadata stays bound to the exact mod version, so a pending 0.1.0/0.1.1 recovery is rejected (not deleted) by 0.1.2. Upgrade guidance tells players to complete it first.
-- Non-runtime qualification of the branding tree (`Qualify.ps1 -Build -Test -VerifyContracts -Package`): 0 warnings/0 errors, 64/64 tests, exact core and game-over UI contracts, Harmony core=5/optional=15 with isolation verified, package validation passed. Release-candidate hashes belong to a clean-commit qualification run and are not recorded here.
-- Not installed, not launched, not runtime-qualified, not tagged, not published.
+- Branding: UMM `DisplayName`/`Author`, `ProductMetadata.Name`/`Version`, assembly title/product/company/version, version-bound package/install/validation scripts, documentation, and Nexus copy.
+- Recovery compatibility (the only functional change): a pending recovery is accepted by its supported recovery format (format 1, unchanged since v0.1.0, with metadata and marker formats required to agree) instead of exact `ModVersion` equality. `ModVersion` remains provenance and must be a well-formed release number. A valid 0.1.0/0.1.1 pending recovery can be restored by 0.1.2. No length, SHA-256, identity, path, marker, timing, reparse-point, no-overwrite, confirmation, or deletion behavior changed; no snapshot is rewritten or migrated.
+- Recovery tests restore the verbatim `metadata.json`/`pending.json` written by the published v0.1.1 DLL (`dll_sha256` `5be7a369…0e85b`) with exact restored bytes, and cover newer writers, unsupported/disagreeing formats, malformed writer versions, identity/integrity tampering, missing markers, no-overwrite, explicit confirmation, and evaluation without rewrites. Automated and offline only.
+- Release disposition: owner-authorized stable publication on 2026-10-15 through the guarded publisher's pre-runtime path. Not installed or launched by the release process; not runtime-qualified.
 
 ## Historical v0.1.0 evidence
 
@@ -52,7 +52,8 @@
 - Runtime qualification: **MANUAL RUNTIME TEST REQUIRED / not performed**.
 - Steam Cloud compatibility: **unqualified pending separate deliberate test**.
 - Owner-authorized pre-runtime release: **approved for v0.1.1 on 2026-09-06**. The owner explicitly requested finalization, merge, tag, and stable publication before personally installing and performing the disposable-campaign GUI checks.
-- That authorization changes the publication disposition only. It is not runtime evidence, does not mark the release runtime-qualified, and does not qualify Steam Cloud.
-- The guarded publisher retains the stricter accepted-runtime path and has a separate, explicit v0.1.1 owner-authorized path that records `runtime_qualified: false` in release provenance.
+- Owner-authorized pre-runtime release: **approved for v0.1.2 on 2026-10-15**. The owner explicitly authorized the recovery-compatibility correction, merge, tag, and stable publication of v0.1.2 without an additional human playtest.
+- Each authorization changes the publication disposition of its own version only. It is not runtime evidence, does not mark the release runtime-qualified, and does not qualify Steam Cloud.
+- The guarded publisher retains the stricter accepted-runtime path and has a separate, explicit per-version owner-authorized path that records `runtime_qualified: false` in release provenance.
 
 Generated machine-readable evidence under `artifacts/` is intentionally ignored because it includes local paths. Installation is recorded separately from runtime testing.

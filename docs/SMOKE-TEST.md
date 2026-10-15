@@ -7,7 +7,7 @@ Compilation and installation are not runtime qualification. Use only a disposabl
 Do not launch Kingmaker for this procedure unless all of these are true:
 
 1. GUI interaction is available through an existing repository-authorized mechanism.
-2. Kingmaker is closed before installation and the qualified candidate package (v0.1.1, or the branding-only v0.1.2) is the only intended mod payload change.
+2. Kingmaker is closed before installation and the qualified package (v0.1.1 or v0.1.2) is the only intended mod payload change.
 3. Steam Cloud behavior is known safe for this local-only pass; otherwise keep Cloud qualification separate and do not silently change account settings.
 4. A disposable standalone campaign can be created or explicitly identified by name and identity. Do not use Continue/latest-save to choose it.
 5. Any independent backup remains outside the Owlcat save directory and outside Git.
@@ -95,4 +95,4 @@ Steam Cloud remains a separate qualification scenario. Only after the local disp
 
 ## Qualification outcome
 
-Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result. The branding-only v0.1.2 carries the same preservation and loading code and the same **MANUAL RUNTIME TEST REQUIRED** status until this checklist passes for its own package.
+Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result. v0.1.2 carries the same preservation and loading code and the same **MANUAL RUNTIME TEST REQUIRED** status until this checklist passes for its own package; the owner authorized its stable publication on 2026-10-15 before that test. Its recovery-format compatibility change is covered by automated filesystem tests only.

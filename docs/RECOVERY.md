@@ -28,6 +28,17 @@ An identity is SHA-256 of normalized source path plus campaign `GameId`; multipl
 
 Metadata records original full path/name, length, source last-write UTC, source/recovery hashes, game ID/name, save name/type, game-over UTC, format, recovery identity, and mod version. Runtime metadata is not committed.
 
+## Format compatibility
+
+`metadata.json` and `pending.json` both carry `FormatVersion`. Format 1 is the structure and meaning written since v0.1.0; v0.1.2 still writes and reads exactly that format.
+
+- A recovery is accepted only when both files carry a supported format and the same format. Missing, unknown, or disagreeing format versions fail closed.
+- `ModVersion` records which mod release wrote the snapshot. It is provenance only: it must be a well-formed release number (for example `0.1.1`), but which release wrote a supported-format recovery does not decide whether another release may restore it. Since v0.1.2, a valid recovery left pending by 0.1.0 or 0.1.1, or written by a later release that still uses format 1, can be restored. Releases 0.1.0 and 0.1.1 themselves only accept recoveries written by their own exact version.
+- Reading and evaluating recovery data never rewrites it. Old snapshots are not migrated.
+- Any future change to the recovery file structure or to the meaning of an existing field must introduce a new format version rather than rely on the mod release number to keep older or newer readers away.
+
+Every other check in this document applies regardless of which release wrote the recovery.
+
 ## Restore policy
 
 Automatic restore is evaluated only while completing the exact in-memory game-over context that created the matching operation GUID marker. It requires valid metadata/marker identity, exact original path under the save root, valid snapshot length/hash, and an absent original. Restore copies to a non-save `.tmp` file in the save root, flushes and validates it, then uses `File.Move` to create the original path; this operation fails rather than overwriting if another writer creates the original. The marker is cleared only after success. A restored save list is explicitly refreshed.

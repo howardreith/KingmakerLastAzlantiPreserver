@@ -1,6 +1,6 @@
 # Nexus Mods release copy
 
-Prepared for the **unreleased v0.1.2 branding candidate**. Nothing here has been uploaded. Before posting, publish the GitHub release first, then copy the final file name and SHA-256 from its `SHA256SUMS.txt` into this page.
+Page copy for **v0.1.2**. The Nexus main file is the exact `KingmakerLastAzlantiPreserver-0.1.2.zip` asset from the GitHub v0.1.2 release, uploaded unchanged; its SHA-256 is listed in that release's `SHA256SUMS.txt`.
 
 ## Title
 
@@ -44,11 +44,12 @@ In a **Last Azlanti** (Only One Save) run, Pathfinder: Kingmaker deletes your si
 
 ## Upgrading from Last Azlanti Preserver 0.1.0 or 0.1.1
 
-Versions 0.1.0 and 0.1.1 were published as **Last Azlanti Preserver**. Version 0.1.2 only changes the name, author and version shown in Unity Mod Manager. The technical mod ID (`KingmakerLastAzlantiPreserver`), DLL, entry point, install folder and recovery location are unchanged.
+Versions 0.1.0 and 0.1.1 were published as **Last Azlanti Preserver**. Version 0.1.2 changes the name, author and version shown in Unity Mod Manager and lets a pending recovery survive a mod update. The technical mod ID (`KingmakerLastAzlantiPreserver`), DLL, entry point, install folder and recovery location are unchanged.
 
 - **Install it over the old version.** It uses the same folder and mod ID, so Unity Mod Manager lists it under the new name instead of adding a second mod.
 - **Your settings carry over.** The download contains no `Settings.xml`, and the settings themselves have not changed. If you want a fallback, back up `Mods/KingmakerLastAzlantiPreserver/Settings.xml` first.
-- **Finish any pending recovery first.** Before upgrading, open the mod's panel and read the **Guarded recovery** line. If it says a validated pending recovery can restore a save, complete that restore with your current version before upgrading. Recovery data records the exact mod version that created it, and 0.1.2 will not restore a recovery created by 0.1.0 or 0.1.1. A rejected recovery is not deleted; its files stay in `<Kingmaker persistent data>/LastAzlantiPreserver/Recovery`.
+- **Pending recoveries carry over.** 0.1.2 reads the same recovery format that 0.1.0 and 0.1.1 wrote, so a valid pending recovery from the old version can still be restored from the mod's panel after you upgrade, with the same integrity, identity, no-overwrite and confirmation checks.
+- **Close the game before updating**, and keep your own backup of any save you care about. The hidden recovery snapshot is a last-resort guard, not a backup.
 - Gameplay behavior is identical to 0.1.1.
 
 ## Supported game version
@@ -61,12 +62,11 @@ Versions 0.1.0 and 0.1.1 were published as **Last Azlanti Preserver**. Version 0
 - **Runtime testing is incomplete.**
   - The core save preservation from v0.1.0 has been seen working by the author in one throwaway standalone Beneath the Stolen Lands Last Azlanti run: the party died, the results screen appeared, and the kept save loaded from the main menu. That is one scenario, not full testing.
   - The **game-over loading buttons** added in v0.1.1 have passed automated tests and exact checks against the game's code, but have **not yet been tested in a running game**. They still need manual runtime testing.
-  - Version 0.1.2 contains the same code and has not been launched in game either.
+  - Version 0.1.2 contains the same preservation and loading code. It was released by the author without a new in-game playtest. Its new cross-version recovery support is tested automatically, including restoring recovery files written by the published 0.1.1, but has not been exercised in a running game.
 - **Steam Cloud** has not been tested.
 - **Controller** navigation of the game-over loading buttons has not been tested.
 - The loading buttons apply only to the standalone **Beneath the Stolen Lands** results screen. They are disabled again by loading, Start Again, Main Menu, another game over, turning the setting or mod off, or a failed safety check.
 - Deleting a save from the game-over **Load Game** window still deletes it, just as in the base game, and is never undone.
-- A pending recovery only works with the exact mod version that created it (see Upgrading).
 
 ## Compatibility
 
@@ -80,7 +80,17 @@ Versions 0.1.0 and 0.1.1 were published as **Last Azlanti Preserver**. Version 0
 - **Author:** Mr. Bard.
 - **FirstAzlanti** (KingmakerFumi) by **Truinto**, MIT License. This mod's approach was informed by FirstAzlanti's identification of the game-over seam. It is a new implementation that keeps `Activate` running and blocks only the exact game-over deletion. The full upstream MIT notice is included as `licenses/FIRST-AZLANTI-MIT.txt`, and the details are in `THIRD-PARTY-NOTICES.md`.
 - **Unity Mod Manager** and **Harmony** are required, but neither is included in this download.
-- **License:** MIT (see `LICENSE` in the download). Reuse, modification and redistribution are allowed as long as the copyright and permission notice is kept. Choose Nexus permission settings that match the MIT terms (owner decision).
+- **License:** MIT (see `LICENSE` in the download). You may use, copy, modify, merge, publish, distribute, sublicense and sell copies, provided the copyright and permission notice is kept. Redistributions must also keep `licenses/FIRST-AZLANTI-MIT.txt` and `THIRD-PARTY-NOTICES.md`.
+- No Owlcat Games assets are included; the MIT license covers only this mod's own files.
+
+### Nexus permission settings (consistent with MIT)
+
+- Upload permission: allowed, with credit and the MIT license and notices kept.
+- Modification permission: allowed, with credit and the license kept.
+- Conversion permission: allowed, with credit and the license kept.
+- Asset use permission: allowed, with credit and the license kept.
+- Asset use in mods/files that are being sold: allowed under MIT terms.
+- Asset use in mods/files that earn donation points: allowed.
 
 ## Source code and bug reports
 
@@ -92,3 +102,4 @@ When you report a bug, please include your game version, Unity Mod Manager versi
 ## Nexus changelog entry (0.1.2)
 
 - Renamed to **Mr. Bard's Second to Last Azlanti** (formerly Last Azlanti Preserver), with Mr. Bard as author. The mod ID, install folder and settings are unchanged, and gameplay is unchanged.
+- A recovery left pending by 0.1.0 or 0.1.1 can now be restored after updating; recoveries are accepted by their recovery format, with every safety check unchanged.

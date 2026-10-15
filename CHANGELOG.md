@@ -1,12 +1,13 @@
 # Changelog
 
-## 0.1.2 - Unreleased (branding candidate)
+## 0.1.2 - 2026-10-15
 
-- Renamed the public display name to **Mr. Bard's Second to Last Azlanti** and the Unity Mod Manager author to **Mr. Bard**; the UMM settings title, load log line, and assembly title/product show the new name.
+- Renamed the public display name to **Mr. Bard's Second to Last Azlanti** and the Unity Mod Manager author to **Mr. Bard**; the UMM settings title, load log line, and assembly title/product/company show the new name.
 - Kept the UMM `Id`, DLL/assembly name, `EntryMethod`, namespaces, Harmony owner IDs, install folder, settings, and recovery directory unchanged so the update installs over Last Azlanti Preserver 0.1.0/0.1.1 as the same mod.
-- Added package and repository checks for the exact branded manifest and stable identity, plus runner tests pinning the stable identifiers.
-- No preservation, recovery, or game-over loading behavior changed. Recovery metadata remains bound to the exact mod version that created it, so complete any pending 0.1.0/0.1.1 recovery before upgrading.
-- Not runtime-qualified: the v0.1.1 **MANUAL RUNTIME TEST REQUIRED** boundary still applies. Not yet tagged or published.
+- Pending recoveries are accepted by their supported recovery format (format 1, unchanged since v0.1.0) instead of exact equality with the running mod version. The writer's `ModVersion` is kept as provenance and must be a well-formed release number; unknown, missing, or disagreeing metadata/marker formats are still rejected. A valid recovery left pending by 0.1.0/0.1.1 can now be restored by 0.1.2. All length, SHA-256, identity, path, marker, timing, reparse-point, no-overwrite, and confirmation checks are unchanged.
+- Added tests that restore the verbatim recovery files written by the published v0.1.1 DLL and cover newer writers, unsupported formats, malformed writer versions, tampering, and evaluation without rewrites; added package and repository checks for the exact branded manifest and stable identity.
+- The guarded publisher derives the release version, title, asset, and notes from the committed manifest and requires a dated owner authorization for the exact version on its pre-runtime path.
+- Owner-authorized stable release, **not runtime-qualified**: the **MANUAL RUNTIME TEST REQUIRED** boundary from v0.1.1 still applies.
 
 ## 0.1.1 - 2026-09-06
 
