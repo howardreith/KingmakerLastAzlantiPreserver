@@ -4,8 +4,7 @@
 
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
 - Public display name/author since v0.1.2: `Mr. Bard's Second to Last Azlanti` / `Mr. Bard` (UMM ID, assembly, entry point, Harmony owners, install folder, settings, and recovery path unchanged)
-- Release version: `0.1.2` (owner-authorized stable release; previous release `v0.1.1`)
-- Candidate version: `0.1.3` (settings-panel presentation cleanup; owner-authorized stable release on 2026-10-15, not runtime-qualified)
+- Release version: `0.1.3` (owner-authorized stable release; settings-panel presentation cleanup; previous release `v0.1.2`)
 - Target: Pathfinder: Kingmaker `2.1.7b`, owner-approved UMM `0.33.0`, installed `0Harmony12`/Harmony `1.2.0.1`, .NET Framework 4.7.2, C# 7.3
 - v0.1.1 feature branch: `codex/game-over-load-controls-v0.1.1` (accepted base `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`)
 - v0.1.2 branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
@@ -42,7 +41,7 @@
 - Recovery tests restore the verbatim `metadata.json`/`pending.json` written by the published v0.1.1 DLL (`dll_sha256` `5be7a369…0e85b`) with exact restored bytes, and cover newer writers, unsupported/disagreeing formats, malformed writer versions, identity/integrity tampering, missing markers, no-overwrite, explicit confirmation, and evaluation without rewrites. Automated and offline only.
 - Release disposition: owner-authorized stable publication on 2026-10-15 through the guarded publisher's pre-runtime path. Not installed or launched by the release process; not runtime-qualified.
 
-## v0.1.3 candidate scope
+## v0.1.3 release scope
 
 - Settings panel presentation only. The default view keeps the three existing settings under player-facing labels, one sentence that Last Azlanti's saving restrictions are unchanged, a Ready/Off/Unavailable status per feature, neutral campaign recognition, and concise always-visible alerts. Verbose diagnostics and all technical detail (raw states, hooks, patch installation, eligibility, recognition, recovery directory and guarded state, latest results, full compatibility report, recovery refresh) moved to a collapsed, non-persisted Troubleshooting section.
 - `SettingsPanel` (Unity-free presenter/model) carries the panel logic and interaction state; `SettingsView` only renders it, refreshing recovery status on IMGUI Layout events at the existing one-minute cadence.
@@ -50,6 +49,15 @@
 - Recovery: a section appears only for a restorable, blocked/invalid, or just-restored recovery. Restore keeps the same service validation, explicit confirmation, and guarded sequence; the confirmation now also resets when the evaluated recovery changes. Status read failures are shown as a blocked recovery instead of throwing on every draw.
 - Unchanged: `Settings.xml` keys/defaults, preservation policy and Harmony scope, game-over loading eligibility, recovery format/eligibility/integrity/identity/no-overwrite checks, manual deletion, branding, and stable identifiers.
 - Automated evidence and package details for the candidate are recorded in ignored qualification output. Runtime and visual verification of the new panel: **not performed**.
+
+## v0.1.3 publication receipt
+
+- Published 2026-10-15T23:02:01Z: https://github.com/howardreith/KingmakerLastAzlantiPreserver/releases/tag/v0.1.3 (stable, non-draft, non-prerelease, GitHub latest; title `Mr. Bard's Second to Last Azlanti v0.1.3`).
+- Release commit: PR #5 merge `22a2ea6eb1407bd41c0d65b98a941bc1995b414c` (parents `0774f60`, `ec7b46e`); annotated tag `v0.1.3` peels to that commit.
+- Publisher: `Publish-Release.ps1 -Publish -ConfirmOwnerAuthorizedPreRuntimeRelease` from a fresh clone of `main`; two clean qualifications, each 84/84 tests, 0 warnings/errors, exact core and game-over UI contracts, Harmony core=5/optional=15 isolation, identical DLL/package hashes, strict package validation.
+- Asset `KingmakerLastAzlantiPreserver-0.1.3.zip` SHA-256 `8b59d76d4583ed0108f1eb740c1669dbac4ea05dacb1003f728b612887d2fbed`; DLL SHA-256 `7a1d482e3c0ea1c41dafb5327bf8789ecfc9cdcb27cfe6de562589c29f94f793` (assembly 0.1.3.0).
+- Independent check after publication: the downloaded asset matched the local artifact and `SHA256SUMS.txt` byte-for-byte; six entries under `KingmakerLastAzlantiPreserver/`; packaged manifest has the stable Id/AssemblyName/EntryMethod, the branded DisplayName/Author, and version 0.1.3; the release manifest records `runtime_qualified: false` and `owner_authorized_release_before_runtime_test: true`. The v0.1.0–v0.1.2 tags and releases are unchanged.
+- Runtime qualification: **MANUAL RUNTIME TEST REQUIRED** (unchanged); the owner's in-game panel check (SMOKE-TEST step 1.7) follows publication. Nexus Mods upload was not performed by the release process, and `docs/NEXUS-RELEASE-COPY.md` still describes v0.1.2.
 
 ## v0.1.2 publication receipt
 
