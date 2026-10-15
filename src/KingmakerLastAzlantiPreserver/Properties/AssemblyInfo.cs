@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Mr. Bard's Second to Last Azlanti")]
 [assembly: AssemblyDescription("Preserves the one legitimate Last Azlanti autosave and allows scoped native loading after game over.")]
-[assembly: AssemblyCompany("Howie Reith")]
+[assembly: AssemblyCompany("Mr. Bard")]
 [assembly: AssemblyProduct("Mr. Bard's Second to Last Azlanti")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Howie Reith")]
 [assembly: ComVisible(false)]
