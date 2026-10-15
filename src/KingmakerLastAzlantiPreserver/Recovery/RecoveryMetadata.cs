@@ -5,7 +5,15 @@ namespace KingmakerLastAzlantiPreserver.Recovery
     [DataContract]
     public sealed class RecoveryMetadata
     {
+        // Format 1 is the metadata.json/pending.json structure and meaning written since v0.1.0.
+        // Readers accept a recovery by its format, never by the writer's ModVersion (provenance only).
+        // Any incompatible change to recovery structure or semantics must introduce a new format version.
         public const int CurrentFormatVersion = 1;
+
+        internal static bool IsSupportedFormat(int formatVersion)
+        {
+            return formatVersion == CurrentFormatVersion;
+        }
 
         [DataMember(Order = 1)] public int FormatVersion { get; set; }
         [DataMember(Order = 2)] public string RecoveryId { get; set; }

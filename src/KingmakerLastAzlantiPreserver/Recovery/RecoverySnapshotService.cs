@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using KingmakerLastAzlantiPreserver.Logging;
 using KingmakerLastAzlantiPreserver.Preservation;
 
@@ -13,6 +14,9 @@ namespace KingmakerLastAzlantiPreserver.Recovery
     {
         private const string SnapshotFileName = "snapshot.bin";
         private const string MetadataFileName = "metadata.json";
+        private static readonly Regex WriterVersionPattern = new Regex(
+            @"^[0-9]+(?:\.[0-9]+){1,3}(?:-[0-9A-Za-z][0-9A-Za-z.\-]*)?(?:\+[0-9A-Za-z.\-]+)?$",
+            RegexOptions.CultureInvariant);
         private readonly string saveRoot;
         private readonly string recoveryRoot;
         private readonly RecoveryMarkerStore markerStore;
@@ -256,7 +260,7 @@ namespace KingmakerLastAzlantiPreserver.Recovery
                     false);
             }
 
-            if (marker.FormatVersion != RecoveryMetadata.CurrentFormatVersion ||
+            if (!RecoveryMetadata.IsSupportedFormat(marker.FormatVersion) ||
                 !string.Equals(marker.RecoveryId, recoveryId, StringComparison.Ordinal) ||
                 !string.Equals(marker.OperationId, operationId.ToString("D"), StringComparison.OrdinalIgnoreCase))
             {
@@ -357,9 +361,11 @@ namespace KingmakerLastAzlantiPreserver.Recovery
         private bool TryValidateMetadata(RecoveryMetadata metadata, RecoveryMarker marker, out string error)
         {
             error = null;
-            if (metadata == null || metadata.FormatVersion != RecoveryMetadata.CurrentFormatVersion)
+            if (metadata == null ||
+                !RecoveryMetadata.IsSupportedFormat(metadata.FormatVersion) ||
+                metadata.FormatVersion != marker.FormatVersion)
             {
-                error = "Recovery metadata format is unsupported.";
+                error = "Recovery metadata format is unsupported or does not match its marker.";
                 return false;
             }
 
@@ -379,7 +385,7 @@ namespace KingmakerLastAzlantiPreserver.Recovery
                 !IsSha256(metadata.SourceSha256) ||
                 !IsSha256(metadata.RecoverySha256) ||
                 !string.Equals(metadata.SaveType, "IronMan", StringComparison.Ordinal) ||
-                !string.Equals(metadata.ModVersion, ProductMetadata.Version, StringComparison.Ordinal) ||
+                !IsWellFormedWriterVersion(metadata.ModVersion) ||
                 !string.Equals(metadata.SourceSha256, metadata.RecoverySha256, StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(metadata.RecoveryId, marker.RecoveryId, StringComparison.Ordinal) ||
                 !string.Equals(metadata.OriginalFullPath, marker.OriginalFullPath, StringComparison.OrdinalIgnoreCase) ||
@@ -584,6 +590,13 @@ namespace KingmakerLastAzlantiPreserver.Recovery
             }
 
             return true;
+        }
+
+        // Writer provenance must be a plausible release number; which release wrote a
+        // supported-format recovery does not decide whether this release may read it.
+        private static bool IsWellFormedWriterVersion(string value)
+        {
+            return !string.IsNullOrEmpty(value) && value.Length <= 64 && WriterVersionPattern.IsMatch(value);
         }
 
         private static bool TryParseUtc(string value, out DateTime utc)

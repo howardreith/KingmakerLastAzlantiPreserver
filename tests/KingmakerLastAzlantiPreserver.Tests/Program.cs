@@ -113,6 +113,8 @@ namespace KingmakerLastAzlantiPreserver.Tests
                 new TestCase(nameof(RuntimeStatusTests.OptionalUiFailureDoesNotChangeCoreAvailability), RuntimeStatusTests.OptionalUiFailureDoesNotChangeCoreAvailability),
                 new TestCase(nameof(RuntimeStatusTests.DisabledUiSettingDoesNotDisableCoreProtection), RuntimeStatusTests.DisabledUiSettingDoesNotDisableCoreProtection),
                 new TestCase(nameof(RuntimeStatusTests.CoreAndOptionalHarmonyOwnersAreDistinct), RuntimeStatusTests.CoreAndOptionalHarmonyOwnersAreDistinct),
+                new TestCase(nameof(ProductIdentityTests.StableModIdentifiersSurviveBranding), ProductIdentityTests.StableModIdentifiersSurviveBranding),
+                new TestCase(nameof(ProductIdentityTests.DisplayedNameAndVersionMatchBrandedCandidate), ProductIdentityTests.DisplayedNameAndVersionMatchBrandedCandidate),
                 new TestCase(nameof(RecoverySnapshotTests.SnapshotCopiesExactBytesAndHashesMatch), RecoverySnapshotTests.SnapshotCopiesExactBytesAndHashesMatch),
                 new TestCase(nameof(RecoverySnapshotTests.SnapshotReplacementKeepsOneCurrentCopyWithoutHistory), RecoverySnapshotTests.SnapshotReplacementKeepsOneCurrentCopyWithoutHistory),
                 new TestCase(nameof(RecoverySnapshotTests.FailedCopyLeavesPriorValidRecoveryIntact), RecoverySnapshotTests.FailedCopyLeavesPriorValidRecoveryIntact),
@@ -127,7 +129,13 @@ namespace KingmakerLastAzlantiPreserver.Tests
                 new TestCase(nameof(RecoverySnapshotTests.PathTraversalAndDirectoryTargetsAreRejected), RecoverySnapshotTests.PathTraversalAndDirectoryTargetsAreRejected),
                 new TestCase(nameof(RecoverySnapshotTests.MultipleCampaignsHaveSeparateCurrentSnapshotsWithoutHistories), RecoverySnapshotTests.MultipleCampaignsHaveSeparateCurrentSnapshotsWithoutHistories),
                 new TestCase(nameof(RecoverySnapshotTests.GuardedRecoveryRequiresExplicitConfirmation), RecoverySnapshotTests.GuardedRecoveryRequiresExplicitConfirmation),
-                new TestCase(nameof(RecoverySnapshotTests.GuardedRecoveryRestoresAfterExplicitConfirmation), RecoverySnapshotTests.GuardedRecoveryRestoresAfterExplicitConfirmation)
+                new TestCase(nameof(RecoverySnapshotTests.GuardedRecoveryRestoresAfterExplicitConfirmation), RecoverySnapshotTests.GuardedRecoveryRestoresAfterExplicitConfirmation),
+                new TestCase(nameof(RecoveryFormatCompatibilityTests.PublishedV011PendingRecoveryRestoresWithExactBytes), RecoveryFormatCompatibilityTests.PublishedV011PendingRecoveryRestoresWithExactBytes),
+                new TestCase(nameof(RecoveryFormatCompatibilityTests.NewerWriterReleaseWithSupportedFormatIsNotRejected), RecoveryFormatCompatibilityTests.NewerWriterReleaseWithSupportedFormatIsNotRejected),
+                new TestCase(nameof(RecoveryFormatCompatibilityTests.UnsupportedOrMismatchedRecoveryFormatsAreRejected), RecoveryFormatCompatibilityTests.UnsupportedOrMismatchedRecoveryFormatsAreRejected),
+                new TestCase(nameof(RecoveryFormatCompatibilityTests.MissingOrMalformedWriterVersionIsRejected), RecoveryFormatCompatibilityTests.MissingOrMalformedWriterVersionIsRejected),
+                new TestCase(nameof(RecoveryFormatCompatibilityTests.PublishedFormatRecoveryStillRequiresIdentityAndIntegrity), RecoveryFormatCompatibilityTests.PublishedFormatRecoveryStillRequiresIdentityAndIntegrity),
+                new TestCase(nameof(RecoveryFormatCompatibilityTests.EvaluatingPublishedFormatRecoveryNeverRewritesOrOverwrites), RecoveryFormatCompatibilityTests.EvaluatingPublishedFormatRecoveryNeverRewritesOrOverwrites)
             };
 
             int failed = 0;

@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Release')][string] $Configuration = 'Release',
-    [string] $ReleaseNotesPath = 'docs\RELEASE-NOTES-0.1.1.md',
+    [string] $ReleaseNotesPath,
     [switch] $PrepareOnly,
     [switch] $Publish,
     [switch] $ConfirmRuntimeQualifiedRelease,
@@ -46,7 +46,7 @@ function Read-Qualification([string] $Root) {
     $validation = Get-Content -LiteralPath (Join-Path $Root 'artifacts\qualification\package-validation.json') -Raw | ConvertFrom-Json
     if ($qualification.status -ne 'non-runtime-qualification-passed' -or
         $qualification.test_result -ne 'passed' -or
-        [int] $qualification.test_count -lt 62 -or
+        [int] $qualification.test_count -lt 70 -or
         [int] $qualification.compiler_warning_count -ne 0 -or
         [int] $qualification.compiler_error_count -ne 0 -or
         $qualification.package_validation -ne 'passed' -or
@@ -106,7 +106,7 @@ if ($PrepareOnly -and ($ConfirmRuntimeQualifiedRelease -or $ConfirmOwnerAuthoriz
     throw 'Release-disposition confirmation switches are valid only with -Publish.'
 }
 if ($Publish -and -not ($ConfirmRuntimeQualifiedRelease -xor $ConfirmOwnerAuthorizedPreRuntimeRelease)) {
-    throw 'Publishing 0.1.1 requires exactly one explicit disposition: -ConfirmRuntimeQualifiedRelease or -ConfirmOwnerAuthorizedPreRuntimeRelease.'
+    throw 'Publishing requires exactly one explicit disposition: -ConfirmRuntimeQualifiedRelease or -ConfirmOwnerAuthorizedPreRuntimeRelease.'
 }
 
 $runtimeQualifiedRelease = [bool] ($Publish -and $ConfirmRuntimeQualifiedRelease)
@@ -145,12 +145,13 @@ try {
         throw "Origin does not match the expected repository: $origin"
     }
 
+    # The release identity comes from the committed manifest. Assert-ProductManifest pins the stable
+    # Id/AssemblyName/EntryMethod together with the expected branded name, author, and version.
     $info = Get-Content -LiteralPath (Join-Path $root 'Info.json') -Raw | ConvertFrom-Json
-    if ($info.Id -ne 'KingmakerLastAzlantiPreserver' -or
-        $info.Version -ne '0.1.1' -or
-        $info.AssemblyName -ne 'KingmakerLastAzlantiPreserver.dll') {
-        throw 'Info.json does not match the 0.1.1 release identity.'
-    }
+    Assert-ProductManifest $info 'Info.json'
+    $version = [string] $info.Version
+    $versionPattern = [regex]::Escape($version) + '(?![0-9.])'
+    if (-not $ReleaseNotesPath) { $ReleaseNotesPath = "docs\RELEASE-NOTES-$version.md" }
 
     $notesPath = if ([IO.Path]::IsPathRooted($ReleaseNotesPath)) {
         [IO.Path]::GetFullPath($ReleaseNotesPath)
@@ -160,11 +161,11 @@ try {
     }
     Assert-FileExists $notesPath 'Release notes'
     $customNotes = (Get-Content -LiteralPath $notesPath -Raw).Trim()
-    if ($customNotes -notmatch '(?i)0\.1\.1' -or $customNotes -notmatch '(?i)not runtime-qualified|runtime qualification.*remain|runtime-qualified') {
-        throw 'Release notes must identify version 0.1.1 and state its runtime qualification disposition.'
+    if ($customNotes -notmatch $versionPattern -or $customNotes -notmatch '(?i)not runtime-qualified|runtime qualification.*remain|runtime-qualified') {
+        throw "Release notes must identify version $version and state its runtime qualification disposition."
     }
     if ($runtimeQualifiedRelease -and $customNotes -match '(?i)not runtime-qualified|runtime qualification.*remain(?:s)? pending') {
-        throw 'Update the v0.1.1 release notes with the accepted runtime result before publication.'
+        throw "Update the v$version release notes with the accepted runtime result before publication."
     }
     if ($ownerAuthorizedPreRuntimeRelease -and
         ($customNotes -notmatch '(?i)owner-authorized' -or $customNotes -notmatch '(?i)not runtime-qualified')) {
@@ -173,19 +174,22 @@ try {
 
     $projectState = Get-Content -LiteralPath (Join-Path $root 'PROJECT-STATE.md') -Raw
     if ($runtimeQualifiedRelease -and $projectState -notmatch 'Runtime qualification: \*\*passed\*\*') {
-        throw 'PROJECT-STATE.md does not record a passed v0.1.1 disposable-campaign runtime qualification.'
+        throw "PROJECT-STATE.md does not record a passed v$version disposable-campaign runtime qualification."
     }
-    if ($ownerAuthorizedPreRuntimeRelease -and
-        $projectState -notmatch 'Owner-authorized pre-runtime release: \*\*approved for v0\.1\.1') {
-        throw 'PROJECT-STATE.md does not record the explicit owner authorization for a pre-runtime v0.1.1 release.'
+    # Each version needs its own dated owner authorization; an earlier release's approval never transfers.
+    $ownerAuthorization = [regex]::Match(
+        $projectState,
+        'Owner-authorized pre-runtime release: \*\*approved for v' + $versionPattern + ' on (\d{4}-\d{2}-\d{2})')
+    if ($ownerAuthorizedPreRuntimeRelease -and -not $ownerAuthorization.Success) {
+        throw "PROJECT-STATE.md does not record the explicit owner authorization for a pre-runtime v$version release."
     }
     if ($ownerAuthorizedPreRuntimeRelease -and
         $projectState -notmatch 'Runtime qualification: \*\*MANUAL RUNTIME TEST REQUIRED') {
         throw 'The pre-runtime publication path requires PROJECT-STATE.md to retain the pending manual-runtime boundary.'
     }
 
-    $tag = 'v0.1.1'
-    $title = 'Last Azlanti Preserver v0.1.1'
+    $tag = "v$version"
+    $title = "$([string] $info.DisplayName) $tag"
     $existingRelease = $null
     if (Test-Native 'gh' @('release', 'view', $tag, '--repo', [string] $repository.nameWithOwner)) {
         $existingRelease = Get-NativeOutput 'gh' @(
@@ -222,12 +226,12 @@ try {
         throw 'The final qualification summary does not retain the required pre-runtime disposition.'
     }
 
-    $releaseDirectory = Join-Path $root 'artifacts\release\0.1.1'
+    $releaseDirectory = Join-Path $root "artifacts\release\$version"
     Assert-PathWithin $releaseDirectory $root 'Release staging directory'
     if (Test-Path -LiteralPath $releaseDirectory) { Remove-Item -LiteralPath $releaseDirectory -Recurse -Force }
     [IO.Directory]::CreateDirectory($releaseDirectory) | Out-Null
 
-    $assetName = 'KingmakerLastAzlantiPreserver-0.1.1.zip'
+    $assetName = "KingmakerLastAzlantiPreserver-$version.zip"
     $releasePackage = Join-Path $releaseDirectory $assetName
     Copy-Item -LiteralPath $second.PackagePath -Destination $releasePackage
     & (Join-Path $PSScriptRoot 'Validate-Package.ps1') `
@@ -260,12 +264,12 @@ try {
     }
     Write-JsonFile $manifestPath $manifest
 
-    $generatedNotesPath = Join-Path $releaseDirectory 'release-notes-0.1.1.md'
+    $generatedNotesPath = Join-Path $releaseDirectory "release-notes-$version.md"
     $runtimeDisposition = if ($runtimeQualifiedRelease) {
         '**Runtime qualification passed before publication.** Steam Cloud remains a separately recorded scenario.'
     }
     elseif ($ownerAuthorizedPreRuntimeRelease) {
-        '**Owner-authorized pre-runtime release:** on 2026-09-06 the owner explicitly requested v0.1.1 publication before installation and disposable-campaign GUI testing. This release is **not runtime-qualified**; Steam Cloud is also unqualified.'
+        ('**Owner-authorized pre-runtime release:** on {0} the owner explicitly authorized stable v{1} publication before installation and disposable-campaign GUI testing. This release is **not runtime-qualified**; Steam Cloud is also unqualified.' -f $ownerAuthorization.Groups[1].Value, $version)
     }
     else {
         '**Runtime qualification has not yet been performed.** Preparation is not a runtime compatibility claim and creates no tag or release.'
@@ -275,7 +279,7 @@ try {
         '',
         "1. Download **$assetName** from **Assets** below.",
         '2. In Unity Mod Manager, select Pathfinder: Kingmaker and drag the ZIP into the **Mods** tab.',
-        '3. Confirm **Last Azlanti Preserver 0.1.1** is enabled and both core protection and game-over loading controls report **AVAILABLE**.',
+        ('3. Confirm **{0} {1}** is enabled and its Unity Mod Manager panel reports **Core preservation: AVAILABLE** and **Game-over loading controls: AVAILABLE**.' -f [string] $info.DisplayName, $version),
         '',
         "Do not download GitHub's generated **Source code** archives; they are not the installable UMM package.",
         '',

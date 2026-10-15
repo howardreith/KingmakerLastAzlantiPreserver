@@ -7,7 +7,7 @@
 - locally installed Pathfinder: Kingmaker 2.1.7b
 - owner-approved Unity Mod Manager 0.33.0 with the installed legacy `0Harmony12, Version=1.2.0.1` surface
 
-The v0.1.1 candidate is measured against UMM 0.33.0. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
+The v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 uses the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
 
 Discover the Steam app manifest or configure a non-Steam installation explicitly:
 
@@ -33,7 +33,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Package.ps1 -Configuration Release
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Validate-Package.ps1 `
-  -PackagePath .\artifacts\packages\KingmakerLastAzlantiPreserver-0.1.1.zip
+  -PackagePath .\artifacts\packages\KingmakerLastAzlantiPreserver-0.1.2.zip
 ```
 
 One non-runtime qualification command:
@@ -52,10 +52,10 @@ The core verifier writes `contracts.json`. The chained optional verifier writes 
 The one permitted candidate archive is:
 
 ```text
-artifacts/packages/KingmakerLastAzlantiPreserver-0.1.1.zip
+artifacts/packages/KingmakerLastAzlantiPreserver-0.1.2.zip
 ```
 
-It contains exactly one top-level `KingmakerLastAzlantiPreserver/` directory and six allowlisted files. It excludes PDBs, game/UMM/Harmony DLLs, source, settings, saves, logs, paths, and recovery data.
+It contains exactly one top-level `KingmakerLastAzlantiPreserver/` directory and six allowlisted files. Package validation also requires the exact branded manifest (`DisplayName` **Mr. Bard's Second to Last Azlanti**, `Author` **Mr. Bard**) together with the unchanged `Id`, `AssemblyName`, and `EntryMethod`; the expected values live in `Get-ExpectedProductManifest` in `scripts/Common.ps1`. It excludes PDBs, game/UMM/Harmony DLLs, source, settings, saves, logs, paths, and recovery data.
 
 Always preview, then install:
 
@@ -70,7 +70,7 @@ The installer validates the archive, refuses to run while Kingmaker is active, r
 
 ## Pull request and publication
 
-Feature work belongs on `codex/game-over-load-controls-v0.1.1` and reaches `main` through its pull request. Automated qualification or installation alone never authorizes a merge, tag, or publication.
+Feature work belongs on a mission-specific branch (v0.1.1: `codex/game-over-load-controls-v0.1.1`; v0.1.2: `codex/mr-bard-branding`) and reaches `main` through its pull request. Automated qualification or installation alone never authorizes a merge, tag, or publication.
 
 The guarded publisher requires clean, fully pushed `main`, two identical complete qualifications, both contract reports, and package validation. Prepare artifacts without a tag or GitHub release:
 
@@ -87,7 +87,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -Publish -ConfirmRuntimeQualifiedRelease
 ```
 
-On 2026-09-06, the owner explicitly authorized v0.1.1 merge, tag, and stable publication before personally installing and running the GUI checklist. That one-version disposition uses a separate deliberate switch:
+The owner can instead authorize one specific version for stable publication before the GUI checklist (v0.1.1 on 2026-09-06; v0.1.2 on 2026-10-15). That per-version disposition uses a separate deliberate switch:
 
 ```powershell
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
@@ -95,4 +95,18 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -Publish -ConfirmOwnerAuthorizedPreRuntimeRelease
 ```
 
-This path requires the committed release notes and project state to retain both the owner authorization and **MANUAL RUNTIME TEST REQUIRED** status. It records `runtime_qualified: false` and `owner_authorized_release_before_runtime_test: true` in the release manifest. It does not transfer to a future version. Steam Cloud remains separately qualified even after the required local GUI pass.
+This path requires `PROJECT-STATE.md` to contain `Owner-authorized pre-runtime release: **approved for v<version> on <YYYY-MM-DD>` for the exact `Info.json` version and to retain **MANUAL RUNTIME TEST REQUIRED**, and requires `docs/RELEASE-NOTES-<version>.md` to name the version and record the owner authorization and the not-runtime-qualified state. It records `runtime_qualified: false` and `owner_authorized_release_before_runtime_test: true` in the release manifest, and the generated notes quote the dated authorization. An authorization never transfers to another version. Steam Cloud remains separately qualified even after the required local GUI pass.
+
+The publisher derives the tag (`v<version>`), title (`<DisplayName> v<version>`), release directory (`artifacts/release/<version>`), asset (`KingmakerLastAzlantiPreserver-<version>.zip`), and default notes path from the committed manifest, which `Assert-ProductManifest` pins to the expected identity. It never replaces a published release.
+
+### v0.1.2
+
+v0.1.2 is published from clean `main` with:
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\Publish-Release.ps1 `
+  -Publish -ConfirmOwnerAuthorizedPreRuntimeRelease
+```
+
+The published v0.1.0 and v0.1.1 tags, releases, assets, and checksums stay unchanged.

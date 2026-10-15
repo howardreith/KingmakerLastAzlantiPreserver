@@ -2,7 +2,7 @@
 
 ## Safety boundary
 
-Version 0.1.1 has two independent Harmony owners.
+Since version 0.1.1, the mod has two independent Harmony owners.
 
 The critical core owner retains the accepted v0.1.0 seams:
 

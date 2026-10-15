@@ -88,15 +88,38 @@ function Write-JsonFile([string] $Path, [object] $Value, [int] $Depth = 8) {
     $Value | ConvertTo-Json -Depth $Depth | Set-Content -LiteralPath $Path -Encoding UTF8
 }
 
+function Get-ExpectedProductManifest {
+    # Id, AssemblyName and EntryMethod are the stable UMM identity and must never follow branding.
+    return [ordered]@{
+        Id = 'KingmakerLastAzlantiPreserver'
+        DisplayName = "Mr. Bard's Second to Last Azlanti"
+        Author = 'Mr. Bard'
+        Version = '0.1.2'
+        AssemblyName = 'KingmakerLastAzlantiPreserver.dll'
+        EntryMethod = 'KingmakerLastAzlantiPreserver.Main.Load'
+    }
+}
+
+function Assert-ProductManifest([object] $Info, [string] $Label) {
+    $expected = Get-ExpectedProductManifest
+    foreach ($key in $expected.Keys) {
+        $actual = [string] $Info.$key
+        if (-not [string]::Equals($actual, $expected[$key], [StringComparison]::Ordinal)) {
+            throw "$Label $key is '$actual'; expected '$($expected[$key])'."
+        }
+    }
+}
+
 function Assert-RepositorySafety {
     $root = Get-RepositoryRoot
     $info = Get-Content -LiteralPath (Join-Path $root 'Info.json') -Raw | ConvertFrom-Json
     if ($info.Id -ne 'KingmakerLastAzlantiPreserver' -or
         $info.AssemblyName -ne 'KingmakerLastAzlantiPreserver.dll' -or
         $info.EntryMethod -ne 'KingmakerLastAzlantiPreserver.Main.Load' -or
-        $info.Version -ne '0.1.1') {
+        $info.Version -ne '0.1.2') {
         throw 'Info.json product identity is inconsistent.'
     }
+    Assert-ProductManifest $info 'Info.json'
 
     $trackedCandidates = Get-ChildItem -LiteralPath $root -File -Recurse | Where-Object {
         $_.FullName -notmatch '[\\/](\.git|artifacts|bin|obj)[\\/]' -and $_.Name -ne 'GamePath.props'
