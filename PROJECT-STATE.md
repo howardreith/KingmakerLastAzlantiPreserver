@@ -3,10 +3,11 @@
 ## Product
 
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
-- Candidate version: `0.1.1`
+- Public display name/author since v0.1.2: `Mr. Bard's Second to Last Azlanti` / `Mr. Bard` (UMM ID, assembly, entry point, Harmony owners, install folder, settings, and recovery path unchanged)
+- Candidate version: `0.1.2` (branding-only, unreleased; latest published release `v0.1.1`)
 - Target: Pathfinder: Kingmaker `2.1.7b`, owner-approved UMM `0.33.0`, installed `0Harmony12`/Harmony `1.2.0.1`, .NET Framework 4.7.2, C# 7.3
-- Feature branch: `codex/game-over-load-controls-v0.1.1`
-- Accepted base: `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`
+- v0.1.1 feature branch: `codex/game-over-load-controls-v0.1.1` (accepted base `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`)
+- v0.1.2 branding branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
 
 ## Implemented candidate
 
@@ -31,6 +32,13 @@
 - Behavior/filesystem/settings/status tests: 62 passed, 0 failed.
 - Production compilation: passed with 0 warnings and 0 errors.
 - Final DLL/package hashes and local candidate installation are recorded in ignored qualification evidence and the private implementation handoff after final qualification.
+
+## v0.1.2 branding candidate
+
+- Scope: UMM `DisplayName`/`Author`, `ProductMetadata.Name`/`Version`, assembly title/product/version, version-bound package/install/validation scripts, documentation, and Nexus copy. No preservation, recovery, Harmony, settings, or game-over loading logic changed.
+- Recovery metadata stays bound to the exact mod version, so a pending 0.1.0/0.1.1 recovery is rejected (not deleted) by 0.1.2. Upgrade guidance tells players to complete it first.
+- Non-runtime qualification of the branding tree (`Qualify.ps1 -Build -Test -VerifyContracts -Package`): 0 warnings/0 errors, 64/64 tests, exact core and game-over UI contracts, Harmony core=5/optional=15 with isolation verified, package validation passed. Release-candidate hashes belong to a clean-commit qualification run and are not recorded here.
+- Not installed, not launched, not runtime-qualified, not tagged, not published.
 
 ## Historical v0.1.0 evidence
 

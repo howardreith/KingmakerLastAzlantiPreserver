@@ -7,7 +7,7 @@ Compilation and installation are not runtime qualification. Use only a disposabl
 Do not launch Kingmaker for this procedure unless all of these are true:
 
 1. GUI interaction is available through an existing repository-authorized mechanism.
-2. Kingmaker is closed before installation and the qualified v0.1.1 package is the only intended mod payload change.
+2. Kingmaker is closed before installation and the qualified candidate package (v0.1.1, or the branding-only v0.1.2) is the only intended mod payload change.
 3. Steam Cloud behavior is known safe for this local-only pass; otherwise keep Cloud qualification separate and do not silently change account settings.
 4. A disposable standalone campaign can be created or explicitly identified by name and identity. Do not use Continue/latest-save to choose it.
 5. Any independent backup remains outside the Owlcat save directory and outside Git.
@@ -19,7 +19,7 @@ Record Kingmaker version, UMM version, mod/package/DLL hashes, enabled mods, Clo
 
 1. Exit Kingmaker and confirm no `Kingmaker` process remains.
 2. Run `scripts/Install.ps1 -WhatIf` and confirm it names only `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`.
-3. Install the qualified candidate and verify UMM reports version 0.1.1. Do not load a valued save.
+3. Install the qualified candidate and verify UMM reports its version (0.1.1 as **Last Azlanti Preserver**, or 0.1.2 as **Mr. Bard's Second to Last Azlanti** by **Mr. Bard**). Do not load a valued save.
 4. Launch only to the main menu and open the UMM panel.
 5. Confirm core preservation reports **AVAILABLE** separately from game-over loading controls **AVAILABLE**. Record the exact desktop/controller targets and latest eligibility reason; at the main menu, ineligibility is expected.
 6. Confirm both preservation settings and hidden recovery are enabled, no red status appears, and no FirstAzlanti conflict is reported.
@@ -95,4 +95,4 @@ Steam Cloud remains a separate qualification scenario. Only after the local disp
 
 ## Qualification outcome
 
-Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result.
+Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result. The branding-only v0.1.2 carries the same preservation and loading code and the same **MANUAL RUNTIME TEST REQUIRED** status until this checklist passes for its own package.

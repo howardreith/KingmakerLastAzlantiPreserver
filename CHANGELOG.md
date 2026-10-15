@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 - Unreleased (branding candidate)
+
+- Renamed the public display name to **Mr. Bard's Second to Last Azlanti** and the Unity Mod Manager author to **Mr. Bard**; the UMM settings title, load log line, and assembly title/product show the new name.
+- Kept the UMM `Id`, DLL/assembly name, `EntryMethod`, namespaces, Harmony owner IDs, install folder, settings, and recovery directory unchanged so the update installs over Last Azlanti Preserver 0.1.0/0.1.1 as the same mod.
+- Added package and repository checks for the exact branded manifest and stable identity, plus runner tests pinning the stable identifiers.
+- No preservation, recovery, or game-over loading behavior changed. Recovery metadata remains bound to the exact mod version that created it, so complete any pending 0.1.0/0.1.1 recovery before upgrading.
+- Not runtime-qualified: the v0.1.1 **MANUAL RUNTIME TEST REQUIRED** boundary still applies. Not yet tagged or published.
+
 ## 0.1.1 - 2026-09-06
 
 - Added a default-enabled, independently gated option to use Kingmaker's native Load Last Save and Load Game controls on the standalone Beneath the Stolen Lands game-over screen after a matching live Last Azlanti save was actually preserved.

@@ -1,8 +1,10 @@
-# Last Azlanti Preserver
+# Mr. Bard's Second to Last Azlanti
 
-Last Azlanti Preserver is a standalone Unity Mod Manager mod for **Pathfinder: Kingmaker 2.1.7b**. It keeps Kingmaker's one-save Last Azlanti discipline while preventing the game-over controller from deleting the one legitimate autosave.
+Mr. Bard's Second to Last Azlanti (published through v0.1.1 as **Last Azlanti Preserver**) is a standalone Unity Mod Manager mod by Mr. Bard for **Pathfinder: Kingmaker 2.1.7b**. It keeps Kingmaker's one-save Last Azlanti discipline while preventing the game-over controller from deleting the one legitimate autosave.
 
-Version 0.1.1 adds a separately gated enhancement for the standalone Beneath the Stolen Lands results screen: after this mod has verifiably preserved the live native save, Kingmaker's own **Load Last Save** and **Load Game** controls can be used without returning to the main menu.
+Since version 0.1.1, a separately gated enhancement is available for the standalone Beneath the Stolen Lands results screen: after this mod has verifiably preserved the live native save, Kingmaker's own **Load Last Save** and **Load Game** controls can be used without returning to the main menu.
+
+Version 0.1.2 is a branding-only update. It changes the name, author, and version shown in Unity Mod Manager; the technical mod ID, DLL, install folder, settings, recovery location, and preservation/loading behavior are unchanged from v0.1.1.
 
 The mod does not enable manual saving or quicksaving, add slots, change autosave timing or selection, alter difficulty or death rules, create a visible recovery save, skip the game-over screen, or reload automatically. Ordinary campaigns and deliberate deletion from the native load-game UI pass through unchanged.
 
@@ -44,7 +46,13 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Install.ps1
 ```
 
-Or install `KingmakerLastAzlantiPreserver-0.1.1.zip` with Unity Mod Manager. The archive has one top-level `KingmakerLastAzlantiPreserver` directory. Disable/remove the original FirstAzlanti mod before using this mod; do not test both together.
+Or install `KingmakerLastAzlantiPreserver-0.1.2.zip` with Unity Mod Manager. The archive has one top-level `KingmakerLastAzlantiPreserver` directory. Disable/remove the original FirstAzlanti mod before using this mod; do not test both together.
+
+### Upgrading from Last Azlanti Preserver 0.1.0 or 0.1.1
+
+The UMM ID (`KingmakerLastAzlantiPreserver`), DLL name, entry point, and `Mods/KingmakerLastAzlantiPreserver` folder are unchanged, so Unity Mod Manager treats this as the same mod and lists it under the new name instead of adding a second entry. The package contains no `Settings.xml`; the settings fields are unchanged, so an existing `Settings.xml` in that folder keeps applying. `scripts/Install.ps1` additionally hash-verifies that an existing `Settings.xml` is preserved.
+
+Before upgrading, open the UMM panel and check the recovery status. Recovery metadata records the exact mod version that created it, and a different version rejects it, so a pending recovery created by 0.1.0 or 0.1.1 cannot be restored by 0.1.2. Complete any **Restore validated pending recovery** action with the version that created it first. A rejected recovery is not deleted; its files stay under `<Kingmaker persistent data>/LastAzlantiPreserver/Recovery`.
 
 ## Qualification and evidence boundary
 
@@ -58,5 +66,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
 The v0.1.0 core was owner-observed working in one disposable standalone Beneath the Stolen Lands Last Azlanti run: death reached the normal results screen, the retained save loaded successfully from Main Menu, and the game-over **Load Last Save**/**Load Game** controls remained disabled. That is positive evidence for the core in that scenario, not full runtime or Steam Cloud qualification.
 
 The v0.1.1 UI enhancement remains **MANUAL RUNTIME TEST REQUIRED** until the disposable-campaign procedure in [docs/SMOKE-TEST.md](docs/SMOKE-TEST.md) is completed. Automated compilation, tests, exact contracts, Harmony ownership, packaging, managed assembly loading, publication, or main-menu startup do not constitute that GUI result. The owner explicitly authorized publishing v0.1.1 before personally performing that test; this release is therefore not yet a runtime compatibility claim. Steam Cloud remains a separate unqualified scenario.
+
+Version 0.1.2 changes only the displayed name, author, and version; its preservation and game-over loading code is the v0.1.1 code. The same **MANUAL RUNTIME TEST REQUIRED** boundary applies to 0.1.2, and it is not a runtime compatibility claim either.
 
 See [docs/RECONNAISSANCE.md](docs/RECONNAISSANCE.md) for the exact 2.1.7b call graph and [docs/RECOVERY.md](docs/RECOVERY.md) for recovery invariants.
