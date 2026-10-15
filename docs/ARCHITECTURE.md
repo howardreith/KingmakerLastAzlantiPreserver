@@ -20,7 +20,7 @@ The optional owner affects only the standalone Endless game-over loading experie
 
 The optional patches never choose a save, open a replacement window, deserialize, delete, or suppress a delete. Native callbacks remain authoritative. A negative or uncertain UI decision does not force controls disabled; it leaves vanilla state untouched, except that the coordinator may restore only its own earlier elevation on the same verified view. The action prefixes pass through when Kingmaker's native `OnlyOneSave` gate is off, preserving ordinary Endless behavior; when that gate is on, a failed live revalidation blocks only an action that vanilla made unavailable.
 
-Core contracts resolve and patch first. Optional contracts use a separate resolver and Harmony ID. Optional resolution, application, ownership, or compatibility failure restores any owned control state and unpatches only the optional owner. Core protection can continue to report `AVAILABLE` while game-over loading reports `UNAVAILABLE` or `DISABLED`.
+Core contracts resolve and patch first. Optional contracts use a separate resolver and Harmony ID. Optional resolution, application, ownership, or compatibility failure restores any owned control state and unpatches only the optional owner. Core protection can continue to report `AVAILABLE` while game-over loading reports `UNAVAILABLE` or `DISABLED`; the default panel shows these as save protection **Ready** with game-over loading **Unavailable** or **Off**, and an optional failure is never worded as a save-protection failure.
 
 ## Responsibilities
 
@@ -30,7 +30,7 @@ Core contracts resolve and patch first. Optional contracts use a separate resolv
 | `Integration/` | Exact Kingmaker contracts, live save identity/path checks, UI outcome lifetime, control ownership, compatibility, and runtime status. |
 | `Preservation/` | Synchronous deletion context, pure deletion predicate, and game-over orchestration. |
 | `Recovery/` | Path validation, byte copy, hashing, metadata, markers, and restore decisions. |
-| `UI/` | UMM settings/status and confirmation-gated fallback. |
+| `UI/` | Unity-free panel presenter/model (`SettingsPanel`) and a thin IMGUI renderer (`SettingsView`): settings, concise status and alerts, a recovery section only when needed with the confirmation-gated fallback, and collapsed troubleshooting diagnostics. |
 | `Logging/` | UMM logging abstraction. |
 
 ## Core interception lifecycle

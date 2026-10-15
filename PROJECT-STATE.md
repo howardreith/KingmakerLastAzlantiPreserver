@@ -5,9 +5,11 @@
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
 - Public display name/author since v0.1.2: `Mr. Bard's Second to Last Azlanti` / `Mr. Bard` (UMM ID, assembly, entry point, Harmony owners, install folder, settings, and recovery path unchanged)
 - Release version: `0.1.2` (owner-authorized stable release; previous release `v0.1.1`)
+- Candidate version: `0.1.3` (settings-panel presentation cleanup; owner-authorized stable release on 2026-10-15, not runtime-qualified)
 - Target: Pathfinder: Kingmaker `2.1.7b`, owner-approved UMM `0.33.0`, installed `0Harmony12`/Harmony `1.2.0.1`, .NET Framework 4.7.2, C# 7.3
 - v0.1.1 feature branch: `codex/game-over-load-controls-v0.1.1` (accepted base `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`)
 - v0.1.2 branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
+- v0.1.3 branch: `claude/settings-panel-cleanup-v0.1.3` (base `main` at `0774f603aa8429c8b93d90e166b628ae8c826551`)
 
 ## Implemented candidate
 
@@ -40,6 +42,15 @@
 - Recovery tests restore the verbatim `metadata.json`/`pending.json` written by the published v0.1.1 DLL (`dll_sha256` `5be7a369…0e85b`) with exact restored bytes, and cover newer writers, unsupported/disagreeing formats, malformed writer versions, identity/integrity tampering, missing markers, no-overwrite, explicit confirmation, and evaluation without rewrites. Automated and offline only.
 - Release disposition: owner-authorized stable publication on 2026-10-15 through the guarded publisher's pre-runtime path. Not installed or launched by the release process; not runtime-qualified.
 
+## v0.1.3 candidate scope
+
+- Settings panel presentation only. The default view keeps the three existing settings under player-facing labels, one sentence that Last Azlanti's saving restrictions are unchanged, a Ready/Off/Unavailable status per feature, neutral campaign recognition, and concise always-visible alerts. Verbose diagnostics and all technical detail (raw states, hooks, patch installation, eligibility, recognition, recovery directory and guarded state, latest results, full compatibility report, recovery refresh) moved to a collapsed, non-persisted Troubleshooting section.
+- `SettingsPanel` (Unity-free presenter/model) carries the panel logic and interaction state; `SettingsView` only renders it, refreshing recovery status on IMGUI Layout events at the existing one-minute cadence.
+- Status reporting: `CompatibilityDetector` returns a structured report with the unchanged detail/log text; `RuntimeStatus` adds the mod-enabled flag and tagged issues (save not identified under Only One Save, recovery backup failure, game-over loading outcome failure, disable cleanup failure). Defeat issues reset at the next game over. An ordinary campaign's game over is not flagged.
+- Recovery: a section appears only for a restorable, blocked/invalid, or just-restored recovery. Restore keeps the same service validation, explicit confirmation, and guarded sequence; the confirmation now also resets when the evaluated recovery changes. Status read failures are shown as a blocked recovery instead of throwing on every draw.
+- Unchanged: `Settings.xml` keys/defaults, preservation policy and Harmony scope, game-over loading eligibility, recovery format/eligibility/integrity/identity/no-overwrite checks, manual deletion, branding, and stable identifiers.
+- Automated evidence and package details for the candidate are recorded in ignored qualification output. Runtime and visual verification of the new panel: **not performed**.
+
 ## v0.1.2 publication receipt
 
 - Published 2026-10-15T22:14:24Z: https://github.com/howardreith/KingmakerLastAzlantiPreserver/releases/tag/v0.1.2 (stable, non-draft, non-prerelease, GitHub latest; title `Mr. Bard's Second to Last Azlanti v0.1.2`).
@@ -62,6 +73,7 @@
 - Steam Cloud compatibility: **unqualified pending separate deliberate test**.
 - Owner-authorized pre-runtime release: **approved for v0.1.1 on 2026-09-06**. The owner explicitly requested finalization, merge, tag, and stable publication before personally installing and performing the disposable-campaign GUI checks.
 - Owner-authorized pre-runtime release: **approved for v0.1.2 on 2026-10-15**. The owner explicitly authorized the recovery-compatibility correction, merge, tag, and stable publication of v0.1.2 without an additional human playtest.
+- Owner-authorized pre-runtime release: **approved for v0.1.3 on 2026-10-15**. The owner explicitly authorized merging, tagging, and stable publication of the v0.1.3 settings-panel cleanup before inspecting the new panel in-game; the in-game panel check (SMOKE-TEST step 1.7) follows publication.
 - Each authorization changes the publication disposition of its own version only. It is not runtime evidence, does not mark the release runtime-qualified, and does not qualify Steam Cloud.
 - The guarded publisher retains the stricter accepted-runtime path and has a separate, explicit per-version owner-authorized path that records `runtime_qualified: false` in release provenance.
 

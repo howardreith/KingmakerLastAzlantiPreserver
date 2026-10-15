@@ -7,13 +7,14 @@ namespace KingmakerLastAzlantiPreserver.Integration
 {
     public sealed class CompatibilityDetector
     {
-        public string Detect(
+        public CompatibilityReport Detect(
             HarmonyInstance coreHarmony,
             KingmakerContracts contracts,
             HarmonyInstance gameOverLoadHarmony,
             GameOverLoadContracts gameOverLoadContracts)
         {
             List<string> warnings = new List<string>();
+            bool firstAzlantiLoaded = false;
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             for (int index = 0; index < assemblies.Length; index++)
             {
@@ -22,12 +23,15 @@ namespace KingmakerLastAzlantiPreserver.Integration
                     name.IndexOf("First Azlanti", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     HasFirstAzlantiType(assemblies[index]))
                 {
+                    firstAzlantiLoaded = true;
                     warnings.Add("Original FirstAzlanti functionality is loaded (" + name + "). Disable it before testing.");
                 }
             }
 
-            AddForeignPatchWarnings(coreHarmony, contracts.GameOverActivate, "core game-over hook", warnings);
-            AddForeignPatchWarnings(coreHarmony, contracts.DeleteSave, "core save-deletion hook", warnings);
+            HashSet<string> foreignCoreOwners = new HashSet<string>(StringComparer.Ordinal);
+            AddForeignPatchWarnings(coreHarmony, contracts.GameOverActivate, "core game-over hook", warnings, foreignCoreOwners);
+            AddForeignPatchWarnings(coreHarmony, contracts.DeleteSave, "core save-deletion hook", warnings, foreignCoreOwners);
+            HashSet<string> foreignGameOverLoadOwners = new HashSet<string>(StringComparer.Ordinal);
             if (gameOverLoadHarmony != null && gameOverLoadContracts != null)
             {
                 IReadOnlyList<MethodBase> targets = gameOverLoadContracts.PatchTargets;
@@ -37,11 +41,16 @@ namespace KingmakerLastAzlantiPreserver.Integration
                         gameOverLoadHarmony,
                         targets[index],
                         "optional game-over loading target " + GameOverLoadContracts.FormatMethod(targets[index]),
-                        warnings);
+                        warnings,
+                        foreignGameOverLoadOwners);
                 }
             }
 
-            return string.Join(" ", warnings.ToArray());
+            return new CompatibilityReport(
+                firstAzlantiLoaded,
+                foreignCoreOwners.Count,
+                foreignGameOverLoadOwners.Count,
+                string.Join(" ", warnings.ToArray()));
         }
 
         private static bool HasFirstAzlantiType(Assembly assembly)
@@ -78,7 +87,8 @@ namespace KingmakerLastAzlantiPreserver.Integration
             HarmonyInstance harmony,
             MethodBase target,
             string label,
-            ICollection<string> warnings)
+            ICollection<string> warnings,
+            ISet<string> foreignOwners)
         {
             Harmony12.Patches patches = harmony.GetPatchInfo(target);
             if (patches == null) return;
@@ -86,6 +96,7 @@ namespace KingmakerLastAzlantiPreserver.Integration
             {
                 if (!IsOurOwner(owner))
                 {
+                    foreignOwners.Add(owner ?? string.Empty);
                     warnings.Add("Another Harmony owner patches the " + label + ": " + owner + ". Compatibility is unqualified.");
                 }
             }

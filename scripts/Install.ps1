@@ -4,7 +4,7 @@ param([string] $PackagePath)
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-RepositoryRoot
 $configuration = Get-KingmakerConfiguration
-if (-not $PackagePath) { $PackagePath = Join-Path $root 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.2.zip' }
+if (-not $PackagePath) { $PackagePath = Join-Path $root 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip' }
 $PackagePath = [IO.Path]::GetFullPath($PackagePath)
 & (Join-Path $PSScriptRoot 'Validate-Package.ps1') -PackagePath $PackagePath
 

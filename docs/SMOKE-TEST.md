@@ -7,7 +7,7 @@ Compilation and installation are not runtime qualification. Use only a disposabl
 Do not launch Kingmaker for this procedure unless all of these are true:
 
 1. GUI interaction is available through an existing repository-authorized mechanism.
-2. Kingmaker is closed before installation and the qualified package (v0.1.1 or v0.1.2) is the only intended mod payload change.
+2. Kingmaker is closed before installation and the qualified package (v0.1.1 or later) is the only intended mod payload change.
 3. Steam Cloud behavior is known safe for this local-only pass; otherwise keep Cloud qualification separate and do not silently change account settings.
 4. A disposable standalone campaign can be created or explicitly identified by name and identity. Do not use Continue/latest-save to choose it.
 5. Any independent backup remains outside the Owlcat save directory and outside Git.
@@ -19,10 +19,11 @@ Record Kingmaker version, UMM version, mod/package/DLL hashes, enabled mods, Clo
 
 1. Exit Kingmaker and confirm no `Kingmaker` process remains.
 2. Run `scripts/Install.ps1 -WhatIf` and confirm it names only `<KINGMAKER_INSTALL>/Mods/KingmakerLastAzlantiPreserver`.
-3. Install the qualified candidate and verify UMM reports its version (0.1.1 as **Last Azlanti Preserver**, or 0.1.2 as **Mr. Bard's Second to Last Azlanti** by **Mr. Bard**). Do not load a valued save.
+3. Install the qualified candidate and verify UMM reports its version (0.1.1 as **Last Azlanti Preserver**, or 0.1.2 and later as **Mr. Bard's Second to Last Azlanti** by **Mr. Bard**). Do not load a valued save.
 4. Launch only to the main menu and open the UMM panel.
-5. Confirm core preservation reports **AVAILABLE** separately from game-over loading controls **AVAILABLE**. Record the exact desktop/controller targets and latest eligibility reason; at the main menu, ineligibility is expected.
+5. Confirm save protection reports **Ready** separately from game-over loading **Ready** (before v0.1.3: core preservation and game-over loading controls **AVAILABLE**). Under **Show troubleshooting** (v0.1.3+), record the exact desktop/controller targets and latest eligibility reason; at the main menu, ineligibility is expected and produces no warning.
 6. Confirm both preservation settings and hidden recovery are enabled, no red status appears, and no FirstAzlanti conflict is reported.
+7. For v0.1.3 and later, confirm the healthy panel shows only the three settings, the one-line explanation, the status lines, and **Show troubleshooting**; that it fits without scrolling at the ordinary UMM window size; that text wraps without clipping; and that **Show troubleshooting**/**Hide troubleshooting** expands and collapses the details without changing any setting.
 
 This startup check proves only that the candidate loaded. It does not qualify preservation or game-over controls.
 
@@ -63,9 +64,9 @@ This startup check proves only that the candidate loaded. It does not qualify pr
 
 ## 6. Setting and core-disable boundaries
 
-1. On a fresh disposable death, disable only **Allow loading the preserved save from the game-over screen** before reaching the results screen. Confirm both controls retain vanilla Last Azlanti disabled behavior while core preservation still leaves the save loadable from Main Menu.
+1. On a fresh disposable death, disable only **Allow loading from the game-over screen** (before v0.1.3: **Allow loading the preserved save from the game-over screen**) before reaching the results screen. Confirm both controls retain vanilla Last Azlanti disabled behavior while core preservation still leaves the save loadable from Main Menu.
 2. Re-enable the setting, reach another disposable results screen, confirm the controls elevate, then disable that setting while the screen is still open. Confirm only the two owned loading controls return to vanilla state and neither action remains usable.
-3. Confirm core preservation remains **AVAILABLE** throughout those UI-setting changes.
+3. Confirm save protection remains **Ready** (before v0.1.3: core preservation **AVAILABLE**) throughout those UI-setting changes.
 4. On a separate disposable run, disable core preservation or the mod and confirm vanilla Last Azlanti game-over behavior is unchanged. Never perform this step against a save that matters.
 
 ## 7. Explicit deletion from the game-over load window
@@ -95,4 +96,4 @@ Steam Cloud remains a separate qualification scenario. Only after the local disp
 
 ## Qualification outcome
 
-Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result. v0.1.2 carries the same preservation and loading code and the same **MANUAL RUNTIME TEST REQUIRED** status until this checklist passes for its own package; the owner authorized its stable publication on 2026-10-15 before that test. Its recovery-format compatibility change is covered by automated filesystem tests only.
+Version 0.1.1 is runtime-qualified only after every applicable non-optional step above passes with recorded disposable-campaign evidence. A main-menu startup, managed assembly load, automated contract pass, package installation, publication, or the prior v0.1.0 owner observation cannot substitute for this test. Until then, report **MANUAL RUNTIME TEST REQUIRED**. The owner authorized v0.1.1 publication before personally performing this checklist on 2026-09-06; that release disposition does not change the qualification result. v0.1.2 carries the same preservation and loading code and the same **MANUAL RUNTIME TEST REQUIRED** status until this checklist passes for its own package; the owner authorized its stable publication on 2026-10-15 before that test. Its recovery-format compatibility change is covered by automated filesystem tests only. v0.1.3 changes only the settings panel's presentation and status reporting; its panel states are covered by automated tests, and step 1.7 is its in-game visual check. The owner authorized v0.1.3 stable publication on 2026-10-15 before that check.
