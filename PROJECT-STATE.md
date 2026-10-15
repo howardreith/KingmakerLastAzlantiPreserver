@@ -40,6 +40,15 @@
 - Recovery tests restore the verbatim `metadata.json`/`pending.json` written by the published v0.1.1 DLL (`dll_sha256` `5be7a369…0e85b`) with exact restored bytes, and cover newer writers, unsupported/disagreeing formats, malformed writer versions, identity/integrity tampering, missing markers, no-overwrite, explicit confirmation, and evaluation without rewrites. Automated and offline only.
 - Release disposition: owner-authorized stable publication on 2026-10-15 through the guarded publisher's pre-runtime path. Not installed or launched by the release process; not runtime-qualified.
 
+## v0.1.2 publication receipt
+
+- Published 2026-10-15T22:14:24Z: https://github.com/howardreith/KingmakerLastAzlantiPreserver/releases/tag/v0.1.2 (stable, non-draft, non-prerelease, GitHub latest; title `Mr. Bard's Second to Last Azlanti v0.1.2`).
+- Release commit: PR #3 merge `37dc29a0b7256cad352a55a2b6a63b479aba987f` (parents `380cba2`, `24a5f43`); annotated tag `v0.1.2` peels to that commit.
+- Publisher: `Publish-Release.ps1 -Publish -ConfirmOwnerAuthorizedPreRuntimeRelease` from a fresh clone of `main`; two clean qualifications, each 70/70 tests, 0 warnings/errors, exact core and game-over UI contracts, Harmony core=5/optional=15 isolation, identical DLL/package hashes, strict package validation.
+- Asset `KingmakerLastAzlantiPreserver-0.1.2.zip` SHA-256 `e5743c53fcd1a8e2793ed4cd2dd38db9a0230e64e16e64b0159fcb54375609d6`; DLL SHA-256 `10d49000ea5ff3f78b2a95393778f8ae52947b8fd247783fc7267987e7246464` (company/product `Mr. Bard` / `Mr. Bard's Second to Last Azlanti`, assembly 0.1.2.0).
+- Independent check after publication: the downloaded asset matched the local artifact and `SHA256SUMS.txt` byte-for-byte; six entries under `KingmakerLastAzlantiPreserver/`; packaged manifest has the stable Id/AssemblyName/EntryMethod and the branded DisplayName/Author.
+- Runtime qualification: **MANUAL RUNTIME TEST REQUIRED** (unchanged). Nexus Mods upload was not performed by the release process.
+
 ## Historical v0.1.0 evidence
 
 - v0.1.0 automated qualification recorded 26/26 tests, exact core contracts, zero-warning compilation, package validation, and transactional installation under its then-measured UMM 0.32.4 environment.
