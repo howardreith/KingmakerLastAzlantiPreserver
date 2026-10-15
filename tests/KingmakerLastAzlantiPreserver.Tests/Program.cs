@@ -113,6 +113,8 @@ namespace KingmakerLastAzlantiPreserver.Tests
                 new TestCase(nameof(RuntimeStatusTests.OptionalUiFailureDoesNotChangeCoreAvailability), RuntimeStatusTests.OptionalUiFailureDoesNotChangeCoreAvailability),
                 new TestCase(nameof(RuntimeStatusTests.DisabledUiSettingDoesNotDisableCoreProtection), RuntimeStatusTests.DisabledUiSettingDoesNotDisableCoreProtection),
                 new TestCase(nameof(RuntimeStatusTests.CoreAndOptionalHarmonyOwnersAreDistinct), RuntimeStatusTests.CoreAndOptionalHarmonyOwnersAreDistinct),
+                new TestCase(nameof(ProductIdentityTests.StableModIdentifiersSurviveBranding), ProductIdentityTests.StableModIdentifiersSurviveBranding),
+                new TestCase(nameof(ProductIdentityTests.DisplayedNameAndVersionMatchBrandedCandidate), ProductIdentityTests.DisplayedNameAndVersionMatchBrandedCandidate),
                 new TestCase(nameof(RecoverySnapshotTests.SnapshotCopiesExactBytesAndHashesMatch), RecoverySnapshotTests.SnapshotCopiesExactBytesAndHashesMatch),
                 new TestCase(nameof(RecoverySnapshotTests.SnapshotReplacementKeepsOneCurrentCopyWithoutHistory), RecoverySnapshotTests.SnapshotReplacementKeepsOneCurrentCopyWithoutHistory),
                 new TestCase(nameof(RecoverySnapshotTests.FailedCopyLeavesPriorValidRecoveryIntact), RecoverySnapshotTests.FailedCopyLeavesPriorValidRecoveryIntact),

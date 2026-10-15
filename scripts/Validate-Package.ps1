@@ -40,6 +40,7 @@ try {
         $info.EntryMethod -ne 'KingmakerLastAzlantiPreserver.Main.Load') {
         throw 'Packaged Info.json identity does not match the product.'
     }
+    Assert-ProductManifest $info 'Packaged Info.json'
     $dllEntry = $files | Where-Object { $_.FullName.Replace('\','/') -eq 'KingmakerLastAzlantiPreserver/KingmakerLastAzlantiPreserver.dll' }
     $dllStream = $dllEntry.Open()
     $temporaryDll = [IO.Path]::Combine([IO.Path]::GetTempPath(), 'KingmakerLastAzlantiPreserver-validate-' + [Guid]::NewGuid().ToString('N') + '.dll')
@@ -55,7 +56,7 @@ try {
         }
         finally { $headerStream.Dispose() }
         $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($temporaryDll)
-        if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.1.0') {
+        if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.2.0') {
             throw "Packaged assembly identity is invalid: $($assemblyName.FullName)"
         }
     }
@@ -74,6 +75,8 @@ $result = [ordered]@{
     entries = $allowed
     assembly_name = $assemblyName.Name
     assembly_version = $assemblyName.Version.ToString()
+    display_name = [string] $info.DisplayName
+    author = [string] $info.Author
 }
 $resolvedReport = if ([IO.Path]::IsPathRooted($ReportPath)) { $ReportPath } else { Join-Path $root $ReportPath }
 Write-JsonFile $resolvedReport $result
