@@ -5,9 +5,14 @@
 - Windows PowerShell 5.1 (`powershell.exe`)
 - .NET SDK/MSBuild with the .NET Framework 4.7.2 targeting pack
 - locally installed Pathfinder: Kingmaker 2.1.7b
-- owner-approved Unity Mod Manager 0.33.0 with the installed legacy `0Harmony12, Version=1.2.0.1` surface
+- UMM 0.31.1 build references pinned by SHA-256 in `scripts/loader-reference-pins.json`
+- a configured installed UMM/Harmony runtime for separate contract checks
 
-The v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 and v0.1.3 use the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
+The current minimum is UMM 0.31.1. Builds use independently pinned references and
+packages require a matching loader-reference receipt. This change still requires
+a full product build and disposable-game checks; see [UMM compatibility](UMM-COMPATIBILITY.md).
+
+Historically, the v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 and v0.1.3 use the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
 
 Discover the Steam app manifest or configure a non-Steam installation explicitly:
 

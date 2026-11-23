@@ -123,11 +123,18 @@ try {
     $ummIdentity = [Reflection.AssemblyName]::GetAssemblyName($ummPath)
     $ummHash = Get-Sha256 $ummPath
     $ummMvid = Get-AssemblyMvid $ummPath
+    # Exact comparison inputs, not a runtime pass claim. Keep the installed loader
+    # separate from the hash-pinned 0.31.1 production references.
+    $loaderProfiles = @{
+        '0.31.1.0' = '2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4'
+        '0.32.4.0' = '1387468bc3af41c50fe51859a3bb7af4922891aa8f13a6187e7a348ceaabfd88'
+        '0.33.0.0' = '63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691'
+    }
+    $loaderVersion = $ummIdentity.Version.ToString()
     if ($ummIdentity.Name -ne 'UnityModManager' -or
-        $ummIdentity.Version.ToString() -ne '0.33.0.0' -or
-        $ummHash -ne '63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691' -or
-        $ummMvid -ne '54059519-2754-445a-b5ee-fdb9326336e2') {
-        throw "The installed Unity Mod Manager identity/hash/MVID does not match the owner-approved 0.33.0 candidate environment."
+        -not $loaderProfiles.ContainsKey($loaderVersion) -or
+        $ummHash -ne $loaderProfiles[$loaderVersion]) {
+        throw 'The installed Unity Mod Manager does not match a pinned compatibility-test profile (0.31.1, 0.32.4 or 0.33.0).'
     }
 
     $harmonyIdentity = [Reflection.AssemblyName]::GetAssemblyName($harmonyPath)

@@ -1,5 +1,15 @@
 # Mr. Bard's Second to Last Azlanti
 
+## Unity Mod Manager baseline
+
+The development baseline is **UMM 0.31.1**, also declared in `Info.json`.
+Production builds use hash-pinned 0.31.1 references independently of the loader
+installed on the developer's machine. This source change is pending a full build
+and disposable-game validation; it does not change already published ZIPs.
+Newer loaders are separate compatibility targets, not a reason to raise the minimum.
+See [the loader compatibility plan](docs/UMM-COMPATIBILITY.md) for the required checks
+and the current evidence limits.
+
 Mr. Bard's Second to Last Azlanti (published through v0.1.1 as **Last Azlanti Preserver**) is a standalone Unity Mod Manager mod by Mr. Bard for **Pathfinder: Kingmaker 2.1.7b**. It keeps Kingmaker's one-save Last Azlanti discipline while preventing the game-over controller from deleting the one legitimate autosave.
 
 Since version 0.1.1, a separately gated enhancement is available for the standalone Beneath the Stolen Lands results screen: after this mod has verifiably preserved the live native save, Kingmaker's own **Load Last Save** and **Load Game** controls can be used without returning to the main menu.

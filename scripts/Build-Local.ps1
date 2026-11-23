@@ -3,6 +3,8 @@ param([ValidateSet('Debug','Release')][string] $Configuration = 'Release')
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-RepositoryRoot
+Initialize-PinnedReferences | Out-Null
+$loaderReferences = @(Get-PinnedReferenceIdentities)
 Assert-RepositorySafety
 $project = Join-Path $root 'src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj'
 $arguments = @($project, '/nologo', '/m', '/t:Rebuild', "/p:Configuration=$Configuration", '/p:Platform=AnyCPU')
@@ -23,6 +25,7 @@ $result = [ordered]@{
     compiler_errors = $errorCount
     dll_path = $dll
     dll_sha256 = Get-Sha256 $dll
+    loader_references = $loaderReferences
 }
 Write-JsonFile (Join-Path $root 'artifacts\qualification\build.json') $result
 Write-Host "Build passed: $dll"

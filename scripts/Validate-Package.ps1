@@ -55,6 +55,7 @@ try {
             }
         }
         finally { $headerStream.Dispose() }
+        Assert-PinnedAssemblyReferences ([IO.File]::ReadAllBytes($temporaryDll))
         $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($temporaryDll)
         if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.3.0') {
             throw "Packaged assembly identity is invalid: $($assemblyName.FullName)"

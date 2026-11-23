@@ -5,6 +5,10 @@ param([ValidateSet('Debug','Release')][string] $Configuration = 'Release')
 $root = Get-RepositoryRoot
 $dll = Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll"
 Assert-FileExists $dll 'Built mod DLL'
+$loaderReceiptPath = Join-Path $root 'artifacts\qualification\build.json'
+Assert-FileExists $loaderReceiptPath 'Build receipt with pinned loader references'
+$loaderReceipt = Get-Content -LiteralPath $loaderReceiptPath -Raw | ConvertFrom-Json
+Assert-PinnedBuildReceipt $loaderReceipt $dll
 $stageRoot = Join-Path $root 'artifacts\staging'
 $stage = Join-Path $stageRoot 'KingmakerLastAzlantiPreserver'
 Assert-PathWithin $stageRoot $root 'Package staging root'

@@ -95,6 +95,7 @@ function Get-ExpectedProductManifest {
         DisplayName = "Mr. Bard's Second to Last Azlanti"
         Author = 'Mr. Bard'
         Version = '0.1.3'
+        ManagerVersion = '0.31.1'
         AssemblyName = 'KingmakerLastAzlantiPreserver.dll'
         EntryMethod = 'KingmakerLastAzlantiPreserver.Main.Load'
     }
@@ -142,5 +143,87 @@ function Assert-RepositorySafety {
     $namespace.AddNamespace('msb', 'http://schemas.microsoft.com/developer/msbuild/2003')
     foreach ($node in @($project.SelectNodes('//msb:Reference[msb:HintPath]', $namespace))) {
         if ([string] $node.Private -ne 'False') { throw "Local reference must use Private=False: $($node.Include)" }
+    }
+}
+
+function Get-PinnedReferenceDefinitions([string] $Path = (Join-Path $script:RepositoryRoot 'scripts\loader-reference-pins.json')) {
+    Assert-FileExists $Path 'Reference pin manifest'
+    $document = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+    $info = Get-Content -LiteralPath (Join-Path $script:RepositoryRoot 'Info.json') -Raw | ConvertFrom-Json
+    $loader = @($document.references | Where-Object { $_.Name -eq 'UnityModManager' })
+    if ($loader.Count -ne 1 -or $loader[0].Version -ne ($info.ManagerVersion + '.0')) {
+        throw 'Info.json ManagerVersion must match the pinned Unity Mod Manager baseline.'
+    }
+    return @($document.references)
+}
+
+function Get-PinnedReferenceDirectory { return (Join-Path $script:RepositoryRoot 'artifacts\references') }
+
+# Ensures every pinned loader reference is present and byte-exact; a hash mismatch fails the build.
+function Initialize-PinnedReferences {
+    & (Join-Path $PSScriptRoot 'Get-PinnedLoaderReferences.ps1') -ReferenceDirectory (Get-PinnedReferenceDirectory)
+}
+
+function Get-PinnedReferenceIdentities {
+    $directory = Get-PinnedReferenceDirectory
+    foreach ($reference in (Get-PinnedReferenceDefinitions)) {
+        $path = Join-Path $directory $reference.File
+        if ((Get-Sha256 $path) -ne $reference.Sha256) {
+            throw "Pinned reference $($reference.File) does not match its expected SHA-256."
+        }
+        [ordered]@{
+            file = $reference.File
+            version = $reference.Version
+            assembly_version = [Reflection.AssemblyName]::GetAssemblyName($path).Version.ToString()
+            sha256 = $reference.Sha256
+            source = $reference.Url
+        }
+    }
+}
+
+# Refuse to package an old build whose manifest was merely lowered after compilation.
+function Assert-PinnedBuildReceipt($Receipt, [string] $DllPath) {
+    if ($Receipt.dll_sha256 -ne (Get-Sha256 $DllPath)) { throw 'Build receipt does not match the mod DLL; rebuild first.' }
+    if (-not $Receipt.PSObject.Properties['loader_references']) { throw 'Build receipt has no pinned loader references; rebuild first.' }
+    $pins = @(Get-PinnedReferenceDefinitions)
+    $recorded = @($Receipt.loader_references)
+    if ($recorded.Count -ne $pins.Count) { throw 'Build receipt has an unexpected loader reference count; rebuild first.' }
+    foreach ($pin in $pins) {
+        $matches = @($recorded | Where-Object { $_.file -eq $pin.File })
+        if ($matches.Count -ne 1 -or $matches[0].version -ne $pin.Version -or
+            $matches[0].sha256 -ne $pin.Sha256 -or $matches[0].source -ne $pin.Url) {
+            throw "Build receipt does not match pinned reference $($pin.File); rebuild first."
+        }
+    }
+}
+
+# Inspect packaged metadata as well as the build receipt: Install.ps1 also accepts
+# a supplied ZIP and therefore calls Validate-Package.ps1 without Package.ps1.
+function Assert-PinnedAssemblyReferences([byte[]] $Bytes) {
+    if ($PSVersionTable.PSEdition -eq 'Core') {
+        Add-Type -AssemblyName System.Reflection.Metadata
+        $stream = [IO.MemoryStream]::new($Bytes, $false)
+        $reader = [System.Reflection.PortableExecutable.PEReader]::new($stream)
+        try {
+            $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($reader)
+            $references = @($metadata.AssemblyReferences | ForEach-Object {
+                $reference = $metadata.GetAssemblyReference($_)
+                [pscustomobject]@{
+                    Name = $metadata.GetString($reference.Name)
+                    Version = $reference.Version
+                }
+            })
+        }
+        finally { $reader.Dispose(); $stream.Dispose() }
+    }
+    else {
+        $assembly = [Reflection.Assembly]::ReflectionOnlyLoad($Bytes)
+        $references = @($assembly.GetReferencedAssemblies())
+    }
+    foreach ($pin in (Get-PinnedReferenceDefinitions)) {
+        $matches = @($references | Where-Object { $_.Name -ceq $pin.Name })
+        if ($matches.Count -ne 1 -or $matches[0].Version.ToString() -cne $pin.Version) {
+            throw "Packaged DLL must reference pinned $($pin.Name) $($pin.Version); lowering Info.json alone is not sufficient."
+        }
     }
 }
