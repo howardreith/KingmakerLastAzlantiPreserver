@@ -72,7 +72,9 @@ function Invoke-MSBuild([string[]] $Arguments) {
 }
 
 function Get-GitMetadata {
-    $branch = (& git -C $script:RepositoryRoot branch --show-current).Trim()
+    # A detached checkout (for example an isolated test clone) has no current branch; record that explicitly.
+    $branchOutput = & git -C $script:RepositoryRoot branch --show-current
+    $branch = if ($branchOutput) { ([string]$branchOutput).Trim() } else { '(detached HEAD)' }
     try {
         $commit = (& git -C $script:RepositoryRoot rev-parse --verify HEAD 2>$null).Trim()
         if (-not $commit) { $commit = 'UNBORN' }
@@ -104,6 +106,7 @@ function Get-ExpectedProductManifest {
 function Assert-ProductManifest([object] $Info, [string] $Label) {
     $expected = Get-ExpectedProductManifest
     foreach ($key in $expected.Keys) {
+        if (-not ($Info.$key -is [string])) { throw "$Label $key must be a JSON string." }
         $actual = [string] $Info.$key
         if (-not [string]::Equals($actual, $expected[$key], [StringComparison]::Ordinal)) {
             throw "$Label $key is '$actual'; expected '$($expected[$key])'."
@@ -150,11 +153,24 @@ function Get-PinnedReferenceDefinitions([string] $Path = (Join-Path $script:Repo
     Assert-FileExists $Path 'Reference pin manifest'
     $document = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
     $info = Get-Content -LiteralPath (Join-Path $script:RepositoryRoot 'Info.json') -Raw | ConvertFrom-Json
-    $loader = @($document.references | Where-Object { $_.Name -eq 'UnityModManager' })
-    if ($loader.Count -ne 1 -or $loader[0].Version -ne ($info.ManagerVersion + '.0')) {
+    if (-not ($info.ManagerVersion -is [string])) { throw 'Info.json ManagerVersion must be a JSON string.' }
+    # The product compiles against exactly these loader assemblies; the same canonical set is enforced by
+    # scripts\Get-PinnedLoaderReferences.ps1 (which MSBuild runs), so no pin can be dropped or renamed unchecked.
+    $canonical = [ordered]@{ 'UnityModManager' = 'UnityModManager.dll'; '0Harmony12' = '0Harmony12.dll' }
+    $references = @($document.references)
+    if ($references.Count -ne $canonical.Count) { throw "The pin file must define exactly: $($canonical.Keys -join ', ')." }
+    foreach ($name in $canonical.Keys) {
+        $match = @($references | Where-Object { $_.Name -is [string] -and $_.Name -ceq $name })
+        if ($match.Count -ne 1 -or -not ($match[0].File -is [string]) -or $match[0].File -cne $canonical[$name] -or
+            -not ($match[0].Version -is [string]) -or -not ($match[0].Sha256 -is [string])) {
+            throw "The pin file must define $name exactly once as $($canonical[$name])."
+        }
+    }
+    $loader = @($references | Where-Object { $_.Name -ceq 'UnityModManager' })
+    if ($loader[0].Version -cne ($info.ManagerVersion + '.0')) {
         throw 'Info.json ManagerVersion must match the pinned Unity Mod Manager baseline.'
     }
-    return @($document.references)
+    return $references
 }
 
 function Get-PinnedReferenceDirectory { return (Join-Path $script:RepositoryRoot 'artifacts\references') }
@@ -181,55 +197,118 @@ function Get-PinnedReferenceIdentities {
     }
 }
 
-# Refuse to package an old build whose manifest was merely lowered after compilation.
-function Assert-PinnedBuildReceipt($Receipt, [string] $DllPath) {
+# Material inputs of the production DLL: every tracked or new file under src\, the loader pin, verifier and
+# MSBuild guard, the root build properties and the manifest. Any change invalidates an existing DLL and receipt,
+# so packaging or qualification can never reuse a build made from other inputs.
+function Get-BuildInputFingerprint {
+    $root = $script:RepositoryRoot
+    $paths = @('src', 'Directory.Build.props', '.editorconfig', 'Info.json', 'LoaderReferences.targets',
+        'scripts/loader-reference-pins.json', 'scripts/Get-PinnedLoaderReferences.ps1')
+    $files = @(& git -C $root ls-files --cached --others --exclude-standard -- @paths)
+    if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed while fingerprinting build inputs.' }
+    $lines = foreach ($file in ($files | Sort-Object -Unique)) {
+        $full = Join-Path $root $file
+        if (Test-Path -LiteralPath $full -PathType Leaf) { $file + "`t" + (Get-Sha256 $full) }
+    }
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
+    finally { $hasher.Dispose() }
+    return ([BitConverter]::ToString($digest)).Replace('-', '').ToLowerInvariant()
+}
+
+# Refuse to package or qualify a DLL that is not exactly the output of the current inputs and configuration,
+# including an old build whose manifest was merely lowered after compilation.
+function Assert-PinnedBuildReceipt($Receipt, [string] $DllPath, [string] $Configuration) {
+    foreach ($field in @('dll_sha256', 'loader_references', 'build_inputs_sha256', 'configuration')) {
+        if (-not $Receipt.PSObject.Properties[$field]) { throw "Build receipt has no $field; rebuild first." }
+    }
     if ($Receipt.dll_sha256 -ne (Get-Sha256 $DllPath)) { throw 'Build receipt does not match the mod DLL; rebuild first.' }
-    if (-not $Receipt.PSObject.Properties['loader_references']) { throw 'Build receipt has no pinned loader references; rebuild first.' }
+    if ($Configuration -and $Receipt.configuration -cne $Configuration) { throw "Build receipt is for configuration $($Receipt.configuration), not $Configuration; rebuild first." }
+    if ($Receipt.build_inputs_sha256 -cne (Get-BuildInputFingerprint)) { throw 'Build inputs changed since this DLL was built (source, manifest or loader pins); rebuild first.' }
     $pins = @(Get-PinnedReferenceDefinitions)
     $recorded = @($Receipt.loader_references)
     if ($recorded.Count -ne $pins.Count) { throw 'Build receipt has an unexpected loader reference count; rebuild first.' }
     foreach ($pin in $pins) {
         $matches = @($recorded | Where-Object { $_.file -eq $pin.File })
-        if ($matches.Count -ne 1 -or $matches[0].version -ne $pin.Version -or
+        if ($matches.Count -ne 1 -or $matches[0].version -ne $pin.Version -or $matches[0].assembly_version -cne $pin.Version -or
             $matches[0].sha256 -ne $pin.Sha256 -or $matches[0].source -ne $pin.Url) {
             throw "Build receipt does not match pinned reference $($pin.File); rebuild first."
         }
     }
 }
 
-# Inspect packaged metadata as well as the build receipt: Install.ps1 also accepts
-# a supplied ZIP and therefore calls Validate-Package.ps1 without Package.ps1.
-function Assert-PinnedAssemblyReferences([byte[]] $Bytes) {
+# Reads a DLL's MVID and AssemblyRef table without executing it. Windows PowerShell has no metadata reader, and a
+# reflection-only load refuses a second assembly with the same identity in one process (validating two packages
+# in one host would fail), so it reads the metadata in a separate process that loads nothing else.
+function Get-AssemblyMetadataIdentity([byte[]] $Bytes) {
     if ($PSVersionTable.PSEdition -eq 'Core') {
         Add-Type -AssemblyName System.Reflection.Metadata
         $stream = [IO.MemoryStream]::new($Bytes, $false)
         $reader = [System.Reflection.PortableExecutable.PEReader]::new($stream)
         try {
             $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($reader)
-            $mvid = $metadata.GetGuid($metadata.GetModuleDefinition().Mvid)
-            $references = @($metadata.AssemblyReferences | ForEach-Object {
-                $reference = $metadata.GetAssemblyReference($_)
-                [pscustomobject]@{
-                    Name = $metadata.GetString($reference.Name)
-                    Version = $reference.Version
-                }
-            })
+            return [pscustomobject]@{
+                Mvid = $metadata.GetGuid($metadata.GetModuleDefinition().Mvid).ToString()
+                References = @($metadata.AssemblyReferences | ForEach-Object {
+                    $reference = $metadata.GetAssemblyReference($_)
+                    [pscustomobject]@{ Name = $metadata.GetString($reference.Name); Version = $reference.Version.ToString() }
+                })
+            }
         }
         finally { $reader.Dispose(); $stream.Dispose() }
     }
-    else {
-        $assembly = [Reflection.Assembly]::ReflectionOnlyLoad($Bytes)
-        $mvid = $assembly.ManifestModule.ModuleVersionId
-        $references = @($assembly.GetReferencedAssemblies())
+    $temporary = Join-Path ([IO.Path]::GetTempPath()) ('klap-metadata-' + [Guid]::NewGuid().ToString('N') + '.dll')
+    [IO.File]::WriteAllBytes($temporary, $Bytes)
+    try {
+        $script = "`$a = [Reflection.Assembly]::ReflectionOnlyLoad([IO.File]::ReadAllBytes('" + $temporary.Replace("'", "''") + "')); " +
+            "[pscustomobject]@{ Mvid = `$a.ManifestModule.ModuleVersionId.ToString(); References = @(`$a.GetReferencedAssemblies() | " +
+            "ForEach-Object { [pscustomobject]@{ Name = `$_.Name; Version = `$_.Version.ToString() } }) } | ConvertTo-Json -Compress -Depth 4"
+        $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try { $json = & powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand $encoded 2>&1 | Out-String }
+        finally { $ErrorActionPreference = $previous }
+        if ($LASTEXITCODE -ne 0) { throw "Packaged DLL metadata could not be read: $json" }
+        $identity = $json | ConvertFrom-Json
+        return [pscustomobject]@{ Mvid = [string]$identity.Mvid; References = @($identity.References) }
     }
+    finally { Remove-Item -LiteralPath $temporary -Force -ErrorAction SilentlyContinue }
+}
+
+# Inspect packaged metadata as well as the build receipt: Install.ps1 also accepts
+# a supplied ZIP and therefore calls Validate-Package.ps1 without Package.ps1.
+function Assert-PinnedAssemblyReferences([byte[]] $Bytes) {
+    $identity = Get-AssemblyMetadataIdentity $Bytes
+    $references = @($identity.References)
     $observed = @()
     foreach ($pin in (Get-PinnedReferenceDefinitions)) {
         $matches = @($references | Where-Object { $_.Name -ceq $pin.Name })
-        if ($matches.Count -ne 1 -or $matches[0].Version.ToString() -cne $pin.Version) {
+        if ($matches.Count -ne 1 -or [string]$matches[0].Version -cne $pin.Version) {
             throw "Packaged DLL must reference pinned $($pin.Name) $($pin.Version); lowering Info.json alone is not sufficient."
         }
-        $observed += [ordered]@{ name = $pin.Name; version = $matches[0].Version.ToString() }
+        $observed += [ordered]@{ name = $pin.Name; version = [string]$matches[0].Version }
     }
     # Returned for the validation report, so it names the exact DLL whose references were inspected.
-    return [pscustomobject]@{ Mvid = $mvid.ToString(); LoaderReferences = $observed }
+    return [pscustomobject]@{ Mvid = $identity.Mvid; LoaderReferences = $observed }
+}
+
+# Validates a private copy of a package and extracts that same copy, so the bytes installed are the bytes that
+# passed validation even if the original file changes afterwards. Returns the validated packaged DLL SHA-256.
+function Expand-ValidatedPackage([string] $PackagePath, [string] $Destination) {
+    $private = Join-Path ([IO.Path]::GetTempPath()) ('KingmakerLastAzlantiPreserver-package-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $private | Out-Null
+    try {
+        $copy = Join-Path $private 'package.zip'
+        Copy-Item -LiteralPath $PackagePath -Destination $copy
+        $report = Join-Path $private 'validation.json'
+        & (Join-Path $PSScriptRoot 'Validate-Package.ps1') -PackagePath $copy -ReportPath $report
+        $validated = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [IO.Compression.ZipFile]::ExtractToDirectory($copy, $Destination)
+        $dll = Join-Path $Destination 'KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll'
+        Assert-FileExists $dll 'Extracted mod DLL'
+        if ((Get-Sha256 $dll) -cne [string]$validated.dll_sha256) { throw 'Extracted DLL does not match the validated package.' }
+        return [string]$validated.dll_sha256
+    }
+    finally { Remove-Item -LiteralPath $private -Recurse -Force -ErrorAction SilentlyContinue }
 }

@@ -5,6 +5,8 @@ param([ValidateSet('Debug','Release')][string] $Configuration = 'Release')
 $root = Get-RepositoryRoot
 Initialize-PinnedReferences | Out-Null
 $loaderReferences = @(Get-PinnedReferenceIdentities)
+# Fingerprint the material inputs before building: a change during or after the build invalidates the receipt.
+$buildInputs = Get-BuildInputFingerprint
 Assert-RepositorySafety
 $git = Get-GitMetadata
 $project = Join-Path $root 'src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj'
@@ -27,6 +29,7 @@ $result = [ordered]@{
     dll_path = $dll
     dll_sha256 = Get-Sha256 $dll
     loader_references = $loaderReferences
+    build_inputs_sha256 = $buildInputs
     source_commit = $git.Commit
     source_dirty = $git.Dirty
 }

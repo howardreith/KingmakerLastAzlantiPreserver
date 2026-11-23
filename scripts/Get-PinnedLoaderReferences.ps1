@@ -9,14 +9,25 @@ Set-StrictMode -Version Latest
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pins = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'loader-reference-pins.json') | ConvertFrom-Json
 if ($pins.schemaVersion -ne 1 -or @($pins.references).Count -eq 0 -or @($pins.manifests).Count -eq 0 -or
+    -not ($pins.minimumManagerVersion -is [string]) -or
     [string]$pins.minimumManagerVersion -cnotmatch '^[0-9]+([.][0-9]+){2}$') { throw 'Unknown or empty loader reference pin file.' }
 $manager = @($pins.references | Where-Object Name -CEQ 'UnityModManager')
 if ($manager.Count -ne 1 -or [string]$manager[0].Version -cne ([string]$pins.minimumManagerVersion + '.0')) {
     throw 'The UnityModManager compile reference must equal the declared minimum.'
 }
+# Exactly the product's compiler references under their canonical file names: a pin cannot be dropped or renamed
+# (an unpinned file of the same name in the cache would otherwise be compiled against unchecked).
+$canonical = [ordered]@{ 'UnityModManager' = 'UnityModManager.dll'; '0Harmony12' = '0Harmony12.dll' }
+if (@($pins.references).Count -ne $canonical.Count) { throw "The pin file must define exactly: $($canonical.Keys -join ', ')." }
+foreach ($name in $canonical.Keys) {
+    $match = @($pins.references | Where-Object { $_.Name -is [string] -and $_.Name -ceq $name })
+    if ($match.Count -ne 1 -or -not ($match[0].File -is [string]) -or $match[0].File -cne $canonical[$name]) {
+        throw "The pin file must define $name exactly once as $($canonical[$name])."
+    }
+}
 foreach ($manifest in $pins.manifests) {
     $info = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $manifest) | ConvertFrom-Json
-    if ([string]$info.ManagerVersion -cne [string]$pins.minimumManagerVersion) {
+    if (-not ($info.ManagerVersion -is [string]) -or $info.ManagerVersion -cne [string]$pins.minimumManagerVersion) {
         throw "$manifest ManagerVersion must equal the pinned baseline $($pins.minimumManagerVersion)."
     }
 }

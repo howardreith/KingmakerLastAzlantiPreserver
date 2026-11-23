@@ -3,25 +3,37 @@
     <PinnedLoaderReferenceDir>$(MSBuildThisFileDirectory)artifacts\references</PinnedLoaderReferenceDir>
     <PinnedLoaderReferenceCheck>$(MSBuildThisFileDirectory)scripts\Get-PinnedLoaderReferences.ps1</PinnedLoaderReferenceCheck>
     <LoaderReferencePowerShell Condition="'$(LoaderReferencePowerShell)' == ''">powershell.exe</LoaderReferencePowerShell>
+    <!-- IDE builds must always reach MSBuild so the guards below run, even when only a pin or the manifest changed. -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
-  <!-- Before resolution: the cached pinned files must exist with their exact SHA-256 and assembly identity. -->
+  <ItemGroup>
+    <!-- A pin, verifier, guard or manifest change also forces recompilation (incremental MSBuild and IDE). -->
+    <_PinnedLoaderBuildInput Include="$(MSBuildThisFileDirectory)scripts\loader-reference-pins.json;$(PinnedLoaderReferenceCheck);$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)Info.json" />
+    <CustomAdditionalCompileInputs Include="@(_PinnedLoaderBuildInput)" />
+    <UpToDateCheckInput Include="@(_PinnedLoaderBuildInput)" />
+  </ItemGroup>
+  <!-- Before resolution: the canonical pinned files must exist with their exact SHA-256 and assembly identity, and
+       Info.json must declare the pinned minimum. Runs on every build, incremental or not. -->
   <Target Name="ValidatePinnedLoaderReferences" BeforeTargets="ResolveAssemblyReferences">
     <Exec Command="&quot;$(LoaderReferencePowerShell)&quot; -NoLogo -NoProfile -ExecutionPolicy Bypass -File &quot;$(PinnedLoaderReferenceCheck)&quot; -VerifyOnly -ReferenceDirectory &quot;$(PinnedLoaderReferenceDir)&quot;" />
   </Target>
-  <!-- After resolution: the compiler's actual inputs (@(ReferencePath)) for each pinned loader assembly must be
-       exactly one file inside the verified pinned directory, so a stray HintPath, search path or installed
-       loader can never be compiled against instead of the baseline. -->
+  <!-- After resolution: the compiler's actual inputs (@(ReferencePath)) for each loader assembly, found by file name or
+       by assembly identity, must be exactly the canonical verified file (full path) in the pinned directory. A stray
+       HintPath, search path, same-stem file or the installed loader can never be compiled against. -->
   <Target Name="AssertPinnedLoaderReferencesResolved" AfterTargets="ResolveAssemblyReferences" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <_PinnedLoaderDirectory>$([MSBuild]::NormalizeDirectory('$(PinnedLoaderReferenceDir)'))</_PinnedLoaderDirectory>
+      <_PinnedUmmPath>$(_PinnedLoaderDirectory)UnityModManager.dll</_PinnedUmmPath>
+      <_PinnedHarmony12Path>$(_PinnedLoaderDirectory)0Harmony12.dll</_PinnedHarmony12Path>
     </PropertyGroup>
     <ItemGroup>
-      <_PinnedLoaderUmm Include="@(ReferencePath)" Condition="'%(Filename)' == 'UnityModManager'" />
-      <_PinnedLoaderHarmony12 Include="@(ReferencePath)" Condition="'%(Filename)' == '0Harmony12'" />
-      <_PinnedLoaderOutside Include="@(_PinnedLoaderUmm);@(_PinnedLoaderHarmony12)" Condition="'$([MSBuild]::NormalizeDirectory(%(RootDir)%(Directory)))' != '$(_PinnedLoaderDirectory)'" />
+      <_PinnedLoaderUmm Include="@(ReferencePath)" Condition="'%(Filename)' == 'UnityModManager' or $([System.String]::Copy('%(ReferencePath.FusionName)').StartsWith('UnityModManager,'))" />
+      <_PinnedLoaderHarmony12 Include="@(ReferencePath)" Condition="'%(Filename)' == '0Harmony12' or $([System.String]::Copy('%(ReferencePath.FusionName)').StartsWith('0Harmony12,'))" />
+      <_PinnedLoaderOutside Include="@(_PinnedLoaderUmm)" Condition="'%(FullPath)' != '$(_PinnedUmmPath)'" />
+      <_PinnedLoaderOutside Include="@(_PinnedLoaderHarmony12)" Condition="'%(FullPath)' != '$(_PinnedHarmony12Path)'" />
     </ItemGroup>
     <Error Condition="'@(_PinnedLoaderUmm->Count())' != '1'" Text="Exactly one UnityModManager compiler reference is required; resolved: @(_PinnedLoaderUmm)" />
     <Error Condition="'@(_PinnedLoaderHarmony12->Count())' != '1'" Text="Exactly one 0Harmony12 compiler reference is required; resolved: @(_PinnedLoaderHarmony12)" />
-    <Error Condition="'@(_PinnedLoaderOutside)' != ''" Text="Loader compiler references must resolve inside the pinned directory $(_PinnedLoaderDirectory); resolved: @(_PinnedLoaderOutside)" />
+    <Error Condition="'@(_PinnedLoaderOutside)' != ''" Text="Loader compiler references must be the verified files in the pinned directory $(_PinnedLoaderDirectory); resolved: @(_PinnedLoaderOutside)" />
   </Target>
 </Project>

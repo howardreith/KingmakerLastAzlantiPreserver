@@ -8,7 +8,7 @@ Assert-FileExists $dll 'Built mod DLL'
 $loaderReceiptPath = Join-Path $root 'artifacts\qualification\build.json'
 Assert-FileExists $loaderReceiptPath 'Build receipt with pinned loader references'
 $loaderReceipt = Get-Content -LiteralPath $loaderReceiptPath -Raw | ConvertFrom-Json
-Assert-PinnedBuildReceipt $loaderReceipt $dll
+Assert-PinnedBuildReceipt $loaderReceipt $dll $Configuration
 $stageRoot = Join-Path $root 'artifacts\staging'
 $stage = Join-Path $stageRoot 'KingmakerLastAzlantiPreserver'
 Assert-PathWithin $stageRoot $root 'Package staging root'
@@ -47,12 +47,17 @@ try {
 }
 finally { $zipStream.Dispose() }
 
-& (Join-Path $PSScriptRoot 'Validate-Package.ps1') -PackagePath $zipPath
+# The archived DLL must be the exact DLL the receipt describes, read back from the produced ZIP.
+& (Join-Path $PSScriptRoot 'Validate-Package.ps1') -PackagePath $zipPath -ExpectedDllSha256 $loaderReceipt.dll_sha256
+$validated = Get-Content -LiteralPath (Join-Path $root 'artifacts\qualification\package-validation.json') -Raw | ConvertFrom-Json
 $result = [ordered]@{
     status = 'passed'
     package_path = $zipPath
     package_sha256 = Get-Sha256 $zipPath
     dll_sha256 = Get-Sha256 $dll
+    build_inputs_sha256 = $loaderReceipt.build_inputs_sha256
+    validated_package_sha256 = $validated.package_sha256
+    validated_dll_sha256 = $validated.dll_sha256
 }
 Write-JsonFile (Join-Path $root 'artifacts\qualification\package.json') $result
 Write-Host "Package: $zipPath"

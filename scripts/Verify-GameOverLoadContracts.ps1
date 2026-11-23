@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string] $GamePathProps,
-    [string] $OutputPath = 'artifacts\qualification\game-over-load-contracts.json'
+    [string] $OutputPath = 'artifacts\qualification\game-over-load-contracts.json',
+    [string] $DllPath
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
@@ -11,7 +12,7 @@ $configuration = Get-KingmakerConfiguration $GamePathProps
 $assemblyPath = Join-Path $configuration.ManagedDir 'Assembly-CSharp.dll'
 $ummPath = Join-Path $configuration.UnityModManagerDir 'UnityModManager.dll'
 $harmonyPath = Join-Path $configuration.UnityModManagerDir '0Harmony12.dll'
-$modDll = Join-Path $root 'artifacts\bin\Release\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll'
+$modDll = if ($DllPath) { [IO.Path]::GetFullPath($DllPath) } else { Join-Path $root 'artifacts\bin\Release\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll' }
 Assert-FileExists $modDll 'Built Last Azlanti Preserver DLL'
 
 $resolverDirectories = @(
@@ -125,16 +126,27 @@ try {
     $ummMvid = Get-AssemblyMvid $ummPath
     # Exact comparison inputs, not a runtime pass claim. Keep the installed loader
     # separate from the hash-pinned 0.31.1 production references.
+    # Each profile is the exact UnityModManager and the Harmony2 (0Harmony.dll, net48) that it references and ships.
     $loaderProfiles = @{
-        '0.31.1.0' = '2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4'
-        '0.32.4.0' = '1387468bc3af41c50fe51859a3bb7af4922891aa8f13a6187e7a348ceaabfd88'
-        '0.33.0.0' = '63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691'
+        '0.31.1.0' = @{ Umm = '2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4'; Harmony2Version = '2.3.1.1'; Harmony2 = '5f7ad0df1eb08e81f66d4006d3a9e5cb40fc05e381f36d7bd0513f334f6a251f' }
+        '0.32.4.0' = @{ Umm = '1387468bc3af41c50fe51859a3bb7af4922891aa8f13a6187e7a348ceaabfd88'; Harmony2Version = '2.3.6.0'; Harmony2 = 'df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80' }
+        '0.33.0.0' = @{ Umm = '63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691'; Harmony2Version = '2.3.6.0'; Harmony2 = 'df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80' }
+        '0.33.4.0' = @{ Umm = 'c5ed5617457f597d7befb272f9fe311d7128c647fd427a114c197bea13475239'; Harmony2Version = '2.4.3.0'; Harmony2 = 'ddc070b57f695ece6f92c43cf82cf4d863c69685de96a99ebd9d2fa1d8fa7a19' }
     }
     $loaderVersion = $ummIdentity.Version.ToString()
     if ($ummIdentity.Name -ne 'UnityModManager' -or
         -not $loaderProfiles.ContainsKey($loaderVersion) -or
-        $ummHash -ne $loaderProfiles[$loaderVersion]) {
-        throw 'The installed Unity Mod Manager does not match a pinned compatibility-test profile (0.31.1, 0.32.4 or 0.33.0).'
+        $ummHash -ne $loaderProfiles[$loaderVersion].Umm) {
+        throw 'The installed Unity Mod Manager does not match a pinned compatibility-test profile (0.31.1, 0.32.4, 0.33.0 or 0.33.4).'
+    }
+    $harmony2Path = Join-Path $configuration.UnityModManagerDir '0Harmony.dll'
+    Assert-FileExists $harmony2Path 'Harmony2 (0Harmony.dll) beside UnityModManager'
+    $harmony2Identity = [Reflection.AssemblyName]::GetAssemblyName($harmony2Path)
+    $harmony2Hash = Get-Sha256 $harmony2Path
+    $expectedProfile = $loaderProfiles[$loaderVersion]
+    if ($harmony2Identity.Name -ne '0Harmony' -or $harmony2Identity.Version.ToString() -ne $expectedProfile.Harmony2Version -or
+        $harmony2Hash -ne $expectedProfile.Harmony2) {
+        throw "The Harmony2 beside UnityModManager $loaderVersion ($($harmony2Identity.FullName), $harmony2Hash) does not match that loader profile's 0Harmony $($expectedProfile.Harmony2Version)."
     }
 
     $harmonyIdentity = [Reflection.AssemblyName]::GetAssemblyName($harmonyPath)
@@ -286,6 +298,16 @@ try {
             identity = $ummIdentity.FullName
             sha256 = $ummHash
             mvid = $ummMvid
+        }
+        loader_profile = $loaderVersion
+        harmony2 = [ordered]@{
+            path = $harmony2Path
+            identity = $harmony2Identity.FullName
+            sha256 = $harmony2Hash
+        }
+        mod_dll = [ordered]@{
+            path = $modDll
+            sha256 = Get-Sha256 $modDll
         }
         legacy_harmony = [ordered]@{
             path = $harmonyPath

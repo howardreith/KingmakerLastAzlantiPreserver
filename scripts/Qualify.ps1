@@ -13,7 +13,9 @@ $root = Get-RepositoryRoot
 Assert-RepositorySafety
 if ($Build) { & (Join-Path $PSScriptRoot 'Build-Local.ps1') -Configuration $Configuration }
 if ($Test) { & (Join-Path $PSScriptRoot 'Test.ps1') -Configuration $Configuration }
-if ($VerifyContracts) { & (Join-Path $PSScriptRoot 'Verify-KingmakerContracts.ps1') }
+if ($VerifyContracts) {
+    & (Join-Path $PSScriptRoot 'Verify-KingmakerContracts.ps1') -DllPath (Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll")
+}
 if ($Package) { & (Join-Path $PSScriptRoot 'Package.ps1') -Configuration $Configuration }
 if ($Install) {
     if (-not $Package) { throw '-Install requires -Package in the same qualification run.' }
@@ -44,6 +46,19 @@ $uiContractReport = if (Test-Path -LiteralPath $uiContractReportPath) { Get-Cont
 $packageReport = if (Test-Path -LiteralPath $packageReportPath) { Get-Content -LiteralPath $packageReportPath -Raw | ConvertFrom-Json } else { $null }
 $validationReport = if (Test-Path -LiteralPath $validationReportPath) { Get-Content -LiteralPath $validationReportPath -Raw | ConvertFrom-Json } else { $null }
 $installReport = if (Test-Path -LiteralPath $installReportPath) { Get-Content -LiteralPath $installReportPath -Raw | ConvertFrom-Json } else { $null }
+# Credit earlier records only for the DLL of the current build record: contract reports must name its hash, and a
+# package counts only when the ZIP on disk, its package record and its validation record all describe that DLL.
+$currentDllSha = if ($buildReport) { [string] $buildReport.dll_sha256 } else { $null }
+$contractsCurrent = [bool]($contractReport -and $uiContractReport -and $currentDllSha -and
+    [string] $contractReport.mod_dll_sha256 -eq $currentDllSha -and [string] $uiContractReport.mod_dll.sha256 -eq $currentDllSha)
+if (-not $contractsCurrent) { $contractReport = $null; $uiContractReport = $null }
+$packageCurrent = $false
+if ($packageReport -and $validationReport -and $currentDllSha -and (Test-Path -LiteralPath ([string] $packageReport.package_path))) {
+    $zipSha = Get-Sha256 ([string] $packageReport.package_path)
+    $packageCurrent = $zipSha -eq [string] $packageReport.package_sha256 -and $zipSha -eq [string] $validationReport.package_sha256 -and
+        [string] $packageReport.dll_sha256 -eq $currentDllSha -and [string] $validationReport.dll_sha256 -eq $currentDllSha
+}
+if (-not $packageCurrent) { $packageReport = $null; $validationReport = $null }
 $installMatchesCandidate = $false
 if ($installReport -and $buildReport -and
     $installReport.status -eq 'passed' -and
@@ -71,6 +86,10 @@ $summary = [ordered]@{
     unity_mod_manager_sha256 = if ($uiContractReport) { $uiContractReport.unity_mod_manager.sha256 } else { 'not verified in this run' }
     legacy_harmony_identity = if ($uiContractReport) { $uiContractReport.legacy_harmony.identity } else { 'not verified in this run' }
     legacy_harmony_sha256 = if ($uiContractReport) { $uiContractReport.legacy_harmony.sha256 } else { 'not verified in this run' }
+    loader_profile = if ($uiContractReport) { $uiContractReport.loader_profile } else { 'not verified in this run' }
+    harmony2_identity = if ($uiContractReport) { $uiContractReport.harmony2.identity } else { 'not verified in this run' }
+    harmony2_sha256 = if ($uiContractReport) { $uiContractReport.harmony2.sha256 } else { 'not verified in this run' }
+    contracts_verified_dll_sha256 = if ($uiContractReport) { $uiContractReport.mod_dll.sha256 } else { 'not verified for the current DLL' }
     core_patch_ownership = if ($uiContractReport) { $uiContractReport.harmony_ownership.core_owned_after_application } else { $false }
     optional_patch_ownership = if ($uiContractReport) { $uiContractReport.harmony_ownership.optional_owned_after_application } else { $false }
     optional_unpatch_preserved_core = if ($uiContractReport) { $uiContractReport.harmony_ownership.core_owned_after_optional_unpatch } else { $false }
@@ -82,7 +101,8 @@ $summary = [ordered]@{
     dll_sha256 = if ($buildReport) { $buildReport.dll_sha256 } else { $null }
     package_path = if ($packageReport) { $packageReport.package_path } else { $null }
     package_sha256 = if ($packageReport) { $packageReport.package_sha256 } else { $null }
-    package_validation = if ($validationReport) { $validationReport.status } else { 'not run' }
+    package_validation = if ($validationReport) { $validationReport.status } else { 'not run for the current DLL' }
+    build_inputs_sha256 = if ($buildReport) { $buildReport.build_inputs_sha256 } else { $null }
     installation_matches_candidate = $installMatchesCandidate
     installed_target = if ($installMatchesCandidate) {
         $installReport.target
@@ -110,6 +130,8 @@ Write-Host "Game-over UI hook: $($summary.game_over_ui_hook)"
 Write-Host "Controller UI hook: $($summary.controller_ui_hook)"
 Write-Host "Unity Mod Manager: $($summary.unity_mod_manager_identity)"
 Write-Host "Legacy Harmony: $($summary.legacy_harmony_identity)"
+Write-Host "Loader profile: $($summary.loader_profile); Harmony2: $($summary.harmony2_identity) $($summary.harmony2_sha256)"
+Write-Host "Contracts verified on DLL: $($summary.contracts_verified_dll_sha256)"
 Write-Host "Harmony ownership core/optional/isolation: $($summary.core_patch_ownership)/$($summary.optional_patch_ownership)/$($summary.optional_unpatch_preserved_core)"
 Write-Host "Tests: $($summary.test_count) ($($summary.test_result))"
 Write-Host "Compiler warnings/errors: $($summary.compiler_warning_count)/$($summary.compiler_error_count)"

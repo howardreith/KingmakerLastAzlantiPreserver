@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string] $PackagePath,
-    [string] $ReportPath = 'artifacts\qualification\package-validation.json'
+    [string] $ReportPath = 'artifacts\qualification\package-validation.json',
+    # When packaging, the DLL SHA-256 recorded by the build receipt: the archived DLL must be exactly that DLL.
+    [string] $ExpectedDllSha256
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
@@ -30,6 +32,20 @@ try {
             [IO.Path]::IsPathRooted($entry.FullName) -or $entry.FullName.Contains(':')) {
             throw "Unsafe or empty package entry: $($entry.FullName)"
         }
+        $entryName = $entry.FullName.Replace('\','/')
+        if ($entryName -ne 'KingmakerLastAzlantiPreserver/Info.json' -and $entryName -ne 'KingmakerLastAzlantiPreserver/KingmakerLastAzlantiPreserver.dll') {
+            # Documentation and licence entries must be text: an assembly (or any binary) under an allowed text name
+            # is refused, so the allow-list cannot carry a loader, Harmony or game DLL by renaming it.
+            $textStream = $entry.Open()
+            $textBuffer = [IO.MemoryStream]::new()
+            try { $textStream.CopyTo($textBuffer); $textBytes = $textBuffer.ToArray() }
+            finally { $textBuffer.Dispose(); $textStream.Dispose() }
+            if (($textBytes.Length -ge 2 -and $textBytes[0] -eq 0x4D -and $textBytes[1] -eq 0x5A) -or [Array]::IndexOf($textBytes, [byte]0) -ge 0) {
+                throw "Package text entry contains binary content: $entryName"
+            }
+            try { [void][Text.UTF8Encoding]::new($false, $true).GetString($textBytes) }
+            catch { throw "Package text entry is not valid UTF-8 text: $entryName" }
+        }
     }
     $infoEntry = $files | Where-Object { $_.FullName.Replace('\','/') -eq 'KingmakerLastAzlantiPreserver/Info.json' }
     $reader = [IO.StreamReader]::new($infoEntry.Open(), [Text.Encoding]::UTF8, $true)
@@ -57,6 +73,9 @@ try {
         finally { $headerStream.Dispose() }
         $dllIdentity = Assert-PinnedAssemblyReferences ([IO.File]::ReadAllBytes($temporaryDll))
         $dllSha256 = Get-Sha256 $temporaryDll
+        if ($ExpectedDllSha256 -and $dllSha256 -cne $ExpectedDllSha256) {
+            throw "Archived DLL SHA-256 $dllSha256 does not match the build receipt's $ExpectedDllSha256."
+        }
         $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($temporaryDll)
         if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.3.0') {
             throw "Packaged assembly identity is invalid: $($assemblyName.FullName)"
