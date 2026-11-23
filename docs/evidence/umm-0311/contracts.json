@@ -1,0 +1,37 @@
+{
+    "status":  "passed",
+    "target":  "Pathfinder: Kingmaker 2.1.7b",
+    "assembly_path":  "<game>\\Kingmaker_Data\\Managed\\Assembly-CSharp.dll",
+    "assembly_sha256":  "3b6450ffec440e296e586f71c711b195aed144b28d53e1cbb29406d18fef5afb",
+    "assembly_mvid":  "07fa1e4d-8618-41b3-9b8d-faa17d3b26f7",
+    "game_over_hook":  "Kingmaker.Controllers.GameOverIronmanController.Activate()",
+    "deletion_hook":  "Kingmaker.EntitySystem.Persistence.SaveManager.DeleteSave(Kingmaker.EntitySystem.Persistence.SaveInfo)",
+    "cleanup_hook":  "Kingmaker.Controllers.GameOverIronmanController.Deactivate()",
+    "exception_cleanup_hook":  "Kingmaker.GameModes.GameMode.OnActivate()",
+    "reset_hook":  "Kingmaker.EntitySystem.Persistence.LoadingProcess.ResetManualLoadingScreen()",
+    "save_routine":  "Kingmaker.EntitySystem.Persistence.SaveManager.SaveRoutine(Kingmaker.EntitySystem.Persistence.SaveInfo, System.Boolean)",
+    "update_save_list":  "Kingmaker.EntitySystem.Persistence.SaveManager.UpdateSaveListIfNeeded(System.Boolean)",
+    "activate_il_length":  98,
+    "activate_delete_call_offset":  "0x0052",
+    "deletion_callers_by_save_info":  [
+                                          "Kingmaker.Cheats.CheatsSaves.DeleteSaveGame(System.String)",
+                                          "Kingmaker.Controllers.GameOverIronmanController.Activate()",
+                                          "Kingmaker.EntitySystem.Persistence.SaveManager.DeleteSave(System.String)",
+                                          "Kingmaker.EntitySystem.Persistence.SaveManager.SerializeAndSaveThread(Kingmaker.EntitySystem.Persistence.SaveInfo, Kingmaker.EntitySystem.Persistence.SavesStorage.SaveCreateDTO, Kingmaker.EntitySystem.Persistence.SaveInfo)",
+                                          "Kingmaker.Game+\u003c\u003ec__DisplayClass177_0.\u003cLoadNewGame\u003eb__4()",
+                                          "Kingmaker.UI.SaveLoadWindow.SaveSlot.TryDeleteMySave(Kingmaker.UI.DialogMessageBoxBase+BoxButton)",
+                                          "Kingmaker.UI.SaveLoadWindow.SaveSlotInject.TryDeleteMySave(Kingmaker.UI.DialogMessageBoxBase+BoxButton)",
+                                          "Kingmaker.Utility.ReportingUtils.Clear()",
+                                          "Kingmaker.Utility.ReportingUtils.CreateSaveFile()"
+                                      ],
+    "deletion_callers_by_string":  "Kingmaker.UI._ConsoleUI.SaveLoadManager.ViewModel.SaveLoadManagerVM.ExecuteDeleteSave(Kingmaker.EntitySystem.Persistence.SaveInfo)",
+    "explicit_ui_deletion_methods":  [
+                                         "Kingmaker.UI.SaveLoadWindow.SaveSlot.TryDeleteMySave(Kingmaker.UI.DialogMessageBoxBase+BoxButton)",
+                                         "Kingmaker.UI.SaveLoadWindow.SaveSlotInject.TryDeleteMySave(Kingmaker.UI.DialogMessageBoxBase+BoxButton)",
+                                         "Kingmaker.UI._ConsoleUI.SaveLoadManager.ViewModel.SaveLoadManagerVM.ExecuteDeleteSave(Kingmaker.EntitySystem.Persistence.SaveInfo)"
+                                     ],
+    "patch_ownership":  "verified-after-application",
+    "harmony_activate_replacement_kind":  "System.Reflection.Emit.DynamicMethod",
+    "mod_dll_path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+    "mod_dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+}

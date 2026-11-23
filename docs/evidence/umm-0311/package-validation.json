@@ -1,0 +1,31 @@
+{
+    "status":  "passed",
+    "package_path":  "<repo>\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip",
+    "package_sha256":  "83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc",
+    "entry_count":  6,
+    "entries":  [
+                    "KingmakerLastAzlantiPreserver/Info.json",
+                    "KingmakerLastAzlantiPreserver/KingmakerLastAzlantiPreserver.dll",
+                    "KingmakerLastAzlantiPreserver/LICENSE",
+                    "KingmakerLastAzlantiPreserver/README.md",
+                    "KingmakerLastAzlantiPreserver/THIRD-PARTY-NOTICES.md",
+                    "KingmakerLastAzlantiPreserver/licenses/FIRST-AZLANTI-MIT.txt"
+                ],
+    "assembly_name":  "KingmakerLastAzlantiPreserver",
+    "assembly_version":  "0.1.3.0",
+    "manager_version":  "0.31.1",
+    "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
+    "dll_mvid":  "4bcbb685-5152-4399-98e2-19fb6d19c6cd",
+    "dll_loader_references":  [
+                                  {
+                                      "name":  "UnityModManager",
+                                      "version":  "0.31.1.0"
+                                  },
+                                  {
+                                      "name":  "0Harmony12",
+                                      "version":  "1.2.0.1"
+                                  }
+                              ],
+    "display_name":  "Mr. Bard\u0027s Second to Last Azlanti",
+    "author":  "Mr. Bard"
+}

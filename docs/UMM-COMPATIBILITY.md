@@ -23,33 +23,43 @@ whatever loader is installed on the build machine.
   identities, the source commit/dirty state (a detached checkout is supported) and a
   fingerprint of every material build input (tracked or new files under `src/`,
   `Directory.Build.props`, `.editorconfig`, `Info.json`, `LoaderReferences.targets`, the
-  pin file and its verifier). A missing, corrupt or different reference (including the
+  pin file and its verifier, the build wrapper `Build-Local.ps1`/`Common.ps1`, and the
+  SHA-256 of every game/Unity assembly the project references from the configured Managed
+  directory). Receipt fields are type-checked before any comparison. A missing, corrupt or different reference (including the
   installed newer loader) fails the build; there is no fallback to `UnityModManagerDir`.
-- Direct `dotnet msbuild`/MSBuild/IDE builds import `LoaderReferences.targets`. On every
+- Direct `dotnet msbuild`/MSBuild builds import `LoaderReferences.targets`. On every
   build, before reference resolution, it re-verifies the cache and the manifest; after
-  resolution the compiler's actual inputs (`@(ReferencePath)`, found by file name or by
-  assembly identity) must be exactly the two verified files by full path, so a stray
-  HintPath, a same-stem or renamed file in the pinned directory or the installed loader
-  is refused. The fast up-to-date check is disabled and the pin, verifier, guard and
+  reference-assembly selection and immediately before compilation, the list Csc receives
+  (`@(ReferencePathWithRefAssemblies)`; each loader assembly found by file name or by
+  assembly identity) must contain exactly the two verified files by full path, so a stray
+  HintPath, a substituted reference assembly, a same-stem or renamed file in the pinned
+  directory or the installed loader is refused. The fast up-to-date check is disabled and the pin, verifier, guard and
   manifest are compile inputs.
 - `ManagerVersion` must be a JSON string equal to 0.31.1 (`Info.json`, the expected
   product manifest, the verifier) and the pin must equal the declared minimum.
 - `scripts/Package.ps1` (and `Qualify.ps1 -Package`) refuse a DLL whose receipt has
-  different bytes, configuration, build inputs or loader identities, and require the DLL
-  read back from the produced ZIP to equal the receipt's DLL hash.
+  different bytes, configuration, build inputs or loader identities, require the DLL
+  read back from the produced ZIP to equal the receipt's DLL hash, and record the producing
+  build and a fingerprint of the repository files the package copies.
 - The standalone `scripts/Validate-Package.ps1` reads the packaged DLL's AssemblyRef
   table (in Windows PowerShell in a separate process, so several packages can be
-  validated in one session), requires exactly UnityModManager 0.31.1.0 and 0Harmony12
-  1.2.0.1, checks the manifest, accepts only the six allow-listed files and requires the
-  documentation and licence entries to be UTF-8 text, so no loader, Harmony, game or
+  validated in one session), inspects and hashes one private copy of the ZIP, requires
+  exactly UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1, checks the manifest, accepts
+  only the six allow-listed files (directory records only as empty records of the
+  package's own folders) and requires the documentation and licence entries to be UTF-8
+  text, so no loader, Harmony, game or
   Unity DLL can be packaged, renamed or not. Its report records the packaged DLL's
   SHA-256, MVID and observed loader references. `scripts/Install.ps1` validates the
   supplied ZIP, then validates a private copy and extracts that same copy
   (`Expand-ValidatedPackage`); the extracted DLL must equal the validated one.
-- `Qualify.ps1` credits contract and package records only for the DLL of the current
-  build record: contract reports must name that DLL's hash, and a package counts only
-  when the ZIP on disk, its package record and its validation record all describe it.
-  `-VerifyContracts` checks the DLL of the selected `-Configuration`.
+- `Qualify.ps1` credits earlier records only for the current candidate: the build receipt
+  must be well formed and match the selected configuration's DLL and the current build
+  inputs; contract records (older formats included) must name that DLL, the current game
+  assembly and the loader components now configured; a package counts only when the ZIP
+  on disk, its package record and its validation record describe that DLL and the files it
+  copies are unchanged. Anything else is reported as not current. `-VerifyContracts`
+  checks the DLL of the selected `-Configuration`, and the verifiers refuse to report on an
+  assembly other than the requested file (a second same-identity DLL in one host).
 - `UnityModManagerDir` identifies the loader used by the contract checks.
   `Verify-GameOverLoadContracts.ps1` accepts it only when UnityModManager and the
   Harmony2 beside it (`0Harmony.dll`) match one exact profile: 0.31.1 + 2.3.1.1, 0.32.4
@@ -80,7 +90,7 @@ and the installed game are never written. It downloads (or accepts with
 them: the genuine v0.1.3 release (SHA-256 `8b59d76d…887d2fbed`, its DLL compiled against
 UnityModManager 0.33.0.0) and the author's UnityModManager 0.32.4 NuGet package
 (`a8438e92…082c9ec9`, DLL `1387468b…7bfd88`) as the known distinct wrong-loader fixture;
-the owner's installed loader is only measured. Its 62 checks cover cache bytes; dropped
+the owner's installed loader is only measured. Its 85 checks cover cache bytes; dropped
 or misnamed pins and raised/array-typed manifests; direct and incremental builds (quoted
 compiler paths, manifest-only and pin-only changes); resolved-input probes (identical
 copy elsewhere, same-stem `.exe`, renamed copy, 0.32.4 fixture); packaging and
@@ -90,12 +100,18 @@ archived-DLL/receipt comparison; smuggled or renamed dependency DLLs and non-str
 `ManagerVersion` values; the v0.1.3 DLL with only its manifest lowered (refused); both
 packages validated in one Windows PowerShell session; the validated private-copy
 extraction; `Qualify.ps1` refusing to credit another validated ZIP or a ZIP replaced on
-disk; and contract checks of a Debug build while a Release build exists.
+disk; and contract checks of a Debug build while a Release build exists; wrapper and resolved
+managed-reference changes; malformed receipt fields; a substituted reference assembly;
+data-bearing directory records; a replaced caller ZIP during validation; partial
+qualification after a source or packaged-README change, with older-format records and
+after switching to a disposable 0.31.1 loader profile; a second DLL in one host; and
+profile comparisons on one frozen DLL while the build output changes.
 
 `Test-LoaderProfiles.ps1` takes a folder of profile subfolders, each holding
 `UnityModManager.dll`, `0Harmony.dll` and `0Harmony12.dll`. For each it writes a
 temporary `GamePath.props` (game assemblies from the configured installation, loader
-files from the profile) and runs both contract verifiers in a separate process: they load
+files from the profile) and runs both contract verifiers, on one private frozen copy of
+the candidate DLL, in a separate process: they load
 Assembly-CSharp, check the profile identities, and apply, verify and remove this product's
 Harmony patches through that profile's 0Harmony12 → 0Harmony stack. Build each profile
 from the author's NuGet `unitymodmanager.<v>.nupkg` (`lib/net35/UnityModManager.dll`), the
@@ -120,7 +136,15 @@ Kingmaker 2.1.7b managed assemblies): SHA-256
 -Package`: 84/84 deterministic tests, Kingmaker and game-over load contracts on that DLL
 (installed profile 0.33.0 + Harmony2 2.3.6.0), package SHA-256
 `83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc`, validation passed.
-`Test-LoaderBaseline.ps1`: 62/62. The candidate commit is recorded in the pull request.
+`Test-LoaderBaseline.ps1`: 85/85.
+
+Machine-generated records for the candidate are committed as structured files in
+[`docs/evidence/umm-0311/`](evidence/umm-0311/INDEX.md) (qualification summary, build,
+package and validation records, contract reports, the boundary-suite and managed
+loader-profile results, the static audit, a full loader-profile inventory with every
+component's identity and references, the newest-stable selection record and the audit
+tool's source). Local path prefixes are replaced by placeholders. The configured
+`qualify` gate's own receipt is produced by the agent-review controller.
 
 | Observation | Result |
 | --- | --- |

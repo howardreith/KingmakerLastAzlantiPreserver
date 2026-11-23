@@ -1,0 +1,27 @@
+{
+    "status":  "passed",
+    "configuration":  "Release",
+    "compiler_warnings":  0,
+    "compiler_errors":  0,
+    "dll_path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+    "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
+    "loader_references":  [
+                              {
+                                  "file":  "UnityModManager.dll",
+                                  "version":  "0.31.1.0",
+                                  "assembly_version":  "0.31.1.0",
+                                  "sha256":  "2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4",
+                                  "source":  "https://api.nuget.org/v3-flatcontainer/unitymodmanager/0.31.1/unitymodmanager.0.31.1.nupkg"
+                              },
+                              {
+                                  "file":  "0Harmony12.dll",
+                                  "version":  "1.2.0.1",
+                                  "assembly_version":  "1.2.0.1",
+                                  "sha256":  "aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292",
+                                  "source":  "https://raw.githubusercontent.com/newman55/unity-mod-manager/10cfb1cce51914a5114928c5bc6a06d1d2c31fe2/lib/Harmony/1.2/0Harmony12.dll"
+                              }
+                          ],
+    "build_inputs_sha256":  "5a42c82758a2061524eae06d1ac6d68a2259f7a319ce7a4511a78b5475a8735c",
+    "source_commit":  "67a09d25829b38f072a20597d91aa05d717aa42c",
+    "source_dirty":  false
+}

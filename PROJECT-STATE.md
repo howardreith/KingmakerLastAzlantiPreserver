@@ -12,7 +12,7 @@ Measured on Windows (2026-11-23): `Qualify.ps1 -Build -Test -VerifyContracts`
 passed (Release DLL `fadf2dab…1248` compiled against UnityModManager 0.31.1.0 and
 0Harmony12 1.2.0.1, 0 warnings/errors; 84/84 tests; Kingmaker and game-over load
 contracts against the installed UMM 0.33.0 environment). Direct MSBuild also checks the
-compiler's resolved loader inputs. `scripts/Test-LoaderBaseline.ps1` passed 62/62,
+compiler's resolved loader inputs. `scripts/Test-LoaderBaseline.ps1` passed 85/85 (records in `docs/evidence/umm-0311/`),
 including rejection of the genuine 0.33.0-compiled v0.1.3 DLL with only its manifest
 lowered. A static loader API audit resolved every reference on 0.31.1, 0.32.4, 0.33.0
 and 0.33.4 (static evidence only), and `scripts/Test-LoaderProfiles.ps1` applied and removed the product's Harmony patches out of game through each of those four loader stacks (a mismatched Harmony2 was refused). Native runtime on every loader version: NOT RUN.
