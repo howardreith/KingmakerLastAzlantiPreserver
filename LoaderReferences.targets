@@ -4,7 +4,24 @@
     <PinnedLoaderReferenceCheck>$(MSBuildThisFileDirectory)scripts\Get-PinnedLoaderReferences.ps1</PinnedLoaderReferenceCheck>
     <LoaderReferencePowerShell Condition="'$(LoaderReferencePowerShell)' == ''">powershell.exe</LoaderReferencePowerShell>
   </PropertyGroup>
+  <!-- Before resolution: the cached pinned files must exist with their exact SHA-256 and assembly identity. -->
   <Target Name="ValidatePinnedLoaderReferences" BeforeTargets="ResolveAssemblyReferences">
     <Exec Command="&quot;$(LoaderReferencePowerShell)&quot; -NoLogo -NoProfile -ExecutionPolicy Bypass -File &quot;$(PinnedLoaderReferenceCheck)&quot; -VerifyOnly -ReferenceDirectory &quot;$(PinnedLoaderReferenceDir)&quot;" />
+  </Target>
+  <!-- After resolution: the compiler's actual inputs (@(ReferencePath)) for each pinned loader assembly must be
+       exactly one file inside the verified pinned directory, so a stray HintPath, search path or installed
+       loader can never be compiled against instead of the baseline. -->
+  <Target Name="AssertPinnedLoaderReferencesResolved" AfterTargets="ResolveAssemblyReferences" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_PinnedLoaderDirectory>$([MSBuild]::NormalizeDirectory('$(PinnedLoaderReferenceDir)'))</_PinnedLoaderDirectory>
+    </PropertyGroup>
+    <ItemGroup>
+      <_PinnedLoaderUmm Include="@(ReferencePath)" Condition="'%(Filename)' == 'UnityModManager'" />
+      <_PinnedLoaderHarmony12 Include="@(ReferencePath)" Condition="'%(Filename)' == '0Harmony12'" />
+      <_PinnedLoaderOutside Include="@(_PinnedLoaderUmm);@(_PinnedLoaderHarmony12)" Condition="'$([MSBuild]::NormalizeDirectory(%(RootDir)%(Directory)))' != '$(_PinnedLoaderDirectory)'" />
+    </ItemGroup>
+    <Error Condition="'@(_PinnedLoaderUmm->Count())' != '1'" Text="Exactly one UnityModManager compiler reference is required; resolved: @(_PinnedLoaderUmm)" />
+    <Error Condition="'@(_PinnedLoaderHarmony12->Count())' != '1'" Text="Exactly one 0Harmony12 compiler reference is required; resolved: @(_PinnedLoaderHarmony12)" />
+    <Error Condition="'@(_PinnedLoaderOutside)' != ''" Text="Loader compiler references must resolve inside the pinned directory $(_PinnedLoaderDirectory); resolved: @(_PinnedLoaderOutside)" />
   </Target>
 </Project>

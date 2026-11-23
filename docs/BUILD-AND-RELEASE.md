@@ -9,8 +9,9 @@
 - a configured installed UMM/Harmony runtime for separate contract checks
 
 The current minimum is UMM 0.31.1. Builds use independently pinned references and
-packages require a matching loader-reference receipt. This change still requires
-a full product build and disposable-game checks; see [UMM compatibility](UMM-COMPATIBILITY.md).
+packages require a matching loader-reference receipt; `scripts/Test-LoaderBaseline.ps1`
+exercises the failure boundaries after a build. Disposable-campaign checks are still
+required before any runtime claim; see [UMM compatibility](UMM-COMPATIBILITY.md).
 
 Historically, the v0.1.1 candidate is measured against UMM 0.33.0, and v0.1.2 and v0.1.3 use the same UMM 0.33.0 surface. Historical v0.1.0 qualification recorded UMM 0.32.4; that record is retained as history and is not a request to downgrade or a compatibility claim for untested loaders.
 

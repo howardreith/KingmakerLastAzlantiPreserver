@@ -8,14 +8,15 @@ Direct MSBuild verifies the pins, and packaging requires a matching build receip
 The game-over contract verifier accepts exact hashed 0.31.1, 0.32.4 and 0.33.0
 comparison inputs; accepting an input is not a runtime pass.
 
-Tooling checks passed: repository safety, PowerShell parsing, exact reference
-hashes/identities, direct-MSBuild valid/corrupt-cache checks, and seven receipt
-cases. The standalone ZIP validator rejected the actual released DLL with only
-its manifest lowered, and its reference check accepted the genuine 0.31.1-built
-Skip DLL. No full product build or game contract checks ran: the Windows game host
-was offline and the game assemblies are unavailable here. Runtime and higher-loader
-compatibility remain unqualified for this change. Nothing was installed, packaged
-or released. The released 0.1.3 ZIP is unchanged and still requires UMM 0.33.0;
+Measured on Windows (2026-11-23): `Qualify.ps1 -Build -Test -VerifyContracts`
+passed (Release DLL `fadf2dab…1248` compiled against UnityModManager 0.31.1.0 and
+0Harmony12 1.2.0.1, 0 warnings/errors; 84/84 tests; Kingmaker and game-over load
+contracts against the installed UMM 0.33.0 environment). Direct MSBuild also checks the
+compiler's resolved loader inputs. `scripts/Test-LoaderBaseline.ps1` passed 23/23,
+including rejection of the genuine 0.33.0-compiled v0.1.3 DLL with only its manifest
+lowered. A static loader API audit resolved every reference on 0.31.1, 0.32.4, 0.33.0
+and 0.33.4 (static evidence only). Native runtime on every loader version: NOT RUN.
+Higher-loader compatibility remains unqualified. Nothing was installed or released. The released 0.1.3 ZIP is unchanged and still requires UMM 0.33.0;
 its historical build/authorization records below do not qualify this change.
 
 ## Product

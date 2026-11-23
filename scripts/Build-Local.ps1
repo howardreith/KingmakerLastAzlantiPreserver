@@ -6,6 +6,7 @@ $root = Get-RepositoryRoot
 Initialize-PinnedReferences | Out-Null
 $loaderReferences = @(Get-PinnedReferenceIdentities)
 Assert-RepositorySafety
+$git = Get-GitMetadata
 $project = Join-Path $root 'src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj'
 $arguments = @($project, '/nologo', '/m', '/t:Rebuild', "/p:Configuration=$Configuration", '/p:Platform=AnyCPU')
 $output = & dotnet msbuild @arguments 2>&1
@@ -26,6 +27,8 @@ $result = [ordered]@{
     dll_path = $dll
     dll_sha256 = Get-Sha256 $dll
     loader_references = $loaderReferences
+    source_commit = $git.Commit
+    source_dirty = $git.Dirty
 }
 Write-JsonFile (Join-Path $root 'artifacts\qualification\build.json') $result
 Write-Host "Build passed: $dll"

@@ -55,7 +55,8 @@ try {
             }
         }
         finally { $headerStream.Dispose() }
-        Assert-PinnedAssemblyReferences ([IO.File]::ReadAllBytes($temporaryDll))
+        $dllIdentity = Assert-PinnedAssemblyReferences ([IO.File]::ReadAllBytes($temporaryDll))
+        $dllSha256 = Get-Sha256 $temporaryDll
         $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($temporaryDll)
         if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.3.0') {
             throw "Packaged assembly identity is invalid: $($assemblyName.FullName)"
@@ -76,9 +77,14 @@ $result = [ordered]@{
     entries = $allowed
     assembly_name = $assemblyName.Name
     assembly_version = $assemblyName.Version.ToString()
+    manager_version = [string] $info.ManagerVersion
+    dll_sha256 = $dllSha256
+    dll_mvid = $dllIdentity.Mvid
+    dll_loader_references = @($dllIdentity.LoaderReferences)
     display_name = [string] $info.DisplayName
     author = [string] $info.Author
 }
 $resolvedReport = if ([IO.Path]::IsPathRooted($ReportPath)) { $ReportPath } else { Join-Path $root $ReportPath }
 Write-JsonFile $resolvedReport $result
 Write-Host "Package validation passed: $PackagePath"
+Write-Host "Packaged DLL SHA-256: $dllSha256; MVID: $($dllIdentity.Mvid); loader references: $((@($dllIdentity.LoaderReferences) | ForEach-Object { $_.name + ' ' + $_.version }) -join ', ')"

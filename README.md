@@ -4,8 +4,10 @@
 
 The development baseline is **UMM 0.31.1**, also declared in `Info.json`.
 Production builds use hash-pinned 0.31.1 references independently of the loader
-installed on the developer's machine. This source change is pending a full build
-and disposable-game validation; it does not change already published ZIPs.
+installed on the developer's machine, and the package validator refuses a DLL compiled
+against any other UnityModManager. The baseline build, tests, contract and package
+checks pass; in-game validation on 0.31.1 and newer loaders has not been run. Already
+published ZIPs are unchanged.
 Newer loaders are separate compatibility targets, not a reason to raise the minimum.
 See [the loader compatibility plan](docs/UMM-COMPATIBILITY.md) for the required checks
 and the current evidence limits.

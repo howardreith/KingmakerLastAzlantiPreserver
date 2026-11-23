@@ -206,6 +206,7 @@ function Assert-PinnedAssemblyReferences([byte[]] $Bytes) {
         $reader = [System.Reflection.PortableExecutable.PEReader]::new($stream)
         try {
             $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($reader)
+            $mvid = $metadata.GetGuid($metadata.GetModuleDefinition().Mvid)
             $references = @($metadata.AssemblyReferences | ForEach-Object {
                 $reference = $metadata.GetAssemblyReference($_)
                 [pscustomobject]@{
@@ -218,12 +219,17 @@ function Assert-PinnedAssemblyReferences([byte[]] $Bytes) {
     }
     else {
         $assembly = [Reflection.Assembly]::ReflectionOnlyLoad($Bytes)
+        $mvid = $assembly.ManifestModule.ModuleVersionId
         $references = @($assembly.GetReferencedAssemblies())
     }
+    $observed = @()
     foreach ($pin in (Get-PinnedReferenceDefinitions)) {
         $matches = @($references | Where-Object { $_.Name -ceq $pin.Name })
         if ($matches.Count -ne 1 -or $matches[0].Version.ToString() -cne $pin.Version) {
             throw "Packaged DLL must reference pinned $($pin.Name) $($pin.Version); lowering Info.json alone is not sufficient."
         }
+        $observed += [ordered]@{ name = $pin.Name; version = $matches[0].Version.ToString() }
     }
+    # Returned for the validation report, so it names the exact DLL whose references were inspected.
+    return [pscustomobject]@{ Mvid = $mvid.ToString(); LoaderReferences = $observed }
 }
