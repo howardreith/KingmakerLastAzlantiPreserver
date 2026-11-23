@@ -10,6 +10,18 @@ param(
 $root = Get-RepositoryRoot
 $PackagePath = [IO.Path]::GetFullPath($PackagePath)
 Assert-FileExists $PackagePath 'Package ZIP'
+if ($PSBoundParameters.ContainsKey('ExpectedDllSha256') -and $ExpectedDllSha256 -cnotmatch '^[0-9a-f]{64}$') {
+    throw 'ExpectedDllSha256 must be a lowercase SHA-256 string.'
+}
+# Inspect and hash one immutable private copy, so the recorded ZIP hash and the inspected contents are the same bytes
+# even if the caller's file is replaced meanwhile.
+$privateDirectory = Join-Path ([IO.Path]::GetTempPath()) ('klap-validate-' + [Guid]::NewGuid().ToString('N'))
+[void][IO.Directory]::CreateDirectory($privateDirectory)
+$inspected = Join-Path $privateDirectory 'package.zip'
+[IO.File]::Copy($PackagePath, $inspected)
+# Test hook (used only by scripts\Test-LoaderBaseline.ps1): replace the caller's file after the private copy is taken.
+if ($env:KLAP_VALIDATE_TEST_REPLACE_INPUT_AFTER_COPY) { [IO.File]::Copy($env:KLAP_VALIDATE_TEST_REPLACE_INPUT_AFTER_COPY, $PackagePath, $true) }
+try {
 $expectedInfo = Get-Content -LiteralPath (Join-Path $root 'Info.json') -Raw | ConvertFrom-Json
 $allowed = @(
     'KingmakerLastAzlantiPreserver/Info.json',
@@ -20,9 +32,15 @@ $allowed = @(
     'KingmakerLastAzlantiPreserver/licenses/FIRST-AZLANTI-MIT.txt'
 )
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$archive = [IO.Compression.ZipFile]::OpenRead($PackagePath)
+$archive = [IO.Compression.ZipFile]::OpenRead($inspected)
 try {
-    $files = @($archive.Entries | Where-Object { $_.FullName -and -not $_.FullName.EndsWith('/') })
+    foreach ($directory in @($archive.Entries | Where-Object { -not $_.FullName -or $_.FullName.EndsWith('/') -or $_.FullName.EndsWith('\') })) {
+        if ($directory.Length -ne 0 -or $directory.CompressedLength -gt 2 -or
+            @('KingmakerLastAzlantiPreserver/', 'KingmakerLastAzlantiPreserver/licenses/') -cnotcontains $directory.FullName) {
+            throw "Unexpected or data-bearing package directory record: '$($directory.FullName)'"
+        }
+    }
+    $files = @($archive.Entries | Where-Object { $_.FullName -and -not $_.FullName.EndsWith('/') -and -not $_.FullName.EndsWith('\') })
     $names = @($files | ForEach-Object { $_.FullName.Replace('\','/') } | Sort-Object)
     if ($files.Count -ne $allowed.Count) { throw "Expected exactly $($allowed.Count) package files; found $($files.Count)." }
     if (@(Compare-Object ($allowed | Sort-Object) $names).Count -ne 0) { throw 'Package allowlist mismatch.' }
@@ -91,7 +109,7 @@ finally { $archive.Dispose() }
 $result = [ordered]@{
     status = 'passed'
     package_path = $PackagePath
-    package_sha256 = Get-Sha256 $PackagePath
+    package_sha256 = Get-Sha256 $inspected
     entry_count = $allowed.Count
     entries = $allowed
     assembly_name = $assemblyName.Name
@@ -107,3 +125,5 @@ $resolvedReport = if ([IO.Path]::IsPathRooted($ReportPath)) { $ReportPath } else
 Write-JsonFile $resolvedReport $result
 Write-Host "Package validation passed: $PackagePath"
 Write-Host "Packaged DLL SHA-256: $dllSha256; MVID: $($dllIdentity.Mvid); loader references: $((@($dllIdentity.LoaderReferences) | ForEach-Object { $_.name + ' ' + $_.version }) -join ', ')"
+}
+finally { if ([IO.Directory]::Exists($privateDirectory)) { [IO.Directory]::Delete($privateDirectory, $true) } }

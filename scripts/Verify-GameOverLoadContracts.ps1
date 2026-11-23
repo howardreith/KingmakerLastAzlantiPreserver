@@ -163,6 +163,7 @@ try {
         throw 'The installed legacy Harmony MVID does not match the verified 1.2.0.1 contract.'
     }
     $modAssembly = [Reflection.Assembly]::LoadFrom($modDll)
+    Assert-LoadedAssemblyIs $modAssembly $modDll
 
     $coreResolverType = $modAssembly.GetType(
         'KingmakerLastAzlantiPreserver.Integration.KingmakerContractResolver',
@@ -308,6 +309,8 @@ try {
         mod_dll = [ordered]@{
             path = $modDll
             sha256 = Get-Sha256 $modDll
+            loaded_location = $modAssembly.Location
+            loaded_mvid = $modAssembly.ManifestModule.ModuleVersionId.ToString('D')
         }
         legacy_harmony = [ordered]@{
             path = $harmonyPath

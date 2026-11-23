@@ -17,23 +17,22 @@
   <Target Name="ValidatePinnedLoaderReferences" BeforeTargets="ResolveAssemblyReferences">
     <Exec Command="&quot;$(LoaderReferencePowerShell)&quot; -NoLogo -NoProfile -ExecutionPolicy Bypass -File &quot;$(PinnedLoaderReferenceCheck)&quot; -VerifyOnly -ReferenceDirectory &quot;$(PinnedLoaderReferenceDir)&quot;" />
   </Target>
-  <!-- After resolution: the compiler's actual inputs (@(ReferencePath)) for each loader assembly, found by file name or
-       by assembly identity, must be exactly the canonical verified file (full path) in the pinned directory. A stray
-       HintPath, search path, same-stem file or the installed loader can never be compiled against. -->
-  <Target Name="AssertPinnedLoaderReferencesResolved" AfterTargets="ResolveAssemblyReferences" BeforeTargets="CoreCompile">
+  <!-- After reference-assembly selection, immediately before compilation: Csc receives @(ReferencePathWithRefAssemblies)
+       (Microsoft.CSharp.Core.targets). Each loader assembly in that exact list, found by file name or by assembly identity,
+       must be the canonical verified file (full path) in the pinned directory. A stray HintPath, a substituted reference
+       assembly, a same-stem or renamed file, or the installed loader can never be compiled against. -->
+  <Target Name="AssertPinnedLoaderReferencesResolved" AfterTargets="FindReferenceAssembliesForReferences" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <_PinnedLoaderDirectory>$([MSBuild]::NormalizeDirectory('$(PinnedLoaderReferenceDir)'))</_PinnedLoaderDirectory>
-      <_PinnedUmmPath>$(_PinnedLoaderDirectory)UnityModManager.dll</_PinnedUmmPath>
-      <_PinnedHarmony12Path>$(_PinnedLoaderDirectory)0Harmony12.dll</_PinnedHarmony12Path>
     </PropertyGroup>
     <ItemGroup>
-      <_PinnedLoaderUmm Include="@(ReferencePath)" Condition="'%(Filename)' == 'UnityModManager' or $([System.String]::Copy('%(ReferencePath.FusionName)').StartsWith('UnityModManager,'))" />
-      <_PinnedLoaderHarmony12 Include="@(ReferencePath)" Condition="'%(Filename)' == '0Harmony12' or $([System.String]::Copy('%(ReferencePath.FusionName)').StartsWith('0Harmony12,'))" />
-      <_PinnedLoaderOutside Include="@(_PinnedLoaderUmm)" Condition="'%(FullPath)' != '$(_PinnedUmmPath)'" />
-      <_PinnedLoaderOutside Include="@(_PinnedLoaderHarmony12)" Condition="'%(FullPath)' != '$(_PinnedHarmony12Path)'" />
+      <_PinnedLoaderUmm Include="@(ReferencePathWithRefAssemblies)" Condition="'%(Filename)' == 'UnityModManager' or $([System.String]::Copy('%(ReferencePathWithRefAssemblies.FusionName)').StartsWith('UnityModManager,'))" />
+      <_PinnedLoaderHarmony12 Include="@(ReferencePathWithRefAssemblies)" Condition="'%(Filename)' == '0Harmony12' or $([System.String]::Copy('%(ReferencePathWithRefAssemblies.FusionName)').StartsWith('0Harmony12,'))" />
+      <_PinnedLoaderOutside Include="@(_PinnedLoaderUmm)" Condition="'%(FullPath)' != '$(_PinnedLoaderDirectory)UnityModManager.dll'" />
+      <_PinnedLoaderOutside Include="@(_PinnedLoaderHarmony12)" Condition="'%(FullPath)' != '$(_PinnedLoaderDirectory)0Harmony12.dll'" />
     </ItemGroup>
-    <Error Condition="'@(_PinnedLoaderUmm->Count())' != '1'" Text="Exactly one UnityModManager compiler reference is required; resolved: @(_PinnedLoaderUmm)" />
-    <Error Condition="'@(_PinnedLoaderHarmony12->Count())' != '1'" Text="Exactly one 0Harmony12 compiler reference is required; resolved: @(_PinnedLoaderHarmony12)" />
+    <Error Condition="'@(_PinnedLoaderUmm->Count())' != '1'" Text="Exactly one UnityModManager compiler input is required; resolved: @(_PinnedLoaderUmm)" />
+    <Error Condition="'@(_PinnedLoaderHarmony12->Count())' != '1'" Text="Exactly one 0Harmony12 compiler input is required; resolved: @(_PinnedLoaderHarmony12)" />
     <Error Condition="'@(_PinnedLoaderOutside)' != ''" Text="Loader compiler references must be the verified files in the pinned directory $(_PinnedLoaderDirectory); resolved: @(_PinnedLoaderOutside)" />
   </Target>
 </Project>

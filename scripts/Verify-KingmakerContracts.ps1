@@ -168,6 +168,7 @@ try {
     if (Test-Path -LiteralPath $modDll) {
         $harmonyAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $configuration.UnityModManagerDir '0Harmony12.dll'))
         $modAssembly = [Reflection.Assembly]::LoadFrom($modDll)
+        Assert-LoadedAssemblyIs $modAssembly $modDll
         $harmonyType = $harmonyAssembly.GetType('Harmony12.HarmonyInstance', $true)
         $harmonyMethodType = $harmonyAssembly.GetType('Harmony12.HarmonyMethod', $true)
         $createHarmony = $harmonyType.GetMethod('Create', [Reflection.BindingFlags]'Public,Static')

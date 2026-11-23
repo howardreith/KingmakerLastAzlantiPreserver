@@ -7,8 +7,10 @@ $dll = Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserv
 Assert-FileExists $dll 'Built mod DLL'
 $loaderReceiptPath = Join-Path $root 'artifacts\qualification\build.json'
 Assert-FileExists $loaderReceiptPath 'Build receipt with pinned loader references'
-$loaderReceipt = Get-Content -LiteralPath $loaderReceiptPath -Raw | ConvertFrom-Json
+$receiptBytes = [IO.File]::ReadAllBytes($loaderReceiptPath)
+$loaderReceipt = [Text.Encoding]::UTF8.GetString($receiptBytes).TrimStart([char]0xFEFF) | ConvertFrom-Json
 Assert-PinnedBuildReceipt $loaderReceipt $dll $Configuration
+$packageInputs = Get-PackageInputFingerprint
 $stageRoot = Join-Path $root 'artifacts\staging'
 $stage = Join-Path $stageRoot 'KingmakerLastAzlantiPreserver'
 Assert-PathWithin $stageRoot $root 'Package staging root'
@@ -54,10 +56,17 @@ $result = [ordered]@{
     status = 'passed'
     package_path = $zipPath
     package_sha256 = Get-Sha256 $zipPath
-    dll_sha256 = Get-Sha256 $dll
+    dll_sha256 = [string] $validated.dll_sha256
     build_inputs_sha256 = $loaderReceipt.build_inputs_sha256
+    package_inputs_sha256 = $packageInputs
+    producing_commit = $loaderReceipt.source_commit
+    producing_dirty = $loaderReceipt.source_dirty
+    producing_configuration = $loaderReceipt.configuration
     validated_package_sha256 = $validated.package_sha256
     validated_dll_sha256 = $validated.dll_sha256
+}
+if ($result.dll_sha256 -cne $loaderReceipt.dll_sha256 -or (Get-Sha256 $zipPath) -cne [string] $validated.package_sha256) {
+    throw 'Package records disagree; the package was not accepted.'
 }
 Write-JsonFile (Join-Path $root 'artifacts\qualification\package.json') $result
 Write-Host "Package: $zipPath"

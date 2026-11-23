@@ -4,6 +4,8 @@ param(
     # only ever read: the suite works on private copies.
     [string] $LegacyReleaseZip,
     [string] $WrongLoaderPackage,
+    # Optional local copy of the official Lib.Harmony 2.3.1.1 package (net48 0Harmony.dll completes a disposable 0.31.1 profile).
+    [string] $Harmony2Package,
     [string] $ReportPath
 )
 # Failure-boundary tests for the pinned UMM 0.31.1 compile baseline, run on the committed HEAD in a temporary clone
@@ -150,6 +152,7 @@ try {
     $build = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     if ($build.ExitCode -ne 0) { throw "Clone build failed: $($build.Output)" }
     $firstDllSha = Get-Sha256 $dll
+    Copy-Item -LiteralPath $dll -Destination (Join-Path $inputs 'first-build-dll.dll')
     $firstReceipt = Join-Path $inputs 'first-build.json'
     Copy-Item -LiteralPath $receiptPath -Destination $firstReceipt
     $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
@@ -254,11 +257,23 @@ try {
         [IO.File]::WriteAllText($path, $text)
         return $path
     }
-    Expect-Accepted 'resolved-input-pinned-accepted' (Invoke-MSBuildIsolated @((New-ProbeProject 'pinned' $pinnedUmm), '/t:ResolveAssemblyReferences')) ''
-    Expect-Rejected 'resolved-input-identical-copy-elsewhere-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'stray' (Join-Path $stray 'UnityModManager.dll')), '/t:ResolveAssemblyReferences')) 'must be the verified files'
-    Expect-Rejected 'resolved-input-same-stem-file-in-pinned-dir-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'samestem' (Join-Path $references 'UnityModManager.exe')), '/t:ResolveAssemblyReferences')) 'must be the verified files'
-    Expect-Rejected 'resolved-input-renamed-loader-in-pinned-dir-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'alias' (Join-Path $references 'umm-alias.dll')), '/t:ResolveAssemblyReferences')) 'must be the verified files'
-    Expect-Rejected 'resolved-input-umm-0.32.4-fixture-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'wrong' $wrongUmm), '/t:ResolveAssemblyReferences')) 'must be the verified files'
+    Expect-Accepted 'resolved-input-pinned-accepted' (Invoke-MSBuildIsolated @((New-ProbeProject 'pinned' $pinnedUmm), '/t:ResolveReferences;FindReferenceAssembliesForReferences')) ''
+    Expect-Rejected 'resolved-input-identical-copy-elsewhere-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'stray' (Join-Path $stray 'UnityModManager.dll')), '/t:ResolveReferences;FindReferenceAssembliesForReferences')) 'must be the verified files'
+    Expect-Rejected 'resolved-input-same-stem-file-in-pinned-dir-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'samestem' (Join-Path $references 'UnityModManager.exe')), '/t:ResolveReferences;FindReferenceAssembliesForReferences')) 'must be the verified files'
+    Expect-Rejected 'resolved-input-renamed-loader-in-pinned-dir-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'alias' (Join-Path $references 'umm-alias.dll')), '/t:ResolveReferences;FindReferenceAssembliesForReferences')) 'must be the verified files'
+    Expect-Rejected 'resolved-input-umm-0.32.4-fixture-rejected' (Invoke-MSBuildIsolated @((New-ProbeProject 'wrong' $wrongUmm), '/t:ResolveReferences;FindReferenceAssembliesForReferences')) 'must be the verified files'
+    # A reference assembly substituted after resolution: ReferencePath stays valid, the Csc input does not.
+    $substituted = (New-ProbeProject 'substituted' $pinnedUmm)
+    $substitution = @"
+  <Target Name="SubstituteLoaderReferenceAssembly" AfterTargets="ResolveAssemblyReferences" BeforeTargets="FindReferenceAssembliesForReferences">
+    <ItemGroup>
+      <ReferencePath Condition="'%(Filename)' == 'UnityModManager'"><ReferenceAssembly>$(Join-Path $stray 'UnityModManager.dll')</ReferenceAssembly></ReferencePath>
+    </ItemGroup>
+  </Target>
+</Project>
+"@
+    [IO.File]::WriteAllText($substituted, ([IO.File]::ReadAllText($substituted).Replace('</Project>', $substitution)))
+    Expect-Rejected 'resolved-input-substituted-reference-assembly-rejected' (Invoke-MSBuildIsolated @($substituted, '/t:ResolveReferences;FindReferenceAssembliesForReferences')) 'must be the verified files'
     Remove-Item -LiteralPath (Join-Path $references 'UnityModManager.exe'), (Join-Path $references 'umm-alias.dll')
 
     # 6. Build receipts bind the DLL bytes, configuration, material inputs and pinned identities; packaging and
@@ -318,6 +333,43 @@ try {
     Edit-Json $otherLoader { param($j) @($j.loader_references | Where-Object file -eq 'UnityModManager.dll')[0].sha256 = $wrongLoaderDllSha256 }
     Expect-Rejected 'receipt-recording-other-loader-rejected' (Test-Receipt $otherLoader $dll 'Release') 'does not match pinned reference UnityModManager\.dll'
 
+
+    # 6b. Wrapper and resolved managed-reference changes also invalidate reuse; malformed receipt fields are refused.
+    [IO.File]::AppendAllText((Join-Path $base 'scripts\Build-Local.ps1'), "`r`n# loader-baseline test edit`r`n")
+    Expect-Rejected 'package-reuse-after-build-wrapper-change-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    & git -C $base checkout -q -- scripts/Build-Local.ps1
+    $gamePath = Join-Path $base 'GamePath.props'
+    $gamePathOriginal = [IO.File]::ReadAllText($gamePath)
+    $managedCopy = Join-Path $temp 'managed copy'
+    New-Item -ItemType Directory -Path (Join-Path $managedCopy 'UnityModManager') -Force | Out-Null
+    [xml] $projectXml = Get-Content -LiteralPath $project -Raw
+    foreach ($hint in @($projectXml.SelectNodes("//*[local-name()='Reference']/*[local-name()='HintPath']") | ForEach-Object { $_.InnerText } | Where-Object { $_.StartsWith('$(KingmakerManagedDir)') })) {
+        $name = $hint.Substring('$(KingmakerManagedDir)'.Length).TrimStart('\')
+        Copy-Item -LiteralPath (Join-Path $config.ManagedDir $name) -Destination (Join-Path $managedCopy $name)
+    }
+    Copy-Item -LiteralPath $pinnedUmm, $pinnedHarmony -Destination (Join-Path $managedCopy 'UnityModManager')
+    [IO.File]::WriteAllText($gamePath, "<Project xmlns=`"http://schemas.microsoft.com/developer/msbuild/2003`"><PropertyGroup><KingmakerInstallDir>$($config.InstallDir)</KingmakerInstallDir><KingmakerManagedDir>$managedCopy</KingmakerManagedDir><UnityModManagerDir>$(Join-Path $managedCopy 'UnityModManager')</UnityModManagerDir></PropertyGroup></Project>")
+    Expect-Accepted 'package-with-identical-managed-references-elsewhere-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    $uiBytes = [IO.File]::ReadAllBytes((Join-Path $managedCopy 'UnityEngine.CoreModule.dll'))
+    $uiBytes[$uiBytes.Length - 1] = $uiBytes[$uiBytes.Length - 1] -bxor 0x01
+    [IO.File]::WriteAllBytes((Join-Path $managedCopy 'UnityEngine.CoreModule.dll'), $uiBytes)
+    Expect-Rejected 'package-reuse-after-resolved-managed-reference-change-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+    $savedReceipt = Join-Path $inputs 'genuine-receipt.json'
+    Copy-Item -LiteralPath $receiptPath -Destination $savedReceipt -Force
+    foreach ($bad in @(
+        @{ Name = 'dll-digest-array'; Edit = { param($j) $j.dll_sha256 = @($j.dll_sha256) } },
+        @{ Name = 'dll-digest-boolean'; Edit = { param($j) $j.dll_sha256 = $true } },
+        @{ Name = 'inputs-digest-array'; Edit = { param($j) $j.build_inputs_sha256 = @($j.build_inputs_sha256, ('0' * 64)) } },
+        @{ Name = 'configuration-array'; Edit = { param($j) $j.configuration = @('Release') } },
+        @{ Name = 'loader-version-array'; Edit = { param($j) @($j.loader_references)[0].version = @(@($j.loader_references)[0].version) } })) {
+        Copy-Item -LiteralPath $savedReceipt -Destination $receiptPath -Force
+        Edit-Json $receiptPath $bad.Edit
+        Expect-Rejected "package-receipt-$($bad.Name)-rejected" (Invoke-Isolated @('-File', $package)) 'must be (a lowercase SHA-256 string|a string)'
+    }
+    Copy-Item -LiteralPath $savedReceipt -Destination $receiptPath -Force
+    Expect-Accepted 'package-genuine-receipt-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+
     # 7. Standalone validator on real archives: each case in its own process, and both archives in one host.
     $v = { param($zip) Invoke-Isolated @('-File', $validator, '-PackagePath', $zip) }
     Expect-Accepted 'package-candidate-accepted' (& $v $candidateZip) 'Packaged DLL SHA-256: [0-9a-f]{64}; MVID: [0-9a-f-]{36}; loader references: UnityModManager 0\.31\.1\.0, 0Harmony12 1\.2\.0\.1'
@@ -328,6 +380,20 @@ try {
     Expect-Rejected 'package-swapped-in-loader-rejected' (& $v $p) 'Package allowlist mismatch'
     $p = Join-Path $inputs 'swap-game.zip'; Edit-Zip $candidateZip $p { param($a) $a.GetEntry("$modFolder/README.md").Delete(); Set-ZipEntryFile $a "$modFolder/Assembly-CSharp-firstpass.dll" (Join-Path $config.ManagedDir 'Assembly-CSharp-firstpass.dll') }
     Expect-Rejected 'package-swapped-in-game-assembly-rejected' (& $v $p) 'Package allowlist mismatch'
+    $p = Join-Path $inputs 'directory-with-data.zip'; Edit-Zip $candidateZip $p { param($a) $w = [IO.StreamWriter]::new($a.CreateEntry("$modFolder/extra/").Open()); try { $w.Write('inert marker') } finally { $w.Dispose() } }
+    Expect-Rejected 'package-data-bearing-directory-record-rejected' (& $v $p) 'data-bearing package directory record'
+    $p = Join-Path $inputs 'own-directory-with-data.zip'; Edit-Zip $candidateZip $p { param($a) $w = [IO.StreamWriter]::new($a.CreateEntry("$modFolder/").Open()); try { $w.Write('inert marker') } finally { $w.Dispose() } }
+    Expect-Rejected 'package-own-directory-record-with-data-rejected' (& $v $p) 'data-bearing package directory record'
+    # The validator hashes and inspects one private copy: replacing the caller's file after the copy cannot mix two ZIPs.
+    $callerZip = Join-Path $inputs 'caller-path.zip'
+    Copy-Item -LiteralPath $candidateZip -Destination $callerZip
+    $mixReport = Join-Path $inputs 'mix-report.json'
+    $env:KLAP_VALIDATE_TEST_REPLACE_INPUT_AFTER_COPY = $secondZip
+    try { $mix = Invoke-Isolated @('-File', $validator, '-PackagePath', $callerZip, '-ReportPath', $mixReport) }
+    finally { Remove-Item Env:\KLAP_VALIDATE_TEST_REPLACE_INPUT_AFTER_COPY }
+    $mr = if (Test-Path -LiteralPath $mixReport) { Get-Content -LiteralPath $mixReport -Raw | ConvertFrom-Json } else { $null }
+    $ok = $mix.ExitCode -eq 0 -and $mr -and $mr.package_sha256 -eq (Get-Sha256 $candidateZip) -and $mr.dll_sha256 -eq $firstDllSha -and (Get-Sha256 $callerZip) -eq (Get-Sha256 $secondZip)
+    Add-Case 'validator-report-describes-one-zip-when-caller-file-replaced' $ok ("report ZIP $($mr.package_sha256) with DLL $($mr.dll_sha256); caller path now holds $(Get-Sha256 $callerZip)")
     $p = Join-Path $inputs 'harmony-as-readme.zip'; Edit-Zip $candidateZip $p { param($a) Set-ZipEntryFile $a "$modFolder/README.md" $pinnedHarmony }
     Expect-Rejected 'package-harmony-bytes-under-readme-name-rejected' (& $v $p) 'binary content: KingmakerLastAzlantiPreserver/README\.md'
     $p = Join-Path $inputs 'loader-as-licence.zip'; Edit-Zip $candidateZip $p { param($a) Set-ZipEntryFile $a "$modFolder/licenses/FIRST-AZLANTI-MIT.txt" $pinnedUmm }
@@ -391,6 +457,79 @@ try {
     $ok = $d.ExitCode -eq 0 -and $debugSha -ne $releaseSha -and $qs.contracts_verified_dll_sha256 -eq $debugSha -and $qs.dll_sha256 -eq $debugSha -and (Test-Path -LiteralPath $dll)
     Add-Case 'contracts-verify-selected-debug-dll' $ok ("Debug DLL $debugSha; contracts verified on $($qs.contracts_verified_dll_sha256); Release DLL $releaseSha still present; loader profile $($qs.loader_profile); Harmony2 $($qs.harmony2_identity)")
 
+    # 12. Qualification freshness: partial runs never credit an old package, older-format or other-profile contract records
+    #     are reported as not current, one host cannot verify a second same-identity DLL as the first, and profile
+    #     comparisons use one frozen DLL.
+    [IO.File]::AppendAllText((Join-Path $base $marker), "`r`n// loader-baseline test edit`r`n")
+    Invoke-Isolated @('-File', $qualify, '-Test', '-Configuration', 'Release') | Out-Null
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-test-after-source-change-credits-nothing-old' (-not $qs.build_record_current -and -not $qs.package_current_for_candidate -and $qs.package_validation -eq 'not run for the current DLL') ("build_record_current $($qs.build_record_current) ($($qs.build_record_problem)); package '$($qs.package_validation)'")
+    & git -C $base checkout -q -- ($marker.Replace('\', '/'))
+    Invoke-Isolated @('-File', $qualify, '-Build', '-Package') | Out-Null
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-fresh-package-control-credited' ($qs.build_record_current -and $qs.package_current_for_candidate -and $qs.package_validation -eq 'passed') ("package $($qs.package_sha256) '$($qs.package_validation)'")
+    [IO.File]::AppendAllText((Join-Path $base 'README.md'), "`n<!-- loader-baseline test edit -->`n")
+    Invoke-Isolated @('-File', $qualify) | Out-Null
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-after-packaged-readme-change-not-credited' (-not $qs.package_current_for_candidate -and $qs.package_validation -eq 'not run for the current DLL') ("package '$($qs.package_validation)'")
+    & git -C $base checkout -q -- README.md
+
+    # A disposable 0.31.1 loader profile: pinned UnityModManager and 0Harmony12 plus the official Lib.Harmony 2.3.1.1 net48.
+    $harmonyPackage = Join-Path $inputs 'lib.harmony.2.3.1.1.nupkg'
+    if ($Harmony2Package) { Copy-Item -LiteralPath $Harmony2Package -Destination $harmonyPackage } else { Invoke-WebRequest -Uri 'https://api.nuget.org/v3-flatcontainer/lib.harmony/2.3.1.1/lib.harmony.2.3.1.1.nupkg' -OutFile $harmonyPackage -UseBasicParsing }
+    if ((Get-Sha256 $harmonyPackage) -ne 'b9096d3e2191ca18b803e2894511a2ee4ec6c92050e53853b46ebfeed46798aa') { throw 'Lib.Harmony 2.3.1.1 package hash mismatch.' }
+    $profileRoot = Join-Path $temp 'profiles'
+    $baselineProfile = Join-Path $profileRoot '0.31.1'
+    New-Item -ItemType Directory -Path $baselineProfile -Force | Out-Null
+    Copy-Item -LiteralPath $pinnedUmm, $pinnedHarmony -Destination $baselineProfile
+    $archive = [IO.Compression.ZipFile]::OpenRead($harmonyPackage)
+    try { [IO.Compression.ZipFileExtensions]::ExtractToFile($archive.GetEntry('lib/net48/0Harmony.dll'), (Join-Path $baselineProfile '0Harmony.dll')) }
+    finally { $archive.Dispose() }
+    if ((Get-Sha256 (Join-Path $baselineProfile '0Harmony.dll')) -ne '5f7ad0df1eb08e81f66d4006d3a9e5cb40fc05e381f36d7bd0513f334f6a251f') { throw '0Harmony 2.3.1.1 net48 hash mismatch.' }
+    Copy-Item -LiteralPath $baselineProfile -Destination (Join-Path $profileRoot '0.31.1-second-run') -Recurse
+
+    # Older-format records (written before the DLL and Harmony2 fields existed) give a usable summary without credit.
+    Invoke-Isolated @('-File', $qualify, '-VerifyContracts') | Out-Null
+    $uiPath = Join-Path $base 'artifacts\qualification\game-over-load-contracts.json'
+    $kcPath = Join-Path $base 'artifacts\qualification\contracts.json'
+    Edit-Json $uiPath { param($j) $j.PSObject.Properties.Remove('mod_dll'); $j.PSObject.Properties.Remove('harmony2'); $j.PSObject.Properties.Remove('loader_profile') }
+    Edit-Json $kcPath { param($j) $j.PSObject.Properties.Remove('mod_dll_sha256'); $j.PSObject.Properties.Remove('mod_dll_path') }
+    $q = Invoke-Isolated @('-File', $qualify)
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-older-format-contract-records-usable-not-credited' ($q.ExitCode -eq 0 -and -not $qs.contracts_current_for_candidate -and $qs.loader_profile -eq 'not verified in this run') ("exit $($q.ExitCode); contracts current $($qs.contracts_current_for_candidate)")
+    # Switching the configured loader to another disposable profile withdraws the old profile's credit.
+    Invoke-Isolated @('-File', $qualify, '-VerifyContracts') | Out-Null
+    [IO.File]::WriteAllText($gamePath, "<Project xmlns=`"http://schemas.microsoft.com/developer/msbuild/2003`"><PropertyGroup><KingmakerInstallDir>$($config.InstallDir)</KingmakerInstallDir><KingmakerManagedDir>$($config.ManagedDir)</KingmakerManagedDir><UnityModManagerDir>$baselineProfile</UnityModManagerDir></PropertyGroup></Project>")
+    Invoke-Isolated @('-File', $qualify) | Out-Null
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-other-profile-records-not-credited' (-not $qs.contracts_current_for_candidate) ("records verified under the owner profile; configured profile now 0.31.1; contracts current $($qs.contracts_current_for_candidate)")
+    Invoke-Isolated @('-File', $qualify, '-VerifyContracts') | Out-Null
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-contracts-under-disposable-0.31.1-profile' ($qs.contracts_current_for_candidate -and $qs.loader_profile -eq '0.31.1.0' -and $qs.harmony2_sha256 -eq '5f7ad0df1eb08e81f66d4006d3a9e5cb40fc05e381f36d7bd0513f334f6a251f') ("loader profile $($qs.loader_profile); Harmony2 $($qs.harmony2_identity)")
+    # The distinct wrong-loader fixture is still refused with the baseline loader configured; a copy of the configured
+    # loader (now identical to the pin, by measurement) is accepted as expected.
+    Expect-Rejected 'cache-umm-0.32.4-fixture-rejected-under-baseline-configuration' (Invoke-Isolated @('-File', $verifier, '-VerifyOnly', '-ReferenceDirectory', $wrongCache)) 'hash mismatch'
+    $configuredCopy = Join-Path $temp 'cache configured loader'
+    Copy-Pins $references $configuredCopy
+    Copy-Item -LiteralPath (Join-Path $baselineProfile 'UnityModManager.dll') -Destination $configuredCopy -Force
+    Expect-Accepted 'cache-copy-of-configured-baseline-loader-accepted' (Invoke-Isolated @('-File', $verifier, '-VerifyOnly', '-ReferenceDirectory', $configuredCopy)) ''
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+
+    # One PowerShell host, two DLLs with the product identity: the second is refused as a binding mismatch.
+    $oneHost = "& $(Quote (Join-Path $base 'scripts\Verify-KingmakerContracts.ps1')) -DllPath $(Quote $dll) -OutputPath $(Quote (Join-Path $inputs 'host-a.json')) -GameOverOutputPath $(Quote (Join-Path $inputs 'host-a-go.json')); 'FIRST VERIFIED'; " +
+        "& $(Quote (Join-Path $base 'scripts\Verify-KingmakerContracts.ps1')) -DllPath $(Quote $debugDll) -OutputPath $(Quote (Join-Path $inputs 'host-b.json')) -GameOverOutputPath $(Quote (Join-Path $inputs 'host-b-go.json')); 'SECOND VERIFIED'"
+    $h = Invoke-Script $oneHost
+    $ok = $h.Output -match 'FIRST VERIFIED' -and $h.Output -notmatch 'SECOND VERIFIED' -and ($h.Output -replace '\s+', ' ') -match 'Loaded assembly binding mismatch'
+    Add-Case 'one-host-second-same-identity-dll-refused' $ok ('second run: ' + (Get-Reason $h.Output))
+
+    # Profile comparisons verify one frozen DLL even when the build output changes between profiles.
+    $frozenReport = Join-Path $inputs 'profiles-frozen.json'
+    $fr = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Test-LoaderProfiles.ps1'), '-ProfileRoot', $profileRoot, '-ReportPath', $frozenReport, '-TestReplaceBuildOutputAfterFirstProfile', $legacyDll)
+    $frj = if (Test-Path -LiteralPath $frozenReport) { Get-Content -LiteralPath $frozenReport -Raw | ConvertFrom-Json } else { $null }
+    $ok = $fr.ExitCode -eq 0 -and $frj -and @($frj.profiles).Count -eq 2 -and @($frj.profiles | Where-Object { $_.passed -and $_.detail -match [regex]::Escape($firstDllSha) }).Count -eq 2 -and (Get-Sha256 $dll) -ne $firstDllSha
+    Add-Case 'profile-comparison-uses-frozen-dll' $ok ("both profile rows verified frozen DLL $($frj.dll_sha256); build output replaced after the first profile (now $(Get-Sha256 $dll))")
+    Copy-Item -LiteralPath (Join-Path $inputs 'first-build-dll.dll') -Destination $dll -Force
+
     # 9. Inputs and this repository's outputs are preserved.
     $legacyOk = (Get-Sha256 $legacyZip) -eq $legacySha256 -and (-not $LegacyReleaseZip -or (Get-Sha256 $LegacyReleaseZip) -eq $legacyOriginalSha)
     Add-Case 'legacy-input-preserved' $legacyOk "private copy and any supplied original still $legacySha256"
@@ -402,7 +541,7 @@ try {
     Invoke-Isolated @('-File', $validator, '-PackagePath', $candidateZip, '-ReportPath', $reportFile) | Out-Null
     $candidateReport = Get-Content -LiteralPath $reportFile -Raw | ConvertFrom-Json
     $summary = [ordered]@{
-        schema = 'klap.loader-baseline-tests.v2'
+        schema = 'klap.loader-baseline-tests.v3'
         source_commit = $commit
         clone_build_receipt = [ordered]@{ commit = $receipt.source_commit; dirty = $receipt.source_dirty; configuration = $receipt.configuration; dll_sha256 = $receipt.dll_sha256; build_inputs_sha256 = $receipt.build_inputs_sha256; loader_references = $receipt.loader_references }
         candidate_package_sha256 = Get-Sha256 $candidateZip

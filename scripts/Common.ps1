@@ -202,13 +202,22 @@ function Get-PinnedReferenceIdentities {
 # so packaging or qualification can never reuse a build made from other inputs.
 function Get-BuildInputFingerprint {
     $root = $script:RepositoryRoot
+    # Also the production build wrapper (Build-Local.ps1 and Common.ps1 choose the MSBuild invocation) and the SHA-256 of
+    # every game/Unity assembly the project references from the configured Managed directory.
     $paths = @('src', 'Directory.Build.props', '.editorconfig', 'Info.json', 'LoaderReferences.targets',
-        'scripts/loader-reference-pins.json', 'scripts/Get-PinnedLoaderReferences.ps1')
+        'scripts/loader-reference-pins.json', 'scripts/Get-PinnedLoaderReferences.ps1', 'scripts/Build-Local.ps1', 'scripts/Common.ps1')
     $files = @(& git -C $root ls-files --cached --others --exclude-standard -- @paths)
     if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed while fingerprinting build inputs.' }
-    $lines = foreach ($file in ($files | Sort-Object -Unique)) {
+    $lines = @(foreach ($file in ($files | Sort-Object -Unique)) {
         $full = Join-Path $root $file
         if (Test-Path -LiteralPath $full -PathType Leaf) { $file + "`t" + (Get-Sha256 $full) }
+    })
+    $managed = (Get-KingmakerConfiguration).ManagedDir
+    [xml] $project = Get-Content -LiteralPath (Join-Path $root 'src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj') -Raw
+    $hints = @($project.SelectNodes("//*[local-name()='Reference']/*[local-name()='HintPath']") | ForEach-Object { $_.InnerText } | Where-Object { $_.StartsWith('$(KingmakerManagedDir)') })
+    foreach ($hint in ($hints | Sort-Object)) {
+        $file = ([string]$hint).Substring('$(KingmakerManagedDir)'.Length).TrimStart('\')
+        $lines += 'managed:' + $file + "`t" + (Get-Sha256 (Join-Path $managed $file))
     }
     $hasher = [Security.Cryptography.SHA256]::Create()
     try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
@@ -222,6 +231,16 @@ function Assert-PinnedBuildReceipt($Receipt, [string] $DllPath, [string] $Config
     foreach ($field in @('dll_sha256', 'loader_references', 'build_inputs_sha256', 'configuration')) {
         if (-not $Receipt.PSObject.Properties[$field]) { throw "Build receipt has no $field; rebuild first." }
     }
+    # Types first: an array or Boolean would make PowerShell's comparison operators filter or coerce instead of compare.
+    foreach ($field in @('dll_sha256', 'build_inputs_sha256')) {
+        if (-not ($Receipt.$field -is [string]) -or $Receipt.$field -cnotmatch '^[0-9a-f]{64}$') { throw "Build receipt $field must be a lowercase SHA-256 string; rebuild first." }
+    }
+    if (-not ($Receipt.configuration -is [string])) { throw 'Build receipt configuration must be a string; rebuild first.' }
+    foreach ($entry in @($Receipt.loader_references)) {
+        foreach ($field in @('file', 'version', 'assembly_version', 'sha256', 'source')) {
+            if ($null -eq $entry -or -not $entry.PSObject.Properties[$field] -or -not ($entry.$field -is [string])) { throw "Build receipt loader reference field $field must be a string; rebuild first." }
+        }
+    }
     if ($Receipt.dll_sha256 -ne (Get-Sha256 $DllPath)) { throw 'Build receipt does not match the mod DLL; rebuild first.' }
     if ($Configuration -and $Receipt.configuration -cne $Configuration) { throw "Build receipt is for configuration $($Receipt.configuration), not $Configuration; rebuild first." }
     if ($Receipt.build_inputs_sha256 -cne (Get-BuildInputFingerprint)) { throw 'Build inputs changed since this DLL was built (source, manifest or loader pins); rebuild first.' }
@@ -229,9 +248,9 @@ function Assert-PinnedBuildReceipt($Receipt, [string] $DllPath, [string] $Config
     $recorded = @($Receipt.loader_references)
     if ($recorded.Count -ne $pins.Count) { throw 'Build receipt has an unexpected loader reference count; rebuild first.' }
     foreach ($pin in $pins) {
-        $matches = @($recorded | Where-Object { $_.file -eq $pin.File })
-        if ($matches.Count -ne 1 -or $matches[0].version -ne $pin.Version -or $matches[0].assembly_version -cne $pin.Version -or
-            $matches[0].sha256 -ne $pin.Sha256 -or $matches[0].source -ne $pin.Url) {
+        $matches = @($recorded | Where-Object { $_.file -ceq $pin.File })
+        if ($matches.Count -ne 1 -or $matches[0].version -cne $pin.Version -or $matches[0].assembly_version -cne $pin.Version -or
+            $matches[0].sha256 -cne $pin.Sha256 -or $matches[0].source -cne $pin.Url) {
             throw "Build receipt does not match pinned reference $($pin.File); rebuild first."
         }
     }
@@ -294,12 +313,15 @@ function Assert-PinnedAssemblyReferences([byte[]] $Bytes) {
 
 # Validates a private copy of a package and extracts that same copy, so the bytes installed are the bytes that
 # passed validation even if the original file changes afterwards. Returns the validated packaged DLL SHA-256.
+# The private copy, its validation report and their cleanup are preflight work, not installation: they also run under
+# -WhatIf (only live Mods changes stay behind ShouldProcess).
 function Expand-ValidatedPackage([string] $PackagePath, [string] $Destination) {
+    $WhatIfPreference = $false
     $private = Join-Path ([IO.Path]::GetTempPath()) ('KingmakerLastAzlantiPreserver-package-' + [Guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $private | Out-Null
+    [void][IO.Directory]::CreateDirectory($private)
     try {
         $copy = Join-Path $private 'package.zip'
-        Copy-Item -LiteralPath $PackagePath -Destination $copy
+        [IO.File]::Copy($PackagePath, $copy)
         $report = Join-Path $private 'validation.json'
         & (Join-Path $PSScriptRoot 'Validate-Package.ps1') -PackagePath $copy -ReportPath $report
         $validated = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
@@ -310,5 +332,29 @@ function Expand-ValidatedPackage([string] $PackagePath, [string] $Destination) {
         if ((Get-Sha256 $dll) -cne [string]$validated.dll_sha256) { throw 'Extracted DLL does not match the validated package.' }
         return [string]$validated.dll_sha256
     }
-    finally { Remove-Item -LiteralPath $private -Recurse -Force -ErrorAction SilentlyContinue }
+    finally { if ([IO.Directory]::Exists($private)) { [IO.Directory]::Delete($private, $true) } }
+}
+
+# The non-DLL files a package copies from the repository (manifest, documentation, licences). A package is current only
+# while these still hash the same as when it was built.
+function Get-PackageInputFingerprint {
+    $root = $script:RepositoryRoot
+    $lines = foreach ($file in @('Info.json', 'LICENSE', 'README.md', 'THIRD-PARTY-NOTICES.md', 'licenses/FIRST-AZLANTI-MIT.txt')) {
+        $file + "`t" + (Get-Sha256 (Join-Path $root $file))
+    }
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
+    finally { $hasher.Dispose() }
+    return ([BitConverter]::ToString($digest)).Replace('-', '').ToLowerInvariant()
+}
+
+# Checks that an assembly loaded into this process is the selected file: LoadFrom returns an already-loaded assembly with
+# the same identity, so a second DLL with the product identity would otherwise be verified as the first.
+function Assert-LoadedAssemblyIs([Reflection.Assembly] $Assembly, [string] $Path) {
+    $expectedPath = [IO.Path]::GetFullPath($Path)
+    $expectedMvid = Get-AssemblyMvid $expectedPath
+    if (-not [string]::Equals([IO.Path]::GetFullPath($Assembly.Location), $expectedPath, [StringComparison]::OrdinalIgnoreCase) -or
+        $Assembly.ManifestModule.ModuleVersionId.ToString('D') -ne $expectedMvid) {
+        throw "Loaded assembly binding mismatch: requested $expectedPath (MVID $expectedMvid) but this process has $($Assembly.Location) (MVID $($Assembly.ManifestModule.ModuleVersionId)). Run each candidate in its own process."
+    }
 }
