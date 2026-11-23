@@ -352,7 +352,8 @@ function Get-PackageInputFingerprint {
 # the same identity, so a second DLL with the product identity would otherwise be verified as the first.
 function Assert-LoadedAssemblyIs([Reflection.Assembly] $Assembly, [string] $Path) {
     $expectedPath = [IO.Path]::GetFullPath($Path)
-    $expectedMvid = Get-AssemblyMvid $expectedPath
+    # Read out of process: a reflection-only load in this host would itself refuse a second same-identity assembly.
+    $expectedMvid = (Get-AssemblyMetadataIdentity ([IO.File]::ReadAllBytes($expectedPath))).Mvid
     if (-not [string]::Equals([IO.Path]::GetFullPath($Assembly.Location), $expectedPath, [StringComparison]::OrdinalIgnoreCase) -or
         $Assembly.ManifestModule.ModuleVersionId.ToString('D') -ne $expectedMvid) {
         throw "Loaded assembly binding mismatch: requested $expectedPath (MVID $expectedMvid) but this process has $($Assembly.Location) (MVID $($Assembly.ManifestModule.ModuleVersionId)). Run each candidate in its own process."
