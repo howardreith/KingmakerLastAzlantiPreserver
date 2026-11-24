@@ -415,13 +415,49 @@ try {
     $settingSha = Get-Sha256 $dll
     $checkedArithmeticDll = Join-Path $inputs 'checked-arithmetic.dll'
     Copy-Item -LiteralPath $dll -Destination $checkedArithmeticDll
-    $ok = $settingBuild.ExitCode -eq 0 -and $settingSha -ne $firstDllSha -and @($settingReceipt.compiler_references | Where-Object { $_.kind -eq 'setting' -and $_.name -ceq 'CheckForOverflowUnderflow=true' }).Count -eq 1
-    Add-Case 'rebuild-with-imported-compiler-setting-records-it' $ok "exit $($settingBuild.ExitCode); DLL $settingSha (committed configuration: $firstDllSha); receipt compiler inputs include CheckForOverflowUnderflow=true"
+    $ok = $settingBuild.ExitCode -eq 0 -and $settingSha -ne $firstDllSha -and @($settingReceipt.compiler_references | Where-Object { $_.kind -eq 'option' -and $_.name -ceq '/checked+' }).Count -eq 1
+    Add-Case 'rebuild-with-imported-compiler-setting-records-it' $ok "exit $($settingBuild.ExitCode); DLL $settingSha (committed configuration: $firstDllSha); receipt compiler inputs include the Csc option /checked+"
     Expect-Accepted 'package-after-rebuild-with-imported-compiler-setting-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
     Expect-Rejected 'package-reuse-after-imported-setting-removed-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ'
     $rebuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     Add-Case 'rebuild-without-imported-setting-reproduces-first-dll' ($rebuild.ExitCode -eq 0 -and (Get-Sha256 $dll) -eq $firstDllSha) "DLL $(Get-Sha256 $dll)"
+    # Any effective compiler option counts (the exact Csc command line), for example BaseAddress from GamePath.props.
+    Write-GamePath $gamePath $baselineProfile -Extra '<BaseAddress>0x11000000</BaseAddress>'
+    Expect-Rejected 'package-reuse-after-base-address-change-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    $b = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    $br = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+    $baseOption = @($br.compiler_references | Where-Object { $_.kind -eq 'option' -and $_.name -like '/baseaddress:*' } | ForEach-Object name)
+    Add-Case 'rebuild-with-base-address-records-it' ($b.ExitCode -eq 0 -and $baseOption -ceq '/baseaddress:0x11000000' -and (Get-Sha256 $dll) -ne $firstDllSha) ("exit $($b.ExitCode); receipt option $($baseOption -join ', '); DLL $(Get-Sha256 $dll)")
+    Expect-Accepted 'package-after-base-address-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    # A file-valued input: an external Win32Resource replaced at the same path invalidates the receipt by content.
+    function New-ResFile([string] $Path, [byte[]] $Payload) {
+        $ms = [IO.MemoryStream]::new(); $w = [IO.BinaryWriter]::new($ms)
+        foreach ($h in @(@(0, 0), @($Payload.Length, 10))) {
+            $w.Write([int]$h[0]); $w.Write([int]32); $w.Write([uint16]0xFFFF); $w.Write([uint16]$h[1]); $w.Write([uint16]0xFFFF); $w.Write([uint16]$(if ($h[1]) { 1 } else { 0 }))
+            $w.Write([int]0); $w.Write([uint16]$(if ($h[1]) { 0x30 } else { 0 })); $w.Write([uint16]$(if ($h[1]) { 0x0409 } else { 0 })); $w.Write([int]0); $w.Write([int]0)
+            if ($h[1]) { $w.Write($Payload); while ($ms.Length % 4) { $w.Write([byte]0) } }
+        }
+        $w.Flush(); [IO.File]::WriteAllBytes($Path, $ms.ToArray()); $w.Dispose()
+    }
+    $resDir = Join-Path $temp 'win32 resource'; New-Item -ItemType Directory -Path $resDir | Out-Null
+    $res = Join-Path $resDir 'external.res'
+    New-ResFile $res ([Text.Encoding]::ASCII.GetBytes('loader-baseline resource A'))
+    Write-GamePath $gamePath $baselineProfile -Extra ('<Win32Resource>' + [Security.SecurityElement]::Escape($res) + '</Win32Resource>')
+    $r1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    $resReceipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+    $resEntry = @($resReceipt.compiler_references | Where-Object { $_.kind -eq 'file-option' -and $_.name -like '/win32res:*' })
+    $dllA = Get-Sha256 $dll
+    Add-Case 'rebuild-with-external-win32-resource-records-its-content' ($r1.ExitCode -eq 0 -and $resEntry.Count -eq 1 -and $resEntry[0].sha256 -eq (Get-Sha256 $res)) ("exit $($r1.ExitCode); receipt $($resEntry.name) $($resEntry.sha256); DLL $dllA")
+    Expect-Accepted 'package-with-external-win32-resource-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    New-ResFile $res ([Text.Encoding]::ASCII.GetBytes('loader-baseline resource B, replaced at the same path'))
+    Expect-Rejected 'package-reuse-after-win32-resource-replaced-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    $r2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    Add-Case 'rebuild-after-win32-resource-replaced-changes-dll' ($r2.ExitCode -eq 0 -and (Get-Sha256 $dll) -ne $dllA) ("exit $($r2.ExitCode); DLL $(Get-Sha256 $dll) (previous resource: $dllA)")
+    Expect-Accepted 'package-after-win32-resource-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+    $rebuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    Add-Case 'rebuild-without-imported-options-reproduces-first-dll' ($rebuild.ExitCode -eq 0 -and (Get-Sha256 $dll) -eq $firstDllSha) "DLL $(Get-Sha256 $dll)"
     # Build and packaging need the game assemblies and pins, not the runtime loader; the managed contract check does.
     Write-GamePath $gamePath (Join-Path $temp 'no loader here')
     $noLoader = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
@@ -625,9 +661,19 @@ try {
     & git -C $base checkout -q -- scripts/Validate-Package.ps1
     # A packaged document changed during staging (by a disposable instrumented Package.ps1) is refused before archiving.
     $stagingEdit = New-InstrumentedScript 'Package' '$packageRules = Get-PackageRuleFingerprint' ('[IO.File]::AppendAllText((Join-Path $root ''README.md''), "`r`n<!-- edited during staging -->`r`n")')
+    $acceptedZip = Join-Path $base 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip'
+    $acceptedRecords = @($acceptedZip, (Join-Path $base 'artifacts\qualification\package.json'), (Join-Path $base 'artifacts\qualification\package-validation.json'))
+    $before = @($acceptedRecords | ForEach-Object { if (Test-Path -LiteralPath $_) { Get-Sha256 $_ } else { 'missing' } }) -join ';'
     Expect-Rejected 'package-document-changed-during-staging-rejected' (Invoke-Isolated @('-File', $stagingEdit)) 'changed during staging'
     Remove-Item -LiteralPath $stagingEdit
+    $after = @($acceptedRecords | ForEach-Object { if (Test-Path -LiteralPath $_) { Get-Sha256 $_ } else { 'missing' } }) -join ';'
+    Add-Case 'staging-refusal-preserves-accepted-zip-and-records' ($before -notmatch 'missing' -and $before -ceq $after) "ZIP, package.json and package-validation.json unchanged: $($before -ceq $after)"
     & git -C $base checkout -q -- README.md
+    $restage = New-InstrumentedScript 'Package' "    Copy-Item -LiteralPath (Join-Path `$root 'licenses\FIRST-AZLANTI-MIT.txt') -Destination (Join-Path `$stage 'licenses\FIRST-AZLANTI-MIT.txt')" "    [IO.File]::AppendAllText((Join-Path `$stage 'README.md'), ""`r`n<!-- restaged after the staging copy -->`r`n"")"
+    $before = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
+    Expect-Rejected 'package-document-restaged-before-archive-rejected' (Invoke-Isolated @('-File', $restage)) 'archived documents differ'
+    Remove-Item -LiteralPath $restage
+    Add-Case 'restage-refusal-preserves-accepted-zip-and-records' ((@($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';') -ceq $before) 'accepted ZIP and records unchanged'
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-package-control-credited-after-staging-refusal' ($qs.package_current_for_candidate -and $qs.package_validation -eq 'passed') ("package $($qs.package_sha256) '$($qs.package_validation)'")
@@ -650,6 +696,18 @@ try {
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     $ok = $q.ExitCode -ne 0 -and ($q.Output -replace '\s+', ' ') -match 'tests did not run against the current DLL' -and [string]$qs.status -match '^failed'
     Add-Case 'qualify-fails-when-tests-ran-against-a-different-dll' $ok ("test project's copy replaced by a valid Release build with one inert extra class ($(Get-Sha256 $substituteDll)): exit $($q.ExitCode); status '$($qs.status)'; " + (Get-Reason $q.Output))
+    # The same substitution, with the selected output copy restored after the runner exits (before the record): the record
+    # still names the substitute the runner loaded.
+    $testScript = Join-Path $base 'scripts\Test.ps1'
+    $testText = [IO.File]::ReadAllText($testScript)
+    $restoreLine = '    $exitCode = $LASTEXITCODE'
+    if ($testText.IndexOf($restoreLine) -lt 0) { throw 'Test.ps1 anchor not found.' }
+    [IO.File]::WriteAllText($testScript, $testText.Replace($restoreLine, $restoreLine + "`r`n    Copy-Item -LiteralPath (Join-Path `$root ""artifacts\bin\`$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll"") -Destination (Join-Path `$root ""artifacts\tests\`$Configuration\KingmakerLastAzlantiPreserver.dll"") -Force"))
+    $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    $tested = Get-Content -LiteralPath (Join-Path $base 'artifacts\qualification\tests.json') -Raw | ConvertFrom-Json
+    Add-Case 'qualify-identifies-tested-substitute-after-output-restored' ($q.ExitCode -ne 0 -and $tested.dll_sha256 -eq (Get-Sha256 $substituteDll) -and [string]$qs.status -match 'tests did not run against the current DLL') ("tests.json names $($tested.dll_sha256) (substitute $(Get-Sha256 $substituteDll)); status '$($qs.status)'")
+    & git -C $base checkout -q -- scripts/Test.ps1
     & git -C $base checkout -q -- 'tests/KingmakerLastAzlantiPreserver.Tests/KingmakerLastAzlantiPreserver.Tests.csproj'
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
@@ -657,9 +715,15 @@ try {
     [IO.File]::AppendAllText((Join-Path $base $marker), "`r`nnamespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineQualifyMarker { } }`r`n")
     $q = Invoke-Isolated @('-File', $qualify, '-Build')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
-    Add-Case 'qualify-build-only-after-source-change-inherits-no-test-pass' ($q.ExitCode -eq 0 -and $qs.test_result -eq 'not run for the current DLL' -and $qs.test_count -eq 0) ("exit $($q.ExitCode); tests $($qs.test_count) ('$($qs.test_result)')")
+    Add-Case 'qualify-build-only-after-source-change-inherits-no-test-pass' ($q.ExitCode -eq 0 -and $qs.test_result -eq 'not run in this qualification' -and $qs.test_count -eq 0) ("exit $($q.ExitCode); tests $($qs.test_count) ('$($qs.test_result)')")
     & git -C $base checkout -q -- ($marker.Replace('\', '/'))
     Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')) | Out-Null
+    $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
+    Write-GamePath $gamePath (Join-Path $temp 'no loader here')
+    $q2 = Invoke-Isolated @('-File', $qualify, '-Build')
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-build-only-without-runtime-loader-gives-no-test-credit' ($q.ExitCode -eq 0 -and $q2.ExitCode -eq 0 -and $qs.test_count -eq 0 -and $qs.test_result -eq 'not run in this qualification') ("after a passing -Test run: build-only with no loader directory exit $($q2.ExitCode); tests $($qs.test_count) ('$($qs.test_result)')")
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
 
     # Contract records count only as one fresh, binding-aware verification under the configured loader.
     $verifyContracts = Join-Path $base 'scripts\Verify-KingmakerContracts.ps1'

@@ -200,19 +200,49 @@ function Get-PinnedReferenceIdentities {
     }
 }
 
-# Reads a compiler-input list written by the WriteCompilerReferenceList target into path-free identities (files: kind,
-# name, SHA-256; properties: name=value), in a canonical order.
+# Reads a compiler-input list written by the WriteCompilerReferenceList target (the intermediate directory, then every Csc
+# argument) into path-free identities in a canonical order: kind reference/compile/file-option with the file's name
+# (repository-relative, obj:<name> for generated files in the intermediate directory, otherwise the file name) and
+# SHA-256; kind option for every other argument verbatim; kind output for output locations (file name only).
 function ConvertFrom-CompilerInputList([string] $ListPath) {
     $rootPrefix = [IO.Path]::GetFullPath($script:RepositoryRoot).TrimEnd('\') + '\'
-    return @(Get-Content -LiteralPath $ListPath -Encoding UTF8 | Where-Object { $_ } | ForEach-Object {
-        $kind, $value = $_ -split '\|', 2
-        if ($kind -ceq 'setting') { [ordered]@{ kind = $kind; name = $value; sha256 = '' } }
-        else {
-            $name = if ($value.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) { $value.Substring($rootPrefix.Length).Replace('\', '/') } else { [IO.Path]::GetFileName($value) }
-            $digest = if (Test-Path -LiteralPath $value -PathType Leaf) { Get-Sha256 $value } else { 'absent' }
-            [ordered]@{ kind = $kind; name = $name; sha256 = $digest }
+    $lines = @(Get-Content -LiteralPath $ListPath -Encoding UTF8 | Where-Object { $_ })
+    if ($lines.Count -lt 3 -or -not $lines[0].StartsWith('intermediate|') -or -not $lines[1].StartsWith('project|')) { throw "Compiler input list is malformed: $ListPath" }
+    $objPrefix = [IO.Path]::GetFullPath($lines[0].Substring('intermediate|'.Length)).TrimEnd('\') + '\'
+    $projectDirectory = $lines[1].Substring('project|'.Length)
+    # Csc arguments name files relative to the project directory.
+    function Resolve-InputPath([string] $Path) { return [IO.Path]::GetFullPath([IO.Path]::Combine($projectDirectory, $Path.Trim('"'))) }
+    function Get-InputName([string] $Path) {
+        $full = Resolve-InputPath $Path
+        # MSBuild's generated target-framework attribute file lives in the intermediate or the temporary directory.
+        if ([IO.Path]::GetFileName($full) -like '*.AssemblyAttributes.cs') { return 'generated:' + [IO.Path]::GetFileName($full) }
+        if ($full.StartsWith($objPrefix, [StringComparison]::OrdinalIgnoreCase)) { return 'obj:' + $full.Substring($objPrefix.Length).Replace('\', '/') }
+        if ($full.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) { return $full.Substring($rootPrefix.Length).Replace('\', '/') }
+        return [IO.Path]::GetFileName($full)
+    }
+    function Get-InputDigest([string] $Path) { $full = Resolve-InputPath $Path; if (Test-Path -LiteralPath $full -PathType Leaf) { return Get-Sha256 $full } else { return 'absent' } }
+    $outputSwitches = @('out', 'pdb', 'refout', 'doc', 'errorlog', 'generatedfilesout')
+    $fileSwitches = @('win32res', 'win32icon', 'win32manifest', 'keyfile', 'ruleset', 'appconfig', 'analyzer', 'a', 'additionalfile', 'analyzerconfig', 'embed', 'sourcelink', 'addmodule')
+    $resourceSwitches = @('resource', 'res', 'linkresource', 'linkres')
+    $entries = foreach ($line in $lines[2..($lines.Count - 1)]) {
+        if (-not $line.StartsWith('arg|')) { throw "Compiler input list is malformed: $line" }
+        $arg = $line.Substring(4)
+        $m = [regex]::Match($arg, '^[/-]([A-Za-z0-9_+-]+?)(?::(.*))?$')
+        if (-not $m.Success) { [ordered]@{ kind = 'compile'; name = Get-InputName $arg; sha256 = Get-InputDigest $arg }; continue }
+        $switch = $m.Groups[1].Value.ToLowerInvariant(); $value = $m.Groups[2].Value
+        if ($outputSwitches -ccontains $switch) { [ordered]@{ kind = 'output'; name = "/$switch" + ':' + [IO.Path]::GetFileName($value.Trim('"')); sha256 = '' } }
+        elseif ($switch -ceq 'reference' -or $switch -ceq 'r') {
+            $alias, $path = if ($value -match '^[A-Za-z_][A-Za-z0-9_]*=') { $value -split '=', 2 } else { $null, $value }
+            [ordered]@{ kind = 'reference'; name = $(if ($alias) { "$alias=" } else { '' }) + (Get-InputName $path); sha256 = Get-InputDigest $path }
         }
-    } | Sort-Object { $_.kind + '|' + $_.name + '|' + $_.sha256 })
+        elseif ($resourceSwitches -ccontains $switch) {
+            $path, $rest = $value -split ',', 2
+            [ordered]@{ kind = 'file-option'; name = "/$switch" + ':' + (Get-InputName $path) + $(if ($rest) { ',' + $rest } else { '' }); sha256 = Get-InputDigest $path }
+        }
+        elseif ($fileSwitches -ccontains $switch -and $value) { [ordered]@{ kind = 'file-option'; name = "/$switch" + ':' + (Get-InputName $value); sha256 = Get-InputDigest $value } }
+        else { [ordered]@{ kind = 'option'; name = $arg.Replace($objPrefix.TrimEnd('\'), 'obj:'); sha256 = '' } }
+    }
+    return @($entries | Sort-Object { $_.kind + '|' + $_.name + '|' + $_.sha256 })
 }
 
 # Canonical text of a compiler inventory (for equality checks between the receipt, the production compile and now).
@@ -228,16 +258,16 @@ function Assert-CompilerInventoryShape($Inventory) {
         foreach ($field in @('kind', 'name', 'sha256')) {
             if ($null -eq $entry -or -not $entry.PSObject.Properties[$field] -or -not ($entry.$field -is [string])) { throw "Build receipt compiler input field $field must be a string; rebuild first." }
         }
-        $valid = if ($entry.kind -ceq 'setting') { $entry.sha256 -ceq '' -and $entry.name -cmatch '^[A-Za-z0-9_]+=' } else {
-            @('reference', 'compile', 'resource', 'analyzer', 'additional', 'editorconfig') -ccontains $entry.kind -and ($entry.sha256 -cmatch '^[0-9a-f]{64}$' -or $entry.sha256 -ceq 'absent') }
+        $valid = if ($entry.kind -ceq 'option' -or $entry.kind -ceq 'output') { $entry.sha256 -ceq '' -and $entry.name.Length -gt 0 } else {
+            @('reference', 'compile', 'file-option') -ccontains $entry.kind -and ($entry.sha256 -cmatch '^[0-9a-f]{64}$' -or $entry.sha256 -ceq 'absent') }
         if (-not $valid) { throw "Build receipt compiler input is malformed: $($entry.kind) $($entry.name); rebuild first." }
     }
     if (@($entries | Where-Object { $_.kind -ceq 'reference' }).Count -eq 0) { throw 'Build receipt compiler inventory names no references; rebuild first.' }
 }
 
-# The compiler inputs for a configuration as MSBuild itself evaluates them: the exact references Csc receives (after
-# reference-assembly selection), source/resource/analyzer items and compile-affecting properties (including anything an
-# import such as GamePath.props sets). Needs the game assemblies and pins, not the runtime loader.
+# The compiler inputs for a configuration as MSBuild itself evaluates them: the exact Csc command line from a
+# SkipCompilerExecution pass through CoreCompile in a fresh intermediate directory (references, sources including generated
+# ones, every option, file-valued inputs by content). Needs the game assemblies and pins, not the runtime loader.
 function Get-CompilerReferenceIdentities([string] $Configuration) {
     $id = [Guid]::NewGuid().ToString('N')
     $list = Join-Path ([IO.Path]::GetTempPath()) ("klap-compiler-references-$id.txt")
@@ -246,8 +276,8 @@ function Get-CompilerReferenceIdentities([string] $Configuration) {
     $previous = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $output = $null | & dotnet msbuild $project /nologo /v:q /nr:false '/t:ResolveReferences;FindReferenceAssembliesForReferences' `
-            "/p:Configuration=$Configuration" /p:Platform=AnyCPU "/p:CompilerReferenceListPath=$list" "/p:IntermediateOutputPath=$obj" 2>&1 | ForEach-Object { "$_" }
+        $output = $null | & dotnet msbuild $project /nologo /v:q /nr:false '/t:Compile' /p:SkipCompilerExecution=true `
+            "/p:Configuration=$Configuration" /p:Platform=AnyCPU "/p:CompilerReferenceListPath=$list" "/p:IntermediateOutputPath=$obj" "/p:OutputPath=$($obj)bin" 2>&1 | ForEach-Object { "$_" }
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $list)) { throw "Could not resolve the compiler references: $($output -join ' ')" }
         return @(ConvertFrom-CompilerInputList $list)
     }
@@ -402,6 +432,26 @@ function Get-PackageInputFingerprint([string] $Directory = $script:RepositoryRoo
     $lines = foreach ($file in @('Info.json', 'LICENSE', 'README.md', 'THIRD-PARTY-NOTICES.md', 'licenses/FIRST-AZLANTI-MIT.txt')) {
         $file + "`t" + (Get-Sha256 (Join-Path $Directory $file))
     }
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
+    finally { $hasher.Dispose() }
+    return ([BitConverter]::ToString($digest)).Replace('-', '').ToLowerInvariant()
+}
+
+# The same fingerprint computed from the documents inside a package archive (entries under KingmakerLastAzlantiPreserver/).
+function Get-PackageInputFingerprintFromArchive([string] $ZipPath) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($ZipPath)
+    try {
+        $lines = foreach ($file in @('Info.json', 'LICENSE', 'README.md', 'THIRD-PARTY-NOTICES.md', 'licenses/FIRST-AZLANTI-MIT.txt')) {
+            $entry = $archive.GetEntry('KingmakerLastAzlantiPreserver/' + $file)
+            if ($null -eq $entry) { throw "Package archive has no $file." }
+            $stream = $entry.Open(); $hasher = [Security.Cryptography.SHA256]::Create()
+            try { $file + "`t" + ([BitConverter]::ToString($hasher.ComputeHash($stream))).Replace('-', '').ToLowerInvariant() }
+            finally { $hasher.Dispose(); $stream.Dispose() }
+        }
+    }
+    finally { $archive.Dispose() }
     $hasher = [Security.Cryptography.SHA256]::Create()
     try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
     finally { $hasher.Dispose() }

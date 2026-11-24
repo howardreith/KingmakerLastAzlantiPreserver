@@ -103,7 +103,9 @@ if ($currentDllSha -and $packageReport -and $validationReport -and $recordedPack
 }
 if (-not $packageCurrent) { $packageReport = $null; $validationReport = $null }
 # A test record counts only for the production DLL it ran against.
-$testsCurrent = [bool]($currentDllSha -and $testReport -and [string] (Get-RecordField $testReport @('dll_sha256')) -eq $currentDllSha -and [string] (Get-RecordField $testReport @('status')) -eq 'passed')
+# A test record counts only when the tests ran in this qualification (-Test) against the current DLL; skipped tests are
+# reported as not run, so a cached result never carries over to another loader configuration or suite.
+$testsCurrent = [bool]($Test -and $currentDllSha -and $testReport -and [string] (Get-RecordField $testReport @('dll_sha256')) -eq $currentDllSha -and [string] (Get-RecordField $testReport @('status')) -eq 'passed')
 if (-not $testsCurrent) { $testReport = $null }
 # The stages requested in this run must have produced current evidence for the same candidate.
 $stageProblems = @()
@@ -146,7 +148,7 @@ $summary = [ordered]@{
     optional_patch_ownership = if ($uiContractReport) { $uiContractReport.harmony_ownership.optional_owned_after_application } else { $false }
     optional_unpatch_preserved_core = if ($uiContractReport) { $uiContractReport.harmony_ownership.core_owned_after_optional_unpatch } else { $false }
     test_count = if ($testReport) { $testReport.total } else { 0 }
-    test_result = if ($testReport) { $testReport.status } else { 'not run for the current DLL' }
+    test_result = if ($testReport) { $testReport.status } elseif (-not $Test) { 'not run in this qualification' } else { 'not run for the current DLL' }
     compiler_warning_count = if ($buildReport) { $buildReport.compiler_warnings } else { $null }
     compiler_error_count = if ($buildReport) { $buildReport.compiler_errors } else { $null }
     dll_path = if ($buildReport) { $buildReport.dll_path } else { $null }
