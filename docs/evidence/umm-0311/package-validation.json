@@ -1,6 +1,5 @@
 {
     "status":  "passed",
-    "package_path":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\.package-186cb5dfe1a5481098e10cf31c5e270c\\KingmakerLastAzlantiPreserver-0.1.3.zip",
     "package_sha256":  "83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc",
     "entry_count":  6,
     "entries":  [
@@ -28,5 +27,6 @@
                               ],
     "display_name":  "Mr. Bard\u0027s Second to Last Azlanti",
     "author":  "Mr. Bard",
-    "package":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip"
+    "package_path":  "<repo>\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip",
+    "package":  "<repo>\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip"
 }

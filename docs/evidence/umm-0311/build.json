@@ -3,7 +3,7 @@
     "configuration":  "Release",
     "compiler_warnings":  0,
     "compiler_errors":  0,
-    "dll_path":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+    "dll_path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
     "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
     "loader_references":  [
                               {
@@ -21,12 +21,137 @@
                                   "source":  "https://raw.githubusercontent.com/newman55/unity-mod-manager/10cfb1cce51914a5114928c5bc6a06d1d2c31fe2/lib/Harmony/1.2/0Harmony12.dll"
                               }
                           ],
-    "build_inputs_sha256":  "96ca8dcd2488c5f3042a5ef086b770cd381794a23ac943636e583250e4b500d6",
+    "build_inputs_sha256":  "3fbff2de554287cb8e3509f9daf5d8d538f776c7e6f5a43e007a24c30e59b275",
     "compiler_references":  [
                                 {
-                                    "kind":  "compile",
-                                    "name":  "generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs",
-                                    "sha256":  "621199557e90fb1661e401cc9a973163c850b4b7e65bbc8d100f67f6699eef70"
+                                    "kind":  "compiler",
+                                    "name":  "csc.dll",
+                                    "sha256":  "fc4fc82205936fa57670f9ebe4b1ddb2fd74da3240eef04c21e2123d584bdc76"
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/noconfig",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/nowarn:1701,1702",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/fullpaths",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/nostdlib+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/warn:4",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/highentropyva+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "artifacts/references/0Harmony12.dll",
+                                    "sha256":  "aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "Assembly-CSharp.dll",
+                                    "sha256":  "3b6450ffec440e296e586f71c711b195aed144b28d53e1cbb29406d18fef5afb"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "mscorlib.dll",
+                                    "sha256":  "a69849cf0b433664b14dbaeb82385ec043449f71f7c69559cba4be0dd3e8be8d"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.Core.dll",
+                                    "sha256":  "f9c65f2d44f244e1195802a68f5d8f3457caeef2e385cf28c534218749adbe7f"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.dll",
+                                    "sha256":  "541c6067cc69a43660d06a4f0f6eab0febcd33df9089f209d99b7ea36682a0a5"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.Runtime.Serialization.dll",
+                                    "sha256":  "a8a8240fc53a5e26a1e6160a39d1d2728b4a1e9652c67740ccb1e349865e7624"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.Xml.dll",
+                                    "sha256":  "a01c28f804dca406d6d5d1eacfa9d8d435755fbef58f6673bce40efb789717f3"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "UnityEngine.CoreModule.dll",
+                                    "sha256":  "3a76df7f709d465e3273502e08edbffb536b1c2f78c3a132b8668e59fddd2803"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "UnityEngine.dll",
+                                    "sha256":  "50b79c57f46bf4e060bb27461b6d4fac6f078e08b57e776c7a811554c4899fd6"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "UnityEngine.IMGUIModule.dll",
+                                    "sha256":  "327b1d34eab0ada754186a03dac40f23de627867124777ec35c6c040b210079a"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "artifacts/references/UnityModManager.dll",
+                                    "sha256":  "2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4"
+                                },
+                                {
+                                    "kind":  "output",
+                                    "name":  "/out:KingmakerLastAzlantiPreserver.dll",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/subsystemversion:6.00",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/target:library",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/warnaserror+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/utf8output",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/deterministic+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/langversion:7.3",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "file-option",
+                                    "name":  "/analyzerconfig:.editorconfig",
+                                    "sha256":  "deda9cddc7a90df5c8f34c7960dbdb020db7bd83bcd839baa153102f94d45935"
                                 },
                                 {
                                     "kind":  "compile",
@@ -239,131 +364,11 @@
                                     "sha256":  "6dde58cfb25f683997617154afd36d6416cb7f0eb8588fb83a501da08369d32e"
                                 },
                                 {
-                                    "kind":  "file-option",
-                                    "name":  "/analyzerconfig:.editorconfig",
-                                    "sha256":  "deda9cddc7a90df5c8f34c7960dbdb020db7bd83bcd839baa153102f94d45935"
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/deterministic+",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/fullpaths",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/highentropyva+",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/langversion:7.3",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/noconfig",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/nostdlib+",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/nowarn:1701,1702",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/subsystemversion:6.00",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/target:library",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/utf8output",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/warn:4",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "option",
-                                    "name":  "/warnaserror+",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "output",
-                                    "name":  "/out:KingmakerLastAzlantiPreserver.dll",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "artifacts/references/0Harmony12.dll",
-                                    "sha256":  "aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "artifacts/references/UnityModManager.dll",
-                                    "sha256":  "2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "Assembly-CSharp.dll",
-                                    "sha256":  "3b6450ffec440e296e586f71c711b195aed144b28d53e1cbb29406d18fef5afb"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "mscorlib.dll",
-                                    "sha256":  "a69849cf0b433664b14dbaeb82385ec043449f71f7c69559cba4be0dd3e8be8d"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "System.Core.dll",
-                                    "sha256":  "f9c65f2d44f244e1195802a68f5d8f3457caeef2e385cf28c534218749adbe7f"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "System.dll",
-                                    "sha256":  "541c6067cc69a43660d06a4f0f6eab0febcd33df9089f209d99b7ea36682a0a5"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "System.Runtime.Serialization.dll",
-                                    "sha256":  "a8a8240fc53a5e26a1e6160a39d1d2728b4a1e9652c67740ccb1e349865e7624"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "System.Xml.dll",
-                                    "sha256":  "a01c28f804dca406d6d5d1eacfa9d8d435755fbef58f6673bce40efb789717f3"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "UnityEngine.CoreModule.dll",
-                                    "sha256":  "3a76df7f709d465e3273502e08edbffb536b1c2f78c3a132b8668e59fddd2803"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "UnityEngine.dll",
-                                    "sha256":  "50b79c57f46bf4e060bb27461b6d4fac6f078e08b57e776c7a811554c4899fd6"
-                                },
-                                {
-                                    "kind":  "reference",
-                                    "name":  "UnityEngine.IMGUIModule.dll",
-                                    "sha256":  "327b1d34eab0ada754186a03dac40f23de627867124777ec35c6c040b210079a"
+                                    "kind":  "compile",
+                                    "name":  "generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs",
+                                    "sha256":  "621199557e90fb1661e401cc9a973163c850b4b7e65bbc8d100f67f6699eef70"
                                 }
                             ],
-    "source_commit":  "5d00290c9027e6cb49c46b0414eb512ae099615e",
+    "source_commit":  "4b4b3ece8b84c17d38d9aeda12d19e398bd577d6",
     "source_dirty":  false
 }
