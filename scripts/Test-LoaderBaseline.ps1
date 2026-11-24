@@ -599,14 +599,21 @@ try {
     Add-Case 'qualify-package-control-credited-after-staging-refusal' ($qs.package_current_for_candidate -and $qs.package_validation -eq 'passed') ("package $($qs.package_sha256) '$($qs.package_validation)'")
 
     # Qualification success follows the requested stages' current results.
+    # A valid substitute that behaves identically: the committed source plus one inert class.
+    [IO.File]::AppendAllText((Join-Path $base $marker), "`r`nnamespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineSubstituteMarker { } }`r`n")
+    Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')) | Out-Null
+    $substituteDll = Join-Path $inputs 'inert-marker-build.dll'
+    Copy-Item -LiteralPath $dll -Destination $substituteDll
+    & git -C $base checkout -q -- ($marker.Replace('\', '/'))
+    Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')) | Out-Null
     $testProject = Join-Path $base 'tests\KingmakerLastAzlantiPreserver.Tests\KingmakerLastAzlantiPreserver.Tests.csproj'
     $testProjectText = [IO.File]::ReadAllText($testProject)
-    $probe = '<Target Name="LoaderBaselineProbeReplace" AfterTargets="Build"><Copy SourceFiles="' + [Security.SecurityElement]::Escape($checkedArithmeticDll) + '" DestinationFiles="$(OutDir)KingmakerLastAzlantiPreserver.dll" /></Target></Project>'
+    $probe = '<Target Name="LoaderBaselineProbeReplace" AfterTargets="Build"><Copy SourceFiles="' + [Security.SecurityElement]::Escape($substituteDll) + '" DestinationFiles="$(OutDir)KingmakerLastAzlantiPreserver.dll" /></Target></Project>'
     [IO.File]::WriteAllText($testProject, $testProjectText.Substring(0, $testProjectText.LastIndexOf('</Project>')) + $probe)
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     $ok = $q.ExitCode -ne 0 -and ($q.Output -replace '\s+', ' ') -match 'tests did not run against the current DLL' -and [string]$qs.status -match '^failed'
-    Add-Case 'qualify-fails-when-tests-ran-against-a-different-dll' $ok ("test project's copy replaced by a valid checked-arithmetic Release DLL: exit $($q.ExitCode); status '$($qs.status)'; " + (Get-Reason $q.Output))
+    Add-Case 'qualify-fails-when-tests-ran-against-a-different-dll' $ok ("test project's copy replaced by a valid Release build with one inert extra class ($(Get-Sha256 $substituteDll)): exit $($q.ExitCode); status '$($qs.status)'; " + (Get-Reason $q.Output))
     & git -C $base checkout -q -- 'tests/KingmakerLastAzlantiPreserver.Tests/KingmakerLastAzlantiPreserver.Tests.csproj'
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
