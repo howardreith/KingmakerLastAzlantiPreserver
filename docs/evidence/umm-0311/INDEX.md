@@ -1,24 +1,32 @@
 # UMM 0.31.1 baseline evidence
 
-Machine-generated outputs for candidate commit `67a09d25829b38f072a20597d91aa05d717aa42c`, exported 2026-11-23 22:51 UTC.
+Machine-generated outputs for candidate commit `363c484d538612597c76839a49d82aea3e446b83`, exported 2026-11-24 00:49 UTC.
 Only local path prefixes were replaced: `<repo>` (this checkout or its temporary clone root), `<temp>`, `<game>`
-(the Kingmaker installation, read-only), `<buildtools>`, `<user-profile>`, `<fleet>` (the owner's fleet mission folder,
-outside this repository). Nothing else was edited. Raw SHA-256 is of the original output; exported SHA-256 is of the
-file in this folder.
+(the Kingmaker installation, read-only), `<buildtools>`, `<reference-assemblies>`, `<dotnet>`, `<user-profile>`, `<fleet>` (the owner's fleet mission folder,
+outside this repository). Line endings were normalized to LF and a UTF-8 byte-order mark was dropped; nothing else was
+edited. Raw SHA-256 is of the original output bytes. Exported SHA-256 is of the committed Git blob of each file in this
+folder (LF bytes; a Windows checkout with `core.autocrlf` may show CRLF in the working tree, so hash the blob, not the
+checked-out file). To verify one, from the repository root:
 
-| File | Raw SHA-256 | Exported SHA-256 |
+```
+git cat-file blob HEAD:docs/evidence/umm-0311/<file> | sha256sum
+python -c "import hashlib,subprocess,sys; print(hashlib.sha256(subprocess.check_output(['git','cat-file','blob','HEAD:docs/evidence/umm-0311/'+sys.argv[1]])).hexdigest())" <file>
+```
+
+| File | Raw SHA-256 | Exported SHA-256 (Git blob) |
 | --- | --- | --- |
-| `qualification-summary.json` | `d1794ff555a8845c59d0a6797e7e2bc5a4153473d74aaa07e0e0a1c21d088f8a` | `790a2e39619b7be7d598d64ed52462307fbe8c8ddd3e7775488a0ec2626d8fd4` |
-| `build.json` | `e58ee928599c7f49530429f76af8742fe6893a3948ba616951a511ba43fb7683` | `886dced1e971adb51b790f84498dc296e38a012e1e718069523abd871b798229` |
-| `package.json` | `23b41b3f925824aee39f7d1d22963cdfa0b1a32135ae1268695f650086e29d8d` | `9ae3859c90fe8b97d78bde961e8a164c0399b7a8d94ee625304994de3ce130ab` |
+| `qualification-summary.json` | `d45f8774be3532d5502249e5e9d73aa0d011189ba20cdc9d9f99af3633655502` | `6ac61ba21f857d1588994e9e654abddfdbbd5f7eb074cfff2aba2b991db233ee` |
+| `build.json` | `fc050e53445f66c000a6330519342e02ada1fae6cc42f48b526f86498183ae01` | `2467f4c664b66acf8691d8209e3b7a5899a67ab54f70ecd5ccef66049702f846` |
+| `tests.json` | `70fc947ae9c3d0000ef4619bf36316b3e93a838d5e22dbc9f1a679ff24bb929c` | `6d1b4bd12d9a7137fdd939d127e57f509fffec9d0e30939d794499c2fd32fbf9` |
+| `contracts.json` | `bdc0819800054481c32dab6d616ebdc8fb3030c6ced7fc31e7a818ce637c3fc8` | `c3f9c9a3441f73caa272067657b857b17b073d6936748a08d83945b55a578512` |
+| `game-over-load-contracts.json` | `e6e57439d4c0442a05a3e3fc0f3ad9a9047e0e1d15dd9df9870407dc5540a183` | `d1842222beaf419373397d4db50938e96b5dd6e96e2a5c5f95093d75cf8c0c1c` |
+| `package.json` | `b321bf6a19914940b44d430f2e02fbdc00951ac121d897c0001e615d8f8b6251` | `d16bbf1f00af630cb9b687c3674f79627846d424ff021a924b54963da48e4def` |
 | `package-validation.json` | `1fc2e5d529e9db041ae5ea689c6c87d95f9623d39b7b2a73555179f7aa9bfeba` | `5adeac007c053c61807098c9a03a62e3490292732e4e9236febd8b0986cc7300` |
-| `contracts.json` | `9bb0495ebf443b645ea037f4f1a89c317e6ab15535e1350a768b7cad477859b3` | `38034b9f36e964a8476be55ba0683f55852c2f31dc67a2883ff9b4085f3a26bd` |
-| `game-over-load-contracts.json` | `0a7908a19a2e2c3faf3c6228c04e0af2560b34817e8c15406a671635c6f1b2b1` | `77d38e4f21d6b8db8dc9c530a8e4e9842f955e52a8e23070a4d7d44785b7eb40` |
-| `tests.json` | `2890a4ae2287a4ec42c75aa3bf72c9f1d834c7a2a3278c51a17369566785aa0c` | `06a2c1cbf403e8d2be583083fdd3d97ca760da6138d0db34b3d1309f1374c9d2` |
-| `loader-baseline.json` | `a7a7791acde6be859117460261dacb94d6804d0853b355168919c04fcb4db080` | `848d1f35c01279dcad2ca35c61089e113e872c7d061c82925b429855b8fe6a2e` |
+| `loader-baseline.json` | `f9f5dbaba99fe03ba9309f5a772eb367f81cb50de72fa4a2c5256804c3de6136` | `aba00dc9a4b4d0bb768df1c4cd96da8b3fab79db2d0f68c278121b8b8e5fc712` |
 | `loader-profiles-managed.json` | `4c7fab048afa6350dd5b439d2208c00250cc56ec81bf2cf9ca465fb9220b0af9` | `a84539352817f11bc11f49c9539f1027c5bd0a970e857d2531085d70cff51737` |
 | `api-audit.json` | `106fde3968a78d951116982c7911f68d468c85c16362b58d6a07412d20f32f41` | `66ef3435dfcf708929a4602d00a909f989961761e3f80037330c775216e9f5be` |
-| `loader-profile-inventory.json` | `9b2baf58aa932cb096aca18e474de56a586f6ad4be2822538a549e1ede2fe41b` | `eda39ed24fb416df577d7e6ab557d28bc8532f46f8267cb9ebbf2a5c740378c2` |
+| `loader-profile-inventory.json` | `53cfa07b7acbda45c798323ad3321aedf9bb0071b6191558cba9de58f22f326f` | `e4160fdd17387eecd887b53653a19e3cb12df85df41b9eaa305bef7ca3c92e0a` |
+| `docs-link-check.json` | `056a39bb2afa80f2a3f85f6a344bf6de853c5b16e3473f10abbf0df1a3ea17b8` | `d1c289efe3e0016494b0c99c890f7cafae48919daae7e425ba056e5b2bed0963` |
 | `newest-stable-selection.json` | `3b3afcb904f00b33006d74c481fbce4bf6e4992e7f9001d28cdf28d589f9f56f` | `150806fc23701c046ae9980c73c91d12c3badb671d7e30c126b61060784dd51e` |
 | `loader-profiles.md` | `3b2883677f537286a0d6f210327fae8ac8734b40ec7cc5850e92819eaeb03d5e` | `3b2883677f537286a0d6f210327fae8ac8734b40ec7cc5850e92819eaeb03d5e` |
 | `loader-api-audit-Program.cs.txt` | `be870827024fd41f63235ebb522c489e8d49c7991de7091ad0e14a1a0e935ea3` | `be870827024fd41f63235ebb522c489e8d49c7991de7091ad0e14a1a0e935ea3` |

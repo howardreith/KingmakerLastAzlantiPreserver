@@ -21,7 +21,469 @@
                                   "source":  "https://raw.githubusercontent.com/newman55/unity-mod-manager/10cfb1cce51914a5114928c5bc6a06d1d2c31fe2/lib/Harmony/1.2/0Harmony12.dll"
                               }
                           ],
-    "build_inputs_sha256":  "5a42c82758a2061524eae06d1ac6d68a2259f7a319ce7a4511a78b5475a8735c",
-    "source_commit":  "67a09d25829b38f072a20597d91aa05d717aa42c",
-    "source_dirty":  false
+    "build_inputs_sha256":  "50ef0cf5c8e38416ddba684c641122c2c39fa62874d395a6ad7cdb424a47a482",
+    "compiler_references":  [
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/CompositionRoot.cs",
+                                    "sha256":  "85b54a615f2c6cc73973206542496f38c330f61aec4a27dedd20736d64a84efc"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/ActiveSaveResolver.cs",
+                                    "sha256":  "4398f82c1a3e9ab3e058f1877a6dbbc688427a9bad0a315e79933c8df47b0844"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/CompatibilityDetector.cs",
+                                    "sha256":  "9b6e0699e766df2141ab8c72076ad4ac1d3ba8370f5733a7e9d6757c6d53aa93"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/CompatibilityReport.cs",
+                                    "sha256":  "ab4cd451c43f543508fdea424e63f0a84391caad2c557431a87daecbfef7c222"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/DeleteInvocationClassifier.cs",
+                                    "sha256":  "1a2d075a6ccfede074e4960e5b5b4488925b39a2976794b091ed617ea0e4ada7"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/GameOverLoadContractResolver.cs",
+                                    "sha256":  "d521431db3d3653320393f9cfa511d8f382bcd8e65bd2597df69dac0e3cfa8e8"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/GameOverLoadContracts.cs",
+                                    "sha256":  "5d45f5d6f8793ecead78a99b30a0569c9af88db95f2073397efcccbef11f72ce"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/GameOverLoadControlCoordinator.cs",
+                                    "sha256":  "daa4d1c25b54262848fc25d171e6b755d52725fecfec727672086c47d9106dcb"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/GameOverLoadEligibility.cs",
+                                    "sha256":  "739c56b80f6d01d44a34d8e0ae7e1f2b28e603572b700e7cdacf50b9f5525e55"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/GameOverLoadEligibilityService.cs",
+                                    "sha256":  "38378d8830b9c7d4e117bde40c79693ce8f152eae513fa28aa98940d95970f7a"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/GameOverLoadOutcomeTracker.cs",
+                                    "sha256":  "b65ca8afbf576f2e282560bec99a7a91a907edfb76fa91904b95f4a2b665d591"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/KingmakerContractResolver.cs",
+                                    "sha256":  "1c2251377fd57073d5246f1cc365a7291c9e7e52ebcdb01b31b396c6d499c7af"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/KingmakerContracts.cs",
+                                    "sha256":  "5a7b59797cdde23013285df9b21a9c791e6e7bef81f90c81093a5c60ce5d29d1"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/RuntimeStatus.cs",
+                                    "sha256":  "dca025d1cd4877025402d44857d0c71ba1a6854825a8595750525144f1a80ac4"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Integration/ScopedControlElevation.cs",
+                                    "sha256":  "b045a5ad77bfd3f86fc180c91ef55e28369cd10f86fd0a04ca36bc38073c7ff1"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Logging/IModLogger.cs",
+                                    "sha256":  "15d580bd3430668c4d40d6481592f8fa23915ac2645dea2c01a47bfa59c4c1e7"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Logging/UmmLogger.cs",
+                                    "sha256":  "8b43bffb98bc218ed51829da244a09011242a503b64049b090bce3b0bd0ad941"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Main.cs",
+                                    "sha256":  "09aa0cf3cb58fee868f6de3b5af28a0684d05b3eda2857889b76e566adc379aa"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Patches/GameOverContextPatch.cs",
+                                    "sha256":  "df8fa4e40d5a61e0c9c6962b789b762972ddf15db05e89a66afe08120838b350"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Patches/GameOverLoadControlsPatch.cs",
+                                    "sha256":  "77b32477685ec9696d57953b44b6d11795881a49ae5e9652178a1f6864373352"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Patches/GameOverLoadPatchBridge.cs",
+                                    "sha256":  "29e4dc4f106adc07f102a1d6280cc5864ae5c74f6fbfab2531a534538d967118"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Patches/PatchBridge.cs",
+                                    "sha256":  "473aa114ca6c89f8b61b41fbd9c4a89a9f6bf9d6b01789cc7f6b5f1a5ee1ed47"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Patches/SaveDeletionPatch.cs",
+                                    "sha256":  "8b8fdea77c21aa153945b092ccb23e9747ec454c93cea5cf997bb66f0063eea2"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/GameOverPreservationCoordinator.cs",
+                                    "sha256":  "c929737a9bc6f71ff91d4b6f217c1bfac619649c4504e01f0bd7c1fd676c1376"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/IGameOverPreservationOutcomeSink.cs",
+                                    "sha256":  "46bd390150847b2b663f703d2dd15f191f1747272796330981351a1ee7c57970"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/PreservationContext.cs",
+                                    "sha256":  "50fdba9297cd379b1d34e35d9131467fbcd6b12d6122cf2edfa1536f3be33004"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/PreservationContextTracker.cs",
+                                    "sha256":  "591a8ccca39aaba4d021ee9d9f68fdd0576832a1d05752b12dd15ee7c69c0ea3"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/PreservationDecision.cs",
+                                    "sha256":  "0523e39e6b4fe3f42ad469b14dc71409b22782752e1684169aa7221cad752c30"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/PreservationPolicy.cs",
+                                    "sha256":  "be885d95fd039fd06c3b35aff66f7ec194a3a12f751d5fbdd7f16cd2d8acdf48"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/PreservationRequest.cs",
+                                    "sha256":  "20812503625db9157a187eb31491cf39684e451b776430e0325857bb96898968"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Preservation/SaveIdentity.cs",
+                                    "sha256":  "69f49d7314fa3a0649565959faef1d9c42f29319c6ba80780389ef3cd1f84fbe"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/ProductMetadata.cs",
+                                    "sha256":  "38df9894dc7fb18edd19b544b1d1ccd68458965c8d1a133f0bd8a32cd5721e83"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Properties/AssemblyInfo.cs",
+                                    "sha256":  "de1feff3c174f9faa92dc10d6a97c4b0ea1f23f270b78b41d3d2c5c0b4f2de68"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Recovery/RecoveryDecision.cs",
+                                    "sha256":  "ce26357f5e8161530e1290a8891b6d799c0abe28372922adbebaeefca2f01bff"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Recovery/RecoveryJson.cs",
+                                    "sha256":  "9f7872f0ff8c1497c4c9af2a3945b6358b2721732273b8cc27ad7628688bb9b8"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Recovery/RecoveryMarkerStore.cs",
+                                    "sha256":  "d06c6edc9fc5a8630e1ef691607a1e1d95b1d09441668c4ba79dd5554e5f0f66"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Recovery/RecoveryMetadata.cs",
+                                    "sha256":  "4ec1cde932631f9d2e821b352dddbc33cd4bc7c35a5deb8898b5b23fd6367a1b"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Recovery/RecoverySnapshotService.cs",
+                                    "sha256":  "8f899ce198d4aed18fd750df9d13b393c986ba2d5384ee0bca86fc49ab799ace"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/Settings.cs",
+                                    "sha256":  "c02f9885956478c4cb33157efca7dfd7663171583e4a56f51de32ad393755925"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/UI/SettingsPanel.cs",
+                                    "sha256":  "329e8c8a968b9a8a67a8a7bf2544c73644251d9798c3e7ba5617894644ea3030"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/UI/SettingsPanelModel.cs",
+                                    "sha256":  "9099361d0bbcff0a10b9a236f9138d9bfe445ad6b2b1a6ad5e02944e57d2a4bc"
+                                },
+                                {
+                                    "kind":  "compile",
+                                    "name":  "src/KingmakerLastAzlantiPreserver/UI/SettingsView.cs",
+                                    "sha256":  "6dde58cfb25f683997617154afd36d6416cb7f0eb8588fb83a501da08369d32e"
+                                },
+                                {
+                                    "kind":  "editorconfig",
+                                    "name":  ".editorconfig",
+                                    "sha256":  "deda9cddc7a90df5c8f34c7960dbdb020db7bd83bcd839baa153102f94d45935"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "artifacts/references/0Harmony12.dll",
+                                    "sha256":  "aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "artifacts/references/UnityModManager.dll",
+                                    "sha256":  "2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "Assembly-CSharp.dll",
+                                    "sha256":  "3b6450ffec440e296e586f71c711b195aed144b28d53e1cbb29406d18fef5afb"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "mscorlib.dll",
+                                    "sha256":  "a69849cf0b433664b14dbaeb82385ec043449f71f7c69559cba4be0dd3e8be8d"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.Core.dll",
+                                    "sha256":  "f9c65f2d44f244e1195802a68f5d8f3457caeef2e385cf28c534218749adbe7f"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.dll",
+                                    "sha256":  "541c6067cc69a43660d06a4f0f6eab0febcd33df9089f209d99b7ea36682a0a5"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.Runtime.Serialization.dll",
+                                    "sha256":  "a8a8240fc53a5e26a1e6160a39d1d2728b4a1e9652c67740ccb1e349865e7624"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "System.Xml.dll",
+                                    "sha256":  "a01c28f804dca406d6d5d1eacfa9d8d435755fbef58f6673bce40efb789717f3"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "UnityEngine.CoreModule.dll",
+                                    "sha256":  "3a76df7f709d465e3273502e08edbffb536b1c2f78c3a132b8668e59fddd2803"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "UnityEngine.dll",
+                                    "sha256":  "50b79c57f46bf4e060bb27461b6d4fac6f078e08b57e776c7a811554c4899fd6"
+                                },
+                                {
+                                    "kind":  "reference",
+                                    "name":  "UnityEngine.IMGUIModule.dll",
+                                    "sha256":  "327b1d34eab0ada754186a03dac40f23de627867124777ec35c6c040b210079a"
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "AdditionalLibPaths=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "AllowUnsafeBlocks=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "ApplicationIcon=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "AssemblyName=KingmakerLastAzlantiPreserver",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "AssemblyOriginatorKeyFile=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "CheckForOverflowUnderflow=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "CscToolExe=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "CscToolPath=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "DebugSymbols=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "DebugType=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "DefineConstants=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "DelaySign=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Deterministic=true",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Features=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "FileAlignment=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "HighEntropyVA=true",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "LangVersion=7.3",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "ModuleAssemblyName=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "NoConfig=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "NoStdLib=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "NoWarn=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Nullable=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Optimize=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "PathMap=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "PlatformTarget=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Prefer32Bit=false",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "PublicSign=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "RootNamespace=KingmakerLastAzlantiPreserver",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "SignAssembly=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "SubsystemVersion=6.00",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "TargetFrameworkMoniker=.NETFramework,Version=v4.7.2",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "TargetFrameworkVersion=v4.7.2",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "TreatWarningsAsErrors=true",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "WarningLevel=4",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "WarningsAsErrors=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "WarningsNotAsErrors=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Win32Manifest=",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "setting",
+                                    "name":  "Win32Resource=",
+                                    "sha256":  ""
+                                }
+                            ],
+    "source_commit":  "363c484d538612597c76839a49d82aea3e446b83",
+    "source_dirty":  true
 }
