@@ -413,6 +413,8 @@ try {
     $settingBuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     $settingReceipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
     $settingSha = Get-Sha256 $dll
+    $checkedArithmeticDll = Join-Path $inputs 'checked-arithmetic.dll'
+    Copy-Item -LiteralPath $dll -Destination $checkedArithmeticDll
     $ok = $settingBuild.ExitCode -eq 0 -and $settingSha -ne $firstDllSha -and @($settingReceipt.compiler_references | Where-Object { $_.kind -eq 'setting' -and $_.name -ceq 'CheckForOverflowUnderflow=true' }).Count -eq 1
     Add-Case 'rebuild-with-imported-compiler-setting-records-it' $ok "exit $($settingBuild.ExitCode); DLL $settingSha (committed configuration: $firstDllSha); receipt compiler inputs include CheckForOverflowUnderflow=true"
     Expect-Accepted 'package-after-rebuild-with-imported-compiler-setting-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
@@ -599,12 +601,12 @@ try {
     # Qualification success follows the requested stages' current results.
     $testProject = Join-Path $base 'tests\KingmakerLastAzlantiPreserver.Tests\KingmakerLastAzlantiPreserver.Tests.csproj'
     $testProjectText = [IO.File]::ReadAllText($testProject)
-    $probe = '<Target Name="LoaderBaselineProbeReplace" AfterTargets="Build"><Copy SourceFiles="' + [Security.SecurityElement]::Escape($debugDll) + '" DestinationFiles="$(OutDir)KingmakerLastAzlantiPreserver.dll" /></Target></Project>'
+    $probe = '<Target Name="LoaderBaselineProbeReplace" AfterTargets="Build"><Copy SourceFiles="' + [Security.SecurityElement]::Escape($checkedArithmeticDll) + '" DestinationFiles="$(OutDir)KingmakerLastAzlantiPreserver.dll" /></Target></Project>'
     [IO.File]::WriteAllText($testProject, $testProjectText.Substring(0, $testProjectText.LastIndexOf('</Project>')) + $probe)
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     $ok = $q.ExitCode -ne 0 -and ($q.Output -replace '\s+', ' ') -match 'tests did not run against the current DLL' -and [string]$qs.status -match '^failed'
-    Add-Case 'qualify-fails-when-tests-ran-against-a-different-dll' $ok ("test project's DLL replaced by the Debug build: exit $($q.ExitCode); status '$($qs.status)'")
+    Add-Case 'qualify-fails-when-tests-ran-against-a-different-dll' $ok ("test project's copy replaced by a valid checked-arithmetic Release DLL: exit $($q.ExitCode); status '$($qs.status)'; " + (Get-Reason $q.Output))
     & git -C $base checkout -q -- 'tests/KingmakerLastAzlantiPreserver.Tests/KingmakerLastAzlantiPreserver.Tests.csproj'
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
@@ -683,14 +685,16 @@ try {
     # Separate processes per profile verify one frozen DLL against the two distinct profiles, even when the build output
     # changes between profiles (replacement done by a disposable instrumented copy of Test-LoaderProfiles.ps1).
     $frozenReport = Join-Path $inputs 'profiles-frozen.json'
-    $profilesReplacing = New-InstrumentedScript 'Test-LoaderProfiles' '        foreach ($identity in $identities) { Write-Host "    $identity" }' ('        if (-not $script:replacedOnce) { Copy-Item -LiteralPath ' + (Quote $legacyDll) + ' -Destination $dll -Force; $script:replacedOnce = $true }')
+    $profilesReplacing = New-InstrumentedScript 'Test-LoaderProfiles' '        foreach ($identity in $identities) { Write-Host "    $identity" }' ('        if (-not (Get-Variable -Name replacedOnce -Scope Script -ErrorAction SilentlyContinue)) { Copy-Item -LiteralPath ' + (Quote $legacyDll) + ' -Destination $dll -Force; $script:replacedOnce = $true }')
     $fr = Invoke-Isolated @('-File', $profilesReplacing, '-ProfileRoot', $profileRoot, '-ReportPath', $frozenReport)
     Remove-Item -LiteralPath $profilesReplacing
     $frj = if (Test-Path -LiteralPath $frozenReport) { Get-Content -LiteralPath $frozenReport -Raw | ConvertFrom-Json } else { $null }
     $rows = if ($frj) { @($frj.profiles) } else { @() }
     $ok = $fr.ExitCode -eq 0 -and $rows.Count -eq 2 -and @($rows | Where-Object { $_.passed -and $_.detail -match [regex]::Escape($firstDllSha) }).Count -eq 2 -and (Get-Sha256 $dll) -ne $firstDllSha -and
         @($rows | Where-Object { $_.profile -eq '0.31.1' -and $_.detail -match 'Version=2\.3\.1\.1' }).Count -eq 1 -and @($rows | Where-Object { $_.profile -eq '0.33.4' -and $_.detail -match 'Version=2\.4\.3' }).Count -eq 1
-    Add-Case 'profile-comparison-distinct-profiles-frozen-dll' $ok ((@($rows | ForEach-Object { $_.profile + ': ' + $_.detail }) -join ' | ') + "; build output replaced after the first profile (now $(Get-Sha256 $dll))")
+    $profileDetail = (@($rows | ForEach-Object { $_.profile + ': ' + $_.detail }) -join ' | ') + "; build output replaced after the first profile (now $(Get-Sha256 $dll))"
+    if (-not $ok) { $profileDetail += "; exit $($fr.ExitCode): " + (Get-Reason $fr.Output) }
+    Add-Case 'profile-comparison-distinct-profiles-frozen-dll' $ok $profileDetail
     Copy-Item -LiteralPath (Join-Path $inputs 'first-build-dll.dll') -Destination $dll -Force
 
     # 9. Inputs and this repository's outputs are preserved.
