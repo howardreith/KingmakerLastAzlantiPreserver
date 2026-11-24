@@ -141,7 +141,7 @@ else {
                 $temporaryReport = $publishedReceipt + '.' + [Guid]::NewGuid().ToString('N') + '.tmp'
                 try {
                     Write-JsonFile $temporaryReport $result
-                    if ([IO.File]::Exists($publishedReceipt)) { [IO.File]::Replace($temporaryReport, $publishedReceipt, $null) } else { [IO.File]::Move($temporaryReport, $publishedReceipt) }
+                    if ([IO.File]::Exists($publishedReceipt)) { [IO.File]::Replace($temporaryReport, $publishedReceipt, [NullString]::Value) } else { [IO.File]::Move($temporaryReport, $publishedReceipt) }
                     $written = $true
                 }
                 finally { if ([IO.File]::Exists($temporaryReport)) { [IO.File]::Delete($temporaryReport) } }
