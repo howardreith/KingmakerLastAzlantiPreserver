@@ -483,7 +483,7 @@ try {
     $ab = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     Expect-Accepted 'package-with-imported-sources-a-then-b-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     [IO.File]::WriteAllText($gamePath, (& $withItems (& $importItems $srcB $srcA)))
-    Expect-Rejected 'package-reuse-after-imported-sources-reordered-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ \(entry \d+ name'
+    Expect-Rejected 'package-reuse-after-imported-sources-reordered-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry \d+ name'
     $ba = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     Add-Case 'rebuild-with-imported-sources-reordered-accepted' ($ab.ExitCode -eq 0 -and $ba.ExitCode -eq 0) "builds exit $($ab.ExitCode)/$($ba.ExitCode)"
     Expect-Accepted 'package-after-reordered-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
@@ -492,7 +492,7 @@ try {
     $otherCsc = Join-Path $temp 'other compiler'; New-Item -ItemType Directory -Path $otherCsc -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') -Destination $otherCsc
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal.Replace('</PropertyGroup>', '<CscToolPath>' + [Security.SecurityElement]::Escape($otherCsc) + '</CscToolPath><CscToolExe>csc.exe</CscToolExe></PropertyGroup>'))
-    Expect-Rejected 'package-reuse-after-compiler-selection-change-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ \(entry 0 '
+    Expect-Rejected 'package-reuse-after-compiler-selection-change-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry 0 '
     # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
     # refused at package admission and at Build-Local, never recorded as text.
     $rspDir = Join-Path $base 'artifacts\response'; New-Item -ItemType Directory -Path $rspDir -Force | Out-Null
@@ -780,13 +780,14 @@ try {
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-build-and-test-control-passes' ($q.ExitCode -eq 0 -and $qs.test_result -eq 'passed') ("exit $($q.ExitCode); tests $($qs.test_count) ($($qs.test_result)); status '$($qs.status)'")
-    $controlTests = Join-Path $inputs 'control-tests.json'
+    # Kept in the clone's ignored artifacts and named relative to the repository: the safety scan refuses absolute paths.
+    $controlTests = Join-Path $base 'artifacts\control-tests.json'
     Copy-Item -LiteralPath (Join-Path $base 'artifacts\qualification\tests.json') -Destination $controlTests -Force
     [IO.File]::WriteAllText($testProject, $testProjectText.Substring(0, $testProjectText.LastIndexOf('</Project>')) + $probe)
     $qualifyText = [IO.File]::ReadAllText($qualify)
     $testLine = "if (`$Test) { & (Join-Path `$PSScriptRoot 'Test.ps1') -Configuration `$Configuration -ResultPath `$invocationTestResult }"
     if ($qualifyText.IndexOf($testLine) -lt 0) { throw 'Qualify.ps1 test anchor not found.' }
-    [IO.File]::WriteAllText($qualify, $qualifyText.Replace($testLine, $testLine + "`r`nCopy-Item -LiteralPath $(Quote $controlTests) -Destination (Join-Path `$root 'artifacts\qualification\tests.json') -Force"))
+    [IO.File]::WriteAllText($qualify, $qualifyText.Replace($testLine, $testLine + "`r`nCopy-Item -LiteralPath (Join-Path `$root 'artifacts\control-tests.json') -Destination (Join-Path `$root 'artifacts\qualification\tests.json') -Force"))
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     & git -C $base checkout -q -- scripts/Qualify.ps1

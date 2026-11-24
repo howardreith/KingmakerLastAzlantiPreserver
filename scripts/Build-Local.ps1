@@ -27,7 +27,7 @@ if ($exitCode -ne 0 -or $warningCount -ne 0 -or $errorCount -ne 0) {
 }
 $difference = Get-CompilerInventoryDifference $produced $compilerReferences
 if ($difference) {
-    throw 'The production compile used different compiler inputs from the evaluated inventory; the build is not recorded.'
+    throw "The production compile used different compiler inputs from the evaluated inventory ($difference); the build is not recorded."
 }
 $dll = Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll"
 Assert-FileExists $dll 'Built mod DLL'
