@@ -487,12 +487,73 @@ try {
     $ba = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     Add-Case 'rebuild-with-imported-sources-reordered-accepted' ($ab.ExitCode -eq 0 -and $ba.ExitCode -eq 0) "builds exit $($ab.ExitCode)/$($ba.ExitCode)"
     Expect-Accepted 'package-after-reordered-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
-    # R1-F1: a changed compiler selection (CscToolPath/CscToolExe naming another csc.exe) refuses the receipt: the
-    # effective compiler is the first inventory entry, by content.
+    # R6-F1: the compiler selection alone. Control: the committed props rebuilt (the first DLL) and accepted; the same props
+    # with only CscToolPath/CscToolExe naming another csc.exe: refused at entry 0 (the compiler) with the entry count
+    # unchanged; the committed props restored: accepted again. Each step records the compiler MSBuild selects.
+    function Get-SelectedCompiler {
+        $r = Invoke-Script (". $(Quote (Join-Path $base 'scripts\Common.ps1')); `$e = @(Get-CompilerReferenceIdentities 'Release'); [Console]::Out.WriteLine('COMPILER ' + `$e[0].name + ' ' + `$e[0].sha256 + ' ENTRIES ' + `$e.Count)")
+        return [regex]::Match($r.Output, 'COMPILER \S+ [0-9a-f]{64} ENTRIES \d+').Value
+    }
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+    $control = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    $controlCompiler = Get-SelectedCompiler
+    $controlPackage = Invoke-Isolated @('-File', $package)
+    Add-Case 'compiler-selection-control-accepted' ($control.ExitCode -eq 0 -and (Get-Sha256 $dll) -eq $firstDllSha -and $controlPackage.ExitCode -eq 0 -and $controlPackage.Output -match 'Package validation passed' -and $controlCompiler) ("rebuilt DLL $(Get-Sha256 $dll); package exit $($controlPackage.ExitCode); selected $controlCompiler")
     $otherCsc = Join-Path $temp 'other compiler'; New-Item -ItemType Directory -Path $otherCsc -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') -Destination $otherCsc
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal.Replace('</PropertyGroup>', '<CscToolPath>' + [Security.SecurityElement]::Escape($otherCsc) + '</CscToolPath><CscToolExe>csc.exe</CscToolExe></PropertyGroup>'))
-    Expect-Rejected 'package-reuse-after-compiler-selection-change-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \((entry 0 |entry count)'
+    $changedCompiler = Get-SelectedCompiler
+    $refused = Invoke-Isolated @('-File', $package)
+    $sameCount = $controlCompiler -and $changedCompiler -and ($controlCompiler -replace '.* ENTRIES ', '') -ceq ($changedCompiler -replace '.* ENTRIES ', '')
+    Add-Case 'package-reuse-after-compiler-selection-change-rejected' ($refused.ExitCode -ne 0 -and $refused.Output -match 'resolves now \(entry 0 name' -and $sameCount -and $changedCompiler -cne $controlCompiler) ("selected $changedCompiler (control $controlCompiler); " + (Get-Reason $refused.Output))
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+    $restoredCompiler = Get-SelectedCompiler
+    $restoredPackage = Invoke-Isolated @('-File', $package)
+    Add-Case 'package-after-compiler-selection-restored-accepted' ($restoredPackage.ExitCode -eq 0 -and $restoredPackage.Output -match 'Package validation passed' -and $restoredCompiler -ceq $controlCompiler) ("selected $restoredCompiler; package exit $($restoredPackage.ExitCode)")
+    # R1-F1: a project-relative compiler selector (CscToolPath bin\selected-compiler) names the copy of a Roslyn csc.exe
+    # below the project directory, where MSBuild runs the compiler; a different file with the same relative path exists
+    # below the repository root, the directory the scripts are run from. The build receipt and package admission
+    # identify the project-selected binary, never the caller-relative one.
+    $roslynCsc = $null
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (Test-Path -LiteralPath $vswhere) { $roslynCsc = @(& $vswhere -latest -products * -find 'MSBuild\Current\Bin\Roslyn\csc.exe' | Where-Object { $_ }) | Select-Object -First 1 }
+    $projectSelected = Join-Path $base 'src\KingmakerLastAzlantiPreserver\bin\selected-compiler'
+    $callerDecoy = Join-Path $base 'bin\selected-compiler'
+    New-Item -ItemType Directory -Path $projectSelected, $callerDecoy -Force | Out-Null
+    if ($roslynCsc) { Copy-Item -Path (Join-Path (Split-Path -Parent $roslynCsc) '*') -Destination $projectSelected -Recurse -Force }
+    Copy-Item -LiteralPath (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') -Destination $callerDecoy
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal.Replace('</PropertyGroup>', '<CscToolPath>bin\selected-compiler</CscToolPath><CscToolExe>csc.exe</CscToolExe><UseSharedCompilation>false</UseSharedCompilation></PropertyGroup>'))
+    $fromRoot = { param([string] $Script) Invoke-Isolated @('-Command', "Set-Location -LiteralPath $(Quote $base); & $(Quote $Script); exit `$LASTEXITCODE") }
+    $relativeBuild = & $fromRoot (Join-Path $base 'scripts\Build-Local.ps1')
+    $projectSha = if (Test-Path -LiteralPath (Join-Path $projectSelected 'csc.exe')) { Get-Sha256 (Join-Path $projectSelected 'csc.exe') } else { 'missing' }
+    $decoySha = Get-Sha256 (Join-Path $callerDecoy 'csc.exe')
+    $recorded = @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references)[0]
+    Add-Case 'relative-compiler-selector-receipt-names-the-project-selected-binary' ($roslynCsc -and $relativeBuild.ExitCode -eq 0 -and $recorded.kind -ceq 'compiler' -and $recorded.name -ceq 'csc.exe' -and $recorded.sha256 -ceq $projectSha -and $projectSha -cne $decoySha) ("Roslyn csc.exe source: $(if ($roslynCsc) { 'Visual Studio Build Tools' } else { 'not found' }); build exit $($relativeBuild.ExitCode); receipt compiler $($recorded.name) $($recorded.sha256); project-selected $projectSha; caller-relative decoy $decoySha; DLL $(Get-Sha256 $dll)" + $(if ($relativeBuild.ExitCode) { '; ' + (Get-Reason $relativeBuild.Output) } else { '' }))
+    $relativePackage = & $fromRoot $package
+    Add-Case 'relative-compiler-selector-package-accepted-from-the-repository-root' ($relativePackage.ExitCode -eq 0 -and $relativePackage.Output -match 'Package validation passed') ("exit $($relativePackage.ExitCode); " + (Get-Reason $relativePackage.Output))
+    [IO.File]::Copy((Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'), (Join-Path $projectSelected 'csc.exe'), $true)
+    Expect-Rejected 'relative-compiler-selector-after-project-selected-binary-replaced-rejected' (& $fromRoot $package) 'resolves now \(entry 0 sha256'
+    Remove-Item -LiteralPath $projectSelected, $callerDecoy -Recurse -Force
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+    # R6-F2: an external source's compiler-visible path is part of its identity (CallerFilePath puts it in the DLL). A
+    # source using CallerFilePath imported from one folder builds and is accepted; a byte-identical copy with the same
+    # name in another folder refuses the receipt; the rebuild from that folder differs and its receipt is accepted.
+    $pathSrc1 = Join-Path $temp 'caller path one\LoaderBaselineCallerPath.cs'; $pathSrc2 = Join-Path $temp 'caller path two\LoaderBaselineCallerPath.cs'
+    foreach ($p in @($pathSrc1, $pathSrc2)) {
+        New-Item -ItemType Directory -Path (Split-Path -Parent $p) -Force | Out-Null
+        [IO.File]::WriteAllText($p, 'namespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineCallerPath { internal static readonly string Here = Of(); private static string Of([System.Runtime.CompilerServices.CallerFilePath] string path = "") { return path; } } }')
+    }
+    $oneItem = { param([string] $Path) '<ItemGroup><Compile Include="' + [Security.SecurityElement]::Escape($Path) + '" /></ItemGroup>' }
+    $externalEntry = { @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references | Where-Object { $_.kind -eq 'compile' -and $_.name -like 'external:LoaderBaselineCallerPath.cs@path-sha256=*' }) }
+    [IO.File]::WriteAllText($gamePath, (& $withItems (& $oneItem $pathSrc1)))
+    $p1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p1Dll = Get-Sha256 $dll; $p1Entry = & $externalEntry
+    Expect-Accepted 'package-with-external-caller-path-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    [IO.File]::WriteAllText($gamePath, (& $withItems (& $oneItem $pathSrc2)))
+    Expect-Rejected 'package-reuse-after-external-source-moved-to-identical-copy-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry \d+ name'
+    $p2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p2Dll = Get-Sha256 $dll; $p2Entry = & $externalEntry
+    $ok = $p1.ExitCode -eq 0 -and $p2.ExitCode -eq 0 -and $p1Entry.Count -eq 1 -and $p2Entry.Count -eq 1 -and $p1Entry[0].sha256 -ceq $p2Entry[0].sha256 -and $p1Entry[0].name -cne $p2Entry[0].name -and $p1Dll -ne $p2Dll -and (Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)
+    Add-Case 'rebuild-from-moved-external-source-records-its-path-and-differs' $ok ("builds exit $($p1.ExitCode)/$($p2.ExitCode); source bytes equal: $((Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)); entries '$(@($p1Entry | ForEach-Object name) -join ',')' / '$(@($p2Entry | ForEach-Object name) -join ',')'; DLL $p1Dll / $p2Dll")
+    Expect-Accepted 'package-after-rebuild-from-moved-external-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
     # refused at package admission and at Build-Local, never recorded as text.
     $rspDir = Join-Path $base 'artifacts\response'; New-Item -ItemType Directory -Path $rspDir -Force | Out-Null
@@ -648,10 +709,13 @@ try {
     if (-not (Test-Path -LiteralPath $summaryPath)) { throw "Qualify -Package wrote no summary (exit $($q.ExitCode)): $($q.Output)" }
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-credits-current-package' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip"))) ("package_validation $($qs.package_validation); package $($qs.package_sha256)")
-    Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip) | Out-Null
+    # A standalone validation of another archive leaves the published validation receipt to the publication (R5-F2), so
+    # Qualify still credits exactly the published package and nothing of the other archive.
+    $publishedReceiptBefore = Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')
+    $otherValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip)
     $q = Invoke-Isolated @('-File', $qualify)
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
-    Add-Case 'qualify-ignores-validation-of-another-zip' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'not run for the current DLL' -and -not $qs.package_sha256) ("after validating the changed-source ZIP: package_validation '$($qs.package_validation)'")
+    Add-Case 'qualify-ignores-validation-of-another-zip' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Published validation receipt not written' -and (Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore -and $q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip")) -and $qs.package_sha256 -ne (Get-Sha256 $secondZip)) ("after validating the changed-source ZIP $(Get-Sha256 $secondZip): published receipt unchanged $((Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore); package_validation '$($qs.package_validation)' for $($qs.package_sha256)")
     Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip") -Force
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null
     Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip") -Force
@@ -740,6 +804,33 @@ try {
     $zipSha = Get-Sha256 $acceptedZip
     $pj = Get-Content -LiteralPath $acceptedRecords[1] -Raw | ConvertFrom-Json; $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json
     Add-Case 'retry-after-handle-closed-publishes-the-replacement-set' ($retry.ExitCode -eq 0 -and $zipSha -ne ($before -split ';')[0] -and $pj.package_sha256 -eq $zipSha -and $pv.package_sha256 -eq $zipSha -and $pv.package_path -eq $acceptedZip) "exit $($retry.ExitCode); ZIP $zipSha"
+    & git -C $base checkout -q -- README.md
+    Invoke-Isolated @('-File', $package) | Out-Null
+    # R5-F2: the published validation receipt has one owner. Controls first: a standalone validation of another archive
+    # leaves the receipt unchanged; one of a private copy of the published bytes refreshes it for the published ZIP.
+    $aSha = Get-Sha256 $acceptedZip
+    $pvBefore = Get-Sha256 $acceptedRecords[2]
+    $otherValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip)
+    Add-Case 'standalone-validation-of-another-zip-leaves-the-published-receipt' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Published validation receipt not written' -and (Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore) ("exit $($otherValidation.ExitCode); receipt unchanged $((Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore)")
+    $copyOfA = Join-Path $inputs 'published-a.zip'; Copy-Item -LiteralPath $acceptedZip -Destination $copyOfA -Force
+    $sameValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $copyOfA)
+    $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json
+    Add-Case 'standalone-validation-of-the-published-bytes-refreshes-the-receipt' ($sameValidation.ExitCode -eq 0 -and $sameValidation.Output -notmatch 'not written' -and $pv.package_sha256 -eq $aSha -and $pv.package_path -eq $acceptedZip -and $pv.package -eq $acceptedZip) ("exit $($sameValidation.ExitCode); receipt package $($pv.package_sha256) at $([IO.Path]::GetFileName([string]$pv.package_path))")
+    # Overlap with a deterministic synchronization point: the instrumented validator takes its private snapshot of the
+    # published ZIP A, then publishes a distinct valid ZIP B (README changed) through Package.ps1 and only then finishes
+    # validating A. Afterwards the published ZIP, package.json and package-validation.json all describe B, the validator
+    # reports that it left the published receipt alone, and no temporary receipt or publication lock is left.
+    [IO.File]::AppendAllText($readme, "`r`n<!-- overlapping replacement -->`r`n")
+    $overlapMarker = Join-Path $inputs 'overlap-publisher.txt'
+    $overlapValidator = New-InstrumentedScript 'Validate-Package' '[IO.File]::Copy($PackagePath, $inspected)' ('$publisherOutput = $null | & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ' + (Quote $package) + ' 2>&1; [IO.File]::WriteAllText(' + (Quote $overlapMarker) + ', "publisher exit $LASTEXITCODE")')
+    $overlap = Invoke-Isolated @('-File', $overlapValidator, '-PackagePath', $acceptedZip)
+    Remove-Item -LiteralPath $overlapValidator
+    $bSha = Get-Sha256 $acceptedZip
+    $pj = Get-Content -LiteralPath $acceptedRecords[1] -Raw | ConvertFrom-Json; $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json
+    $leftovers = @(Get-ChildItem -LiteralPath (Join-Path $base 'artifacts\qualification') -Force -Filter 'package-validation.json.*.tmp').Count + @(Get-ChildItem -LiteralPath (Join-Path $base 'artifacts\packages') -Force -Filter '.publish.lock').Count
+    $publisher = if (Test-Path -LiteralPath $overlapMarker) { [IO.File]::ReadAllText($overlapMarker) } else { 'publisher did not run' }
+    $ok = $overlap.ExitCode -eq 0 -and $publisher -ceq 'publisher exit 0' -and $overlap.Output -match 'Published validation receipt not written' -and $overlap.Output -match 'Package validation passed' -and $bSha -ne $aSha -and $pj.package_sha256 -eq $bSha -and $pv.package_sha256 -eq $bSha -and $pv.package_path -eq $acceptedZip -and $leftovers -eq 0
+    Add-Case 'overlapping-standalone-validation-keeps-the-replacement-receipt' $ok ("validator exit $($overlap.ExitCode) (validated snapshot A $aSha); $publisher; published ZIP B $bSha; package.json $($pj.package_sha256); package-validation.json $($pv.package_sha256); temporary receipts or locks left $leftovers")
     & git -C $base checkout -q -- README.md
     Invoke-Isolated @('-File', $package) | Out-Null
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null

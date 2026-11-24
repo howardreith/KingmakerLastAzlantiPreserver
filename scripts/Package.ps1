@@ -95,15 +95,7 @@ try {
     [IO.Directory]::CreateDirectory($packageDirectory) | Out-Null
     $qualification = Join-Path $root 'artifacts\qualification'
     [IO.Directory]::CreateDirectory($qualification) | Out-Null
-    $publishLock = $null
-    $deadline = [DateTime]::UtcNow.AddSeconds(300)
-    while ($null -eq $publishLock) {
-        try { $publishLock = [IO.FileStream]::new((Join-Path $packageDirectory '.publish.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None, 1, [IO.FileOptions]::DeleteOnClose) }
-        catch [IO.IOException] {
-            if ([DateTime]::UtcNow -gt $deadline) { throw "Another package publication holds $packageDirectory; nothing was changed." }
-            Start-Sleep -Milliseconds 200
-        }
-    }
+    $publishLock = Enter-PackagePublishLock $packageDirectory
     try {
         $previous = Join-Path $private 'previous'; New-Item -ItemType Directory -Path $previous | Out-Null
         $pairs = @(@($newZip, $zipPath), @($validationFinal, (Join-Path $qualification 'package-validation.json')), @($resultFinal, (Join-Path $qualification 'package.json')))

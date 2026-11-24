@@ -93,6 +93,21 @@ function Write-JsonFile([string] $Path, [object] $Value, [int] $Depth = 8) {
     $Value | ConvertTo-Json -Depth $Depth | Set-Content -LiteralPath $Path -Encoding UTF8
 }
 
+# The publication lock of the package set {ZIP, package-validation.json, package.json}: an exclusive lock file in the
+# package directory, removed when its handle closes. Package.ps1 publishes under it; a standalone validation refreshes the
+# published validation receipt only under it. Waits up to five minutes for another holder.
+function Enter-PackagePublishLock([string] $PackageDirectory) {
+    [IO.Directory]::CreateDirectory($PackageDirectory) | Out-Null
+    $deadline = [DateTime]::UtcNow.AddSeconds(300)
+    while ($true) {
+        try { return [IO.FileStream]::new((Join-Path $PackageDirectory '.publish.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None, 1, [IO.FileOptions]::DeleteOnClose) }
+        catch [IO.IOException] {
+            if ([DateTime]::UtcNow -gt $deadline) { throw "Another package publication holds $PackageDirectory; nothing was changed." }
+            Start-Sleep -Milliseconds 200
+        }
+    }
+}
+
 function Get-ExpectedProductManifest {
     # Id, AssemblyName and EntryMethod are the stable UMM identity and must never follow branding.
     return [ordered]@{
@@ -203,7 +218,10 @@ function Get-PinnedReferenceIdentities {
 # Reads a compiler-input list written by the WriteCompilerReferenceList target (the intermediate directory, then every Csc
 # argument) into path-free identities in a canonical order: kind reference/compile/file-option with the file's name
 # (repository-relative, obj:<name> for generated files in the intermediate directory, otherwise the file name) and
-# SHA-256; kind option for every other argument verbatim; kind output for output locations (file name only).
+# SHA-256; kind option for every other argument verbatim; kind output for output locations (file name only). A source
+# outside the repository and the intermediate directory also carries the SHA-256 of its compiler-visible full path
+# (external:<name>@path-sha256=<digest>), because that path reaches the DLL (CallerFilePath, diagnostics); references
+# stay identified by content, so a byte-identical reference elsewhere is the same input.
 function ConvertFrom-CompilerInputList([string] $ListPath) {
     $rootPrefix = [IO.Path]::GetFullPath($script:RepositoryRoot).TrimEnd('\') + '\'
     $lines = @(Get-Content -LiteralPath $ListPath -Encoding UTF8 | Where-Object { $_ })
@@ -220,12 +238,23 @@ function ConvertFrom-CompilerInputList([string] $ListPath) {
         if ($full.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) { return $full.Substring($rootPrefix.Length).Replace('\', '/') }
         return [IO.Path]::GetFileName($full)
     }
+    function Get-SourceName([string] $Path) {
+        $name = Get-InputName $Path
+        $full = Resolve-InputPath $Path
+        # Generated, intermediate and repository sources keep their names; only a bare file name means an external source.
+        if ($name -cne [IO.Path]::GetFileName($full) -or $full.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) { return $name }
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { $pathDigest = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($full)) | ForEach-Object { $_.ToString('x2') }) } finally { $sha.Dispose() }
+        return 'external:' + $name + '@path-sha256=' + $pathDigest
+    }
     function Get-InputDigest([string] $Path) { $full = Resolve-InputPath $Path; if (Test-Path -LiteralPath $full -PathType Leaf) { return Get-Sha256 $full } else { return 'absent' } }
     $outputSwitches = @('out', 'pdb', 'refout', 'doc', 'errorlog', 'generatedfilesout')
     $fileSwitches = @('win32res', 'win32icon', 'win32manifest', 'keyfile', 'ruleset', 'appconfig', 'analyzer', 'a', 'additionalfile', 'analyzerconfig', 'embed', 'sourcelink', 'addmodule')
     $resourceSwitches = @('resource', 'res', 'linkresource', 'linkres')
     # The effective compiler binary (and, without /noconfig, the implicit csc.rsp beside it) is an input.
-    $compiler = $lines[2].Substring('compiler|'.Length)
+    # The target records the absolute path of the compiler the project selects; an older list's relative selector is
+    # resolved against the recorded project directory too, never against the caller's directory.
+    $compiler = Resolve-InputPath $lines[2].Substring('compiler|'.Length)
     $compilerEntry = [ordered]@{ kind = 'compiler'; name = [IO.Path]::GetFileName($compiler); sha256 = $(if (Test-Path -LiteralPath $compiler -PathType Leaf) { Get-Sha256 $compiler } else { 'absent' }) }
     $cscArgs = @($lines[3..($lines.Count - 1)] | ForEach-Object { if (-not $_.StartsWith('arg|')) { throw "Compiler input list is malformed: $_" }; $_.Substring(4) })
     $implicit = @()
@@ -241,7 +270,7 @@ function ConvertFrom-CompilerInputList([string] $ListPath) {
         # and wildcard source recursion.
         if ($arg.StartsWith('@')) { throw "Unsupported compiler input: the response file $arg can name files the build receipt cannot bind; remove it from the project or local configuration." }
         $m = [regex]::Match($arg, '^[/-]([A-Za-z0-9_+-]+?)(?::(.*))?$')
-        if (-not $m.Success) { [ordered]@{ kind = 'compile'; name = Get-InputName $arg; sha256 = Get-InputDigest $arg }; continue }
+        if (-not $m.Success) { [ordered]@{ kind = 'compile'; name = Get-SourceName $arg; sha256 = Get-InputDigest $arg }; continue }
         $switch = $m.Groups[1].Value.ToLowerInvariant(); $value = $m.Groups[2].Value
         if (@('link', 'l', 'recurse') -ccontains $switch) { throw "Unsupported compiler input: $arg (linked references and wildcard source recursion are not supported by the build receipt); remove it from the project or local configuration." }
         if ($outputSwitches -ccontains $switch) { [ordered]@{ kind = 'output'; name = "/$switch" + ':' + [IO.Path]::GetFileName($value.Trim('"')); sha256 = '' } }

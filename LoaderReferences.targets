@@ -46,12 +46,17 @@
     <Error Condition="'@(CscCommandLineArgs)' == ''" Text="The compiler command line was not captured (CoreCompile did not run); use a fresh intermediate directory." />
     <WriteLinesToFile File="$(CompilerReferenceListPath)" Lines="intermediate|$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)'))))" Overwrite="true" Encoding="UTF-8" />
     <WriteLinesToFile File="$(CompilerReferenceListPath)" Lines="project|$(MSBuildProjectDirectory)" Overwrite="false" Encoding="UTF-8" />
-    <!-- The compiler MSBuild runs: CscToolPath/CscToolExe when set, otherwise Roslyn's csc.dll (dotnet MSBuild) or csc.exe. -->
+    <!-- The compiler MSBuild runs: CscToolPath/CscToolExe when set, otherwise Roslyn's csc.dll (dotnet MSBuild) or csc.exe.
+         A relative selector is resolved against the project directory, the working directory MSBuild gives the Csc task,
+         so the recorded path is the absolute path of the binary the project selects. -->
     <PropertyGroup>
       <_EffectiveCscTool Condition="'$(CscToolPath)' != ''">$([System.IO.Path]::Combine('$(CscToolPath)', '$(CscToolExe)'))</_EffectiveCscTool>
       <_EffectiveCscTool Condition="'$(CscToolPath)' == '' and '$(CscToolExe)' != ''">$([System.IO.Path]::Combine('$(RoslynTargetsPath)', '$(CscToolExe)'))</_EffectiveCscTool>
       <_EffectiveCscTool Condition="'$(_EffectiveCscTool)' == '' and '$(MSBuildRuntimeType)' == 'Core'">$([System.IO.Path]::Combine('$(RoslynTargetsPath)', 'bincore', 'csc.dll'))</_EffectiveCscTool>
       <_EffectiveCscTool Condition="'$(_EffectiveCscTool)' == ''">$([System.IO.Path]::Combine('$(RoslynTargetsPath)', 'csc.exe'))</_EffectiveCscTool>
+    </PropertyGroup>
+    <PropertyGroup>
+      <_EffectiveCscTool>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(_EffectiveCscTool)'))))</_EffectiveCscTool>
     </PropertyGroup>
     <WriteLinesToFile File="$(CompilerReferenceListPath)" Lines="compiler|$(_EffectiveCscTool)" Overwrite="false" Encoding="UTF-8" />
     <WriteLinesToFile File="$(CompilerReferenceListPath)" Lines="@(CscCommandLineArgs->'arg|%(Identity)')" Overwrite="false" Encoding="UTF-8" />
