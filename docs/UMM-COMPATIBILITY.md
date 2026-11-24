@@ -20,13 +20,21 @@ whatever loader is installed on the build machine.
 - `scripts/Build-Local.ps1` downloads them into the ignored `artifacts/references`
   cache, verifies SHA-256 and assembly identity, and writes
   `artifacts/qualification/build.json` with the DLL hash, configuration, loader
-  identities, the source commit/dirty state (a detached checkout is supported) and a
-  fingerprint of every material build input (tracked or new files under `src/`,
-  `Directory.Build.props`, `.editorconfig`, `Info.json`, `LoaderReferences.targets`, the
-  pin file and its verifier, the build wrapper `Build-Local.ps1`/`Common.ps1`, and the
-  SHA-256 of every game/Unity assembly the project references from the configured Managed
-  directory). Receipt fields are type-checked before any comparison. A missing, corrupt or different reference (including the
-  installed newer loader) fails the build; there is no fallback to `UnityModManagerDir`.
+  identities, the source commit/dirty state (a detached checkout is supported), the
+  compiler inventory and a fingerprint of every material build input. The inventory is what
+  MSBuild itself evaluates for the production project and configuration (an opt-in
+  `WriteCompilerReferenceList` target in `LoaderReferences.targets`): the exact references
+  Csc receives after reference-assembly selection, the source/resource/analyzer items and
+  the compile-affecting properties (for example `CheckForOverflowUnderflow`, `DefineConstants`,
+  `LangVersion`, `Optimize`), including anything `GamePath.props` or another import sets,
+  as path-free identities. The production compile writes its own inventory, which must equal
+  the one evaluated before building. The fingerprint covers tracked or new files under
+  `src/`, `Directory.Build.props`, `.editorconfig`, `Info.json`, `LoaderReferences.targets`,
+  the pin file and its verifier, `Build-Local.ps1`/`Common.ps1` and that inventory. Building,
+  packaging and qualification summaries need the game assemblies and the pins, not the
+  runtime loader directory. Receipt fields (the recorded inventory included) are
+  type-checked before any comparison. A missing, corrupt or different reference (including
+  the installed newer loader) fails the build; there is no fallback to `UnityModManagerDir`.
 - Direct `dotnet msbuild`/MSBuild builds import `LoaderReferences.targets`. On every
   build, before reference resolution, it re-verifies the cache and the manifest; after
   reference-assembly selection and immediately before compilation, the list Csc receives
@@ -38,28 +46,42 @@ whatever loader is installed on the build machine.
 - `ManagerVersion` must be a JSON string equal to 0.31.1 (`Info.json`, the expected
   product manifest, the verifier) and the pin must equal the declared minimum.
 - `scripts/Package.ps1` (and `Qualify.ps1 -Package`) refuse a DLL whose receipt has
-  different bytes, configuration, build inputs or loader identities, require the DLL
+  different bytes, configuration, loader identities or compiler inventory (the recorded
+  inventory must equal what MSBuild evaluates now) or whose build inputs changed, refuse to
+  archive if a packaged repository file changed while it was being staged, require the DLL
   read back from the produced ZIP to equal the receipt's DLL hash, and record the producing
-  build and a fingerprint of the repository files the package copies.
+  build inputs, a fingerprint of the repository files the package copies and a fingerprint
+  of the packaging rules (`Package.ps1`, `Validate-Package.ps1`).
 - The standalone `scripts/Validate-Package.ps1` reads the packaged DLL's AssemblyRef
   table (in Windows PowerShell in a separate process, so several packages can be
   validated in one session), inspects and hashes one private copy of the ZIP, requires
   exactly UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1, checks the manifest, accepts
-  only the six allow-listed files (directory records only as empty records of the
-  package's own folders) and requires the documentation and licence entries to be UTF-8
+  only the six allow-listed files (directory records only for the package's own folders
+  and only when their decoded content is empty, whatever the compression) and requires the documentation and licence entries to be UTF-8
   text, so no loader, Harmony, game or
   Unity DLL can be packaged, renamed or not. Its report records the packaged DLL's
-  SHA-256, MVID and observed loader references. `scripts/Install.ps1` validates the
+  SHA-256, MVID and observed loader references. The private copy is created inside the
+  validator's cleanup scope, so a copy failure leaves nothing behind; the validator has no
+  test hooks. `scripts/Install.ps1` validates the
   supplied ZIP, then validates a private copy and extracts that same copy
   (`Expand-ValidatedPackage`); the extracted DLL must equal the validated one.
 - `Qualify.ps1` credits earlier records only for the current candidate: the build receipt
   must be well formed and match the selected configuration's DLL and the current build
-  inputs; contract records (older formats included) must name that DLL, the current game
-  assembly and the loader components now configured; a package counts only when the ZIP
-  on disk, its package record and its validation record describe that DLL and the files it
-  copies are unchanged. Anything else is reported as not current. `-VerifyContracts`
-  checks the DLL of the selected `-Configuration`, and the verifiers refuse to report on an
-  assembly other than the requested file (a second same-identity DLL in one host).
+  inputs; both contract records must come from one binding-aware verification run (the
+  same run id, the loaded product and Harmony2 modules recorded) under the loader
+  components configured now, so earlier-format or mixed records are not current; a test
+  record counts only for the product DLL the test runner actually loaded; a package counts
+  only when the ZIP on disk, its package record and its validation record describe that DLL,
+  the files it copies are unchanged, its producing build inputs equal the current receipt's
+  and the packaging rules are unchanged. Anything else is reported as not current. The
+  final status and exit code follow the stages requested in the run: a requested build,
+  test, contract or package stage without current evidence for the same candidate fails the
+  run. `-VerifyContracts` checks the DLL of the selected `-Configuration`.
+- The verifiers refuse to report on an assembly other than the requested file (a second
+  same-identity DLL in one host) and, before crediting patch ownership, check that the
+  0Harmony12 and Harmony2 modules bound in the process are the configured files (a host
+  reused for a second loader profile is refused); the contract records name the loaded
+  Harmony2 module (location and MVID).
 - `UnityModManagerDir` identifies the loader used by the contract checks.
   `Verify-GameOverLoadContracts.ps1` accepts it only when UnityModManager and the
   Harmony2 beside it (`0Harmony.dll`) match one exact profile: 0.31.1 + 2.3.1.1, 0.32.4
@@ -83,14 +105,18 @@ and evidence; existing published ZIPs are unchanged.
 ```
 
 `Test-LoaderBaseline.ps1` clones the committed HEAD into a temporary directory whose
-path contains a space (a detached checkout), seeds its ignored cache, builds it, and runs
+path contains a space (a detached checkout), seeds its ignored cache, configures it with a
+disposable 0.31.1 loader profile (so no check depends on the owner's installed loader),
+builds it, and runs
 every check in a separate PowerShell or MSBuild process; this repository's `artifacts`
 and the installed game are never written. It downloads (or accepts with
-`-LegacyReleaseZip` / `-WrongLoaderPackage`) two hash-checked fixtures and only reads
-them: the genuine v0.1.3 release (SHA-256 `8b59d76d…887d2fbed`, its DLL compiled against
+`-LegacyReleaseZip`, `-WrongLoaderPackage`, `-Harmony2Package`, `-NewestLoaderPackage`,
+`-NewestHarmony2Package`) hash-checked fixtures and only reads them: the official
+Lib.Harmony 2.3.1.1 / 2.4.3 and UnityModManager 0.33.4 NuGet packages that complete the
+disposable 0.31.1 and 0.33.4 profiles, the genuine v0.1.3 release (SHA-256 `8b59d76d…887d2fbed`, its DLL compiled against
 UnityModManager 0.33.0.0) and the author's UnityModManager 0.32.4 NuGet package
 (`a8438e92…082c9ec9`, DLL `1387468b…7bfd88`) as the known distinct wrong-loader fixture;
-the owner's installed loader is only measured. Its 85 checks cover cache bytes; dropped
+the owner's installed loader is only measured. Its 114 checks cover cache bytes; dropped
 or misnamed pins and raised/array-typed manifests; direct and incremental builds (quoted
 compiler paths, manifest-only and pin-only changes); resolved-input probes (identical
 copy elsewhere, same-stem `.exe`, renamed copy, 0.32.4 fixture); packaging and
@@ -104,8 +130,27 @@ disk; and contract checks of a Debug build while a Release build exists; wrapper
 managed-reference changes; malformed receipt fields; a substituted reference assembly;
 data-bearing directory records; a replaced caller ZIP during validation; partial
 qualification after a source or packaged-README change, with older-format records and
-after switching to a disposable 0.31.1 loader profile; a second DLL in one host; and
-profile comparisons on one frozen DLL while the build output changes.
+after switching profiles; a second DLL in one host; and profile comparisons on one frozen
+DLL while the build output changes. Round 4 adds: an overflow-checking option imported from
+`GamePath.props` (stale package refused, effective option recorded, rebuild accepted,
+removal refused until rebuilt); the receipt's reference inventory equal to the real Csc
+`/reference` list, and a changed or missing recorded inventory refused; build and package
+with no runtime loader directory (and the contract check reporting the missing loader);
+package credit withdrawn after a build-input change that reproduces the same DLL, after a
+packaging-rule change and when a document changes during staging, and restored by matching
+controls; a failed qualification when the tests ran against a different valid DLL and no
+inherited test pass after a source change; contract records in the fd9f30f shape and mixed
+pairs from a second interrupted verification (same profile and 0.33.4) not credited, a fresh
+pair credited; switching to the known-distinct 0.33.4 profile withdrawing credit while a
+byte-identical copy of the verified profile keeps it; one host refusing a second loader
+profile as a Harmony binding mismatch after recording the first run's bound Harmony2;
+separate-process profile comparisons on the distinct 0.31.1 and 0.33.4 profiles; a
+checked level-0 DEFLATE empty directory accepted (and a failed fixture write failing the
+case); a validator copy failure leaving no private directory; the caller ZIP replaced by the
+harness after the validator's snapshot; and standalone validation and `Install.ps1 -WhatIf`
+(against a disposable game folder) leaving the supplied ZIP unchanged. Cases that need an
+injected step use disposable instrumented copies of the scripts inside the clone, removed
+after use; the committed scripts contain no test hooks.
 
 `Test-LoaderProfiles.ps1` takes a folder of profile subfolders, each holding
 `UnityModManager.dll`, `0Harmony.dll` and `0Harmony12.dll`. For each it writes a
@@ -126,17 +171,20 @@ forwarders. The newest-stable row was selected on 2026-11-23 from the author's N
 feed (0.33.4, published 2026-11-19, the highest version; project URL the Nexus page) and
 confirmed by the author's GitHub HEAD `3d14bf0d` (`<Version>0.33.4</Version>`).
 
-## Evidence for this change (2026-11-23)
+## Evidence for this change (2026-11-24, round 4)
+
+The build/qualification tooling is at `363c484`; the product sources are unchanged since round 3, so the
+candidate DLL and package below are byte-identical to the earlier records.
 
 Candidate DLL (Release, `dotnet msbuild` on Windows against the pinned cache and the
 Kingmaker 2.1.7b managed assemblies): SHA-256
 `fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248`, MVID
 `4bcbb685-5152-4399-98e2-19fb6d19c6cd`; AssemblyRefs UnityModManager 0.31.1.0 and
 0Harmony12 1.2.0.1; 0 compiler warnings/errors. `Qualify.ps1 -Build -Test -VerifyContracts
--Package`: 84/84 deterministic tests, Kingmaker and game-over load contracts on that DLL
-(installed profile 0.33.0 + Harmony2 2.3.6.0), package SHA-256
-`83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc`, validation passed.
-`Test-LoaderBaseline.ps1`: 85/85.
+-Package` on `363c484`: 84/84 deterministic tests run against that DLL, Kingmaker and game-over
+load contracts from one binding-aware verification (installed profile 0.33.0 + Harmony2 2.3.6.0),
+package SHA-256 `83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc`, validation passed.
+`Test-LoaderBaseline.ps1` on `363c484`: 114/114.
 
 Machine-generated records for the candidate are committed as structured files in
 [`docs/evidence/umm-0311/`](evidence/umm-0311/INDEX.md) (qualification summary, build,
