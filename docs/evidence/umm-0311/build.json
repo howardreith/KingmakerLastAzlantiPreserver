@@ -3,7 +3,7 @@
     "configuration":  "Release",
     "compiler_warnings":  0,
     "compiler_errors":  0,
-    "dll_path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+    "dll_path":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
     "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
     "loader_references":  [
                               {
@@ -21,8 +21,13 @@
                                   "source":  "https://raw.githubusercontent.com/newman55/unity-mod-manager/10cfb1cce51914a5114928c5bc6a06d1d2c31fe2/lib/Harmony/1.2/0Harmony12.dll"
                               }
                           ],
-    "build_inputs_sha256":  "50ef0cf5c8e38416ddba684c641122c2c39fa62874d395a6ad7cdb424a47a482",
+    "build_inputs_sha256":  "96ca8dcd2488c5f3042a5ef086b770cd381794a23ac943636e583250e4b500d6",
     "compiler_references":  [
+                                {
+                                    "kind":  "compile",
+                                    "name":  "generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs",
+                                    "sha256":  "621199557e90fb1661e401cc9a973163c850b4b7e65bbc8d100f67f6699eef70"
+                                },
                                 {
                                     "kind":  "compile",
                                     "name":  "src/KingmakerLastAzlantiPreserver/CompositionRoot.cs",
@@ -234,9 +239,74 @@
                                     "sha256":  "6dde58cfb25f683997617154afd36d6416cb7f0eb8588fb83a501da08369d32e"
                                 },
                                 {
-                                    "kind":  "editorconfig",
-                                    "name":  ".editorconfig",
+                                    "kind":  "file-option",
+                                    "name":  "/analyzerconfig:.editorconfig",
                                     "sha256":  "deda9cddc7a90df5c8f34c7960dbdb020db7bd83bcd839baa153102f94d45935"
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/deterministic+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/fullpaths",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/highentropyva+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/langversion:7.3",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/noconfig",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/nostdlib+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/nowarn:1701,1702",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/subsystemversion:6.00",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/target:library",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/utf8output",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/warn:4",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "option",
+                                    "name":  "/warnaserror+",
+                                    "sha256":  ""
+                                },
+                                {
+                                    "kind":  "output",
+                                    "name":  "/out:KingmakerLastAzlantiPreserver.dll",
+                                    "sha256":  ""
                                 },
                                 {
                                     "kind":  "reference",
@@ -292,198 +362,8 @@
                                     "kind":  "reference",
                                     "name":  "UnityEngine.IMGUIModule.dll",
                                     "sha256":  "327b1d34eab0ada754186a03dac40f23de627867124777ec35c6c040b210079a"
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "AdditionalLibPaths=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "AllowUnsafeBlocks=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "ApplicationIcon=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "AssemblyName=KingmakerLastAzlantiPreserver",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "AssemblyOriginatorKeyFile=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "CheckForOverflowUnderflow=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "CscToolExe=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "CscToolPath=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "DebugSymbols=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "DebugType=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "DefineConstants=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "DelaySign=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Deterministic=true",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Features=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "FileAlignment=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "HighEntropyVA=true",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "LangVersion=7.3",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "ModuleAssemblyName=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "NoConfig=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "NoStdLib=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "NoWarn=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Nullable=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Optimize=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "PathMap=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "PlatformTarget=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Prefer32Bit=false",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "PublicSign=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "RootNamespace=KingmakerLastAzlantiPreserver",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "SignAssembly=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "SubsystemVersion=6.00",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "TargetFrameworkMoniker=.NETFramework,Version=v4.7.2",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "TargetFrameworkVersion=v4.7.2",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "TreatWarningsAsErrors=true",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "WarningLevel=4",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "WarningsAsErrors=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "WarningsNotAsErrors=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Win32Manifest=",
-                                    "sha256":  ""
-                                },
-                                {
-                                    "kind":  "setting",
-                                    "name":  "Win32Resource=",
-                                    "sha256":  ""
                                 }
                             ],
-    "source_commit":  "363c484d538612597c76839a49d82aea3e446b83",
-    "source_dirty":  true
+    "source_commit":  "5d00290c9027e6cb49c46b0414eb512ae099615e",
+    "source_dirty":  false
 }

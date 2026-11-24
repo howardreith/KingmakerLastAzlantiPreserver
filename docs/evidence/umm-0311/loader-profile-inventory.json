@@ -1,6 +1,6 @@
 {
   "schema": "kingmaker.loader-profile-inventory.v1",
-  "measured_utc": "2026-11-24T00:49:40Z",
+  "measured_utc": "2026-11-24T01:22:55Z",
   "candidate": {
     "file": "KingmakerLastAzlantiPreserver.dll",
     "assembly": "KingmakerLastAzlantiPreserver",

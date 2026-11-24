@@ -3,6 +3,7 @@
     "total":  84,
     "passed":  84,
     "failed":  0,
-    "runner":  "<repo>\\artifacts\\tests\\Release\\KingmakerLastAzlantiPreserver.Tests.exe",
-    "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+    "runner":  "<temp>\\klap-test-run-a5290572cf984cfbbaa49d322a27a23e\\KingmakerLastAzlantiPreserver.Tests.exe",
+    "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
+    "dll_identity":  "KingmakerLastAzlantiPreserver, Version=0.1.3.0, Culture=neutral, PublicKeyToken=null"
 }

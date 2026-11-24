@@ -14,7 +14,7 @@
                               "mvid":  "54059519-2754-445a-b5ee-fdb9326336e2"
                           },
     "loader_profile":  "0.33.0.0",
-    "verification_run_id":  "26016f666ca64c7b876e07b056904a7b",
+    "verification_run_id":  "93dde8f83ea44f5bbe33be28f0ebb012",
     "harmony2":  {
                      "path":  "<game>\\Kingmaker_Data\\Managed\\UnityModManager\\0Harmony.dll",
                      "identity":  "0Harmony, Version=2.3.6.0, Culture=neutral, PublicKeyToken=null",
@@ -23,9 +23,9 @@
                      "loaded_mvid":  "4dbb7cd6-acb5-43ef-8d7e-6fc104af5bdc"
                  },
     "mod_dll":  {
-                    "path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+                    "path":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
                     "sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
-                    "loaded_location":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+                    "loaded_location":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
                     "loaded_mvid":  "4bcbb685-5152-4399-98e2-19fb6d19c6cd"
                 },
     "legacy_harmony":  {

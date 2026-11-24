@@ -1,12 +1,12 @@
 {
     "schema":  "klap.loader-baseline-tests.v3",
-    "source_commit":  "363c484d538612597c76839a49d82aea3e446b83",
+    "source_commit":  "5d00290c9027e6cb49c46b0414eb512ae099615e",
     "clone_build_receipt":  {
-                                "commit":  "363c484d538612597c76839a49d82aea3e446b83",
+                                "commit":  "5d00290c9027e6cb49c46b0414eb512ae099615e",
                                 "dirty":  false,
                                 "configuration":  "Release",
                                 "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
-                                "build_inputs_sha256":  "bff0928446977af5f86942a8744f6e7d07831b0fcd05922d60cfc3b069c0cf53",
+                                "build_inputs_sha256":  "96ca8dcd2488c5f3042a5ef086b770cd381794a23ac943636e583250e4b500d6",
                                 "loader_references":  [
                                                           {
                                                               "file":  "UnityModManager.dll",
@@ -46,13 +46,13 @@
                                    "version":  "0.33.0.0",
                                    "sha256":  "63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691"
                                },
-    "passed":  114,
-    "total":  114,
+    "passed":  128,
+    "total":  128,
     "cases":  [
                   {
                       "name":  "clone-build-from-detached-commit",
                       "passed":  true,
-                      "detail":  "detached clone build; receipt source_commit 363c484d538612597c76839a49d82aea3e446b83 dirty False dll fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248 inputs bff0928446977af5f86942a8744f6e7d07831b0fcd05922d60cfc3b069c0cf53"
+                      "detail":  "detached clone build; receipt source_commit 5d00290c9027e6cb49c46b0414eb512ae099615e dirty False dll fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248 inputs 96ca8dcd2488c5f3042a5ef086b770cd381794a23ac943636e583250e4b500d6"
                   },
                   {
                       "name":  "cache-genuine-verified",
@@ -107,12 +107,12 @@
                   {
                       "name":  "msbuild-corrupt-cache-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(18,5): error MSB3073: The command \"\"powershell.exe\" -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\scripts\\Get-PinnedLoaderReferences.ps1\" -VerifyOnly -ReferenceDirectory \"<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\cache corrupt\"\" exited with code 1. [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\src\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(18,5): error MSB3073: The command \"\"powershell.exe\" -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\scripts\\Get-PinnedLoaderReferences.ps1\" -VerifyOnly -ReferenceDirectory \"<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\cache corrupt\"\" exited with code 1. [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\src\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.csproj]"
                   },
                   {
                       "name":  "msbuild-direct-compiles-against-pinned-inputs",
                       "passed":  true,
-                      "detail":  "exit 0; csc UnityModManager: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\UnityModManager.dll; csc 0Harmony12: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\0Harmony12.dll"
+                      "detail":  "exit 0; csc UnityModManager: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\UnityModManager.dll; csc 0Harmony12: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\0Harmony12.dll"
                   },
                   {
                       "name":  "incremental-build-genuine-accepted",
@@ -127,12 +127,12 @@
                   {
                       "name":  "incremental-build-after-manifest-only-change-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(18,5): error MSB3073: The command \"\"powershell.exe\" -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\scripts\\Get-PinnedLoaderReferences.ps1\" -VerifyOnly -ReferenceDirectory \"<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\"\" exited with code 1. [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\src\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(18,5): error MSB3073: The command \"\"powershell.exe\" -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\scripts\\Get-PinnedLoaderReferences.ps1\" -VerifyOnly -ReferenceDirectory \"<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\"\" exited with code 1. [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\src\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.csproj]"
                   },
                   {
                       "name":  "incremental-build-after-pin-only-change-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(18,5): error MSB3073: The command \"\"powershell.exe\" -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\scripts\\Get-PinnedLoaderReferences.ps1\" -VerifyOnly -ReferenceDirectory \"<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\"\" exited with code 1. [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\src\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(18,5): error MSB3073: The command \"\"powershell.exe\" -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\scripts\\Get-PinnedLoaderReferences.ps1\" -VerifyOnly -ReferenceDirectory \"<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\"\" exited with code 1. [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\src\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.csproj]"
                   },
                   {
                       "name":  "incremental-build-after-restore-accepted",
@@ -147,27 +147,27 @@
                   {
                       "name":  "resolved-input-identical-copy-elsewhere-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\stray copy\\UnityModManager.dll [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\probe stray.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\stray copy\\UnityModManager.dll [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\probe stray.csproj]"
                   },
                   {
                       "name":  "resolved-input-same-stem-file-in-pinned-dir-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\UnityModManager.exe [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\probe samestem.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\UnityModManager.exe [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\probe samestem.csproj]"
                   },
                   {
                       "name":  "resolved-input-renamed-loader-in-pinned-dir-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\umm-alias.dll [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\probe alias.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\umm-alias.dll [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\probe alias.csproj]"
                   },
                   {
                       "name":  "resolved-input-umm-0.32.4-fixture-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\inputs\\umm-0.32.4\\UnityModManager.dll [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\probe wrong.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\inputs\\umm-0.32.4\\UnityModManager.dll [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\probe wrong.csproj]"
                   },
                   {
                       "name":  "resolved-input-substituted-reference-assembly-rejected",
                       "passed":  true,
-                      "detail":  "rejected: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\stray copy\\UnityModManager.dll [<temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\probe substituted.csproj]"
+                      "detail":  "rejected: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\LoaderReferences.targets(36,5): error : Loader compiler references must be the verified files in the pinned directory <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\references\\; resolved: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\stray copy\\UnityModManager.dll [<temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\probe substituted.csproj]"
                   },
                   {
                       "name":  "receipt-matching-build-accepted",
@@ -207,7 +207,7 @@
                   {
                       "name":  "package-after-restoring-identical-inputs-accepted",
                       "passed":  true,
-                      "detail":  "accepted: Package validation passed: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip"
+                      "detail":  "accepted: Package validation passed: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\.package-a919077df9b343999c8cdd5baf067751\\KingmakerLastAzlantiPreserver-0.1.3.zip"
                   },
                   {
                       "name":  "rebuild-after-source-change-accepted",
@@ -217,7 +217,7 @@
                   {
                       "name":  "package-after-matching-rebuild-accepted",
                       "passed":  true,
-                      "detail":  "accepted: Package validation passed: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip"
+                      "detail":  "accepted: Package validation passed: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\.package-426d21de5c794c27855cd9e1aa4c50e6\\KingmakerLastAzlantiPreserver-0.1.3.zip"
                   },
                   {
                       "name":  "receipt-of-first-build-for-changed-dll-rejected",
@@ -272,7 +272,7 @@
                   {
                       "name":  "rebuild-with-imported-compiler-setting-records-it",
                       "passed":  true,
-                      "detail":  "exit 0; DLL 34d9687712ce1cfb00cb59ae0665078bc8590f6ce555a9a01a1063e09e582772 (committed configuration: fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248); receipt compiler inputs include CheckForOverflowUnderflow=true"
+                      "detail":  "exit 0; DLL 34d9687712ce1cfb00cb59ae0665078bc8590f6ce555a9a01a1063e09e582772 (committed configuration: fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248); receipt compiler inputs include the Csc option /checked+"
                   },
                   {
                       "name":  "package-after-rebuild-with-imported-compiler-setting-accepted",
@@ -290,6 +290,51 @@
                       "detail":  "DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
                   },
                   {
+                      "name":  "package-reuse-after-base-address-change-rejected",
+                      "passed":  true,
+                      "detail":  "rejected: Build inputs changed since this DLL was built: the receipt compiler inputs differ from the inputs MSBuild resolves now"
+                  },
+                  {
+                      "name":  "rebuild-with-base-address-records-it",
+                      "passed":  true,
+                      "detail":  "exit 0; receipt option /baseaddress:0x11000000; DLL 44b24a21959781ec9fc473e48011c219009fa8d38b8fe06b7a6af30269446a82"
+                  },
+                  {
+                      "name":  "package-after-base-address-rebuild-accepted",
+                      "passed":  true,
+                      "detail":  "accepted: Package validation passed"
+                  },
+                  {
+                      "name":  "rebuild-with-external-win32-resource-records-its-content",
+                      "passed":  true,
+                      "detail":  "exit 0; receipt /win32res:external.res 366781267e4967456b0f59e96ce9a5126c8bf0e95893dd1fae16aeed5a156c8d; DLL 151c6e3e0c7489e15e8153f80705dd4339eed3b6d1ed7540f2d17a4d4933190f"
+                  },
+                  {
+                      "name":  "package-with-external-win32-resource-accepted",
+                      "passed":  true,
+                      "detail":  "accepted: Package validation passed"
+                  },
+                  {
+                      "name":  "package-reuse-after-win32-resource-replaced-rejected",
+                      "passed":  true,
+                      "detail":  "rejected: Build inputs changed since this DLL was built: the receipt compiler inputs differ from the inputs MSBuild resolves now"
+                  },
+                  {
+                      "name":  "rebuild-after-win32-resource-replaced-changes-dll",
+                      "passed":  true,
+                      "detail":  "exit 0; DLL 94aa371554e5a43722cfe5043bf50c4e51df6f1f69253244c7526e4e09c70407 (previous resource: 151c6e3e0c7489e15e8153f80705dd4339eed3b6d1ed7540f2d17a4d4933190f)"
+                  },
+                  {
+                      "name":  "package-after-win32-resource-rebuild-accepted",
+                      "passed":  true,
+                      "detail":  "accepted: Package validation passed"
+                  },
+                  {
+                      "name":  "rebuild-without-imported-options-reproduces-first-dll",
+                      "passed":  true,
+                      "detail":  "DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+                  },
+                  {
                       "name":  "build-local-without-runtime-loader-directory",
                       "passed":  true,
                       "detail":  "exit 0; DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
@@ -302,7 +347,7 @@
                   {
                       "name":  "contract-check-reports-missing-runtime-loader",
                       "passed":  true,
-                      "detail":  "rejected:    e-b1b03c6add6e4684bcfdb72f7eae1051\\no loader here\\UnityModManager.dll"
+                      "detail":  "rejected:    e-e855e930c5814b2caea800d442cd0e37\\no loader here\\UnityModManager.dll"
                   },
                   {
                       "name":  "receipt-reference-inventory-equals-csc-inputs",
@@ -452,12 +497,12 @@
                   {
                       "name":  "same-host-validation-candidate-first",
                       "passed":  true,
-                      "detail":  "Package validation passed: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\inputs\\candidate.zip | Packaged DLL SHA-256: fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248; MVID: 4bcbb685-5152-4399-98e2-19fb6d19c6cd; loader references: UnityModManager 0.31.1.0, 0Harmony12 1.2.0.1 | ACCEPTED candidate.zip | REJECTED legacy-lowered-manifest.zip: Packaged DLL must reference pinned UnityModManager 0.31.1.0; lowering Info.json alone is not sufficient."
+                      "detail":  "Package validation passed: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\inputs\\candidate.zip | Packaged DLL SHA-256: fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248; MVID: 4bcbb685-5152-4399-98e2-19fb6d19c6cd; loader references: UnityModManager 0.31.1.0, 0Harmony12 1.2.0.1 | ACCEPTED candidate.zip | REJECTED legacy-lowered-manifest.zip: Packaged DLL must reference pinned UnityModManager 0.31.1.0; lowering Info.json alone is not sufficient."
                   },
                   {
                       "name":  "same-host-validation-legacy-lowered-manifest-first",
                       "passed":  true,
-                      "detail":  "REJECTED legacy-lowered-manifest.zip: Packaged DLL must reference pinned UnityModManager 0.31.1.0; lowering Info.json alone is not sufficient. | Package validation passed: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\inputs\\candidate.zip | Packaged DLL SHA-256: fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248; MVID: 4bcbb685-5152-4399-98e2-19fb6d19c6cd; loader references: UnityModManager 0.31.1.0, 0Harmony12 1.2.0.1 | ACCEPTED candidate.zip"
+                      "detail":  "REJECTED legacy-lowered-manifest.zip: Packaged DLL must reference pinned UnityModManager 0.31.1.0; lowering Info.json alone is not sufficient. | Package validation passed: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\inputs\\candidate.zip | Packaged DLL SHA-256: fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248; MVID: 4bcbb685-5152-4399-98e2-19fb6d19c6cd; loader references: UnityModManager 0.31.1.0, 0Harmony12 1.2.0.1 | ACCEPTED candidate.zip"
                   },
                   {
                       "name":  "expand-validated-package-candidate",
@@ -492,7 +537,7 @@
                   {
                       "name":  "contracts-verify-selected-debug-dll",
                       "passed":  true,
-                      "detail":  "Debug DLL 80c05cde5479401a998b29637873d94ec03cb82b47b821a3987e8cad6a88d905; contracts verified on 80c05cde5479401a998b29637873d94ec03cb82b47b821a3987e8cad6a88d905; Release DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248 still present; loader profile 0.31.1.0; Harmony2 0Harmony, Version=2.3.1.1, Culture=neutral, PublicKeyToken=null"
+                      "detail":  "Debug DLL 64ecc61541d7ff480c0dc2b231e3b73b65a7e73662593e07f68a59af8ec45632; contracts verified on 64ecc61541d7ff480c0dc2b231e3b73b65a7e73662593e07f68a59af8ec45632; Release DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248 still present; loader profile 0.31.1.0; Harmony2 0Harmony, Version=2.3.1.1, Culture=neutral, PublicKeyToken=null"
                   },
                   {
                       "name":  "qualify-test-after-source-change-credits-nothing-old",
@@ -532,7 +577,22 @@
                   {
                       "name":  "package-document-changed-during-staging-rejected",
                       "passed":  true,
-                      "detail":  "rejected: Package files changed during staging; the package was not built."
+                      "detail":  "rejected: Package files changed during staging; the archived documents differ from the verified repository files. The package"
+                  },
+                  {
+                      "name":  "staging-refusal-preserves-accepted-zip-and-records",
+                      "passed":  true,
+                      "detail":  "ZIP, package.json and package-validation.json unchanged: True"
+                  },
+                  {
+                      "name":  "package-document-restaged-before-archive-rejected",
+                      "passed":  true,
+                      "detail":  "rejected: Package files changed during staging; the archived documents differ from the verified repository files. The package"
+                  },
+                  {
+                      "name":  "restage-refusal-preserves-accepted-zip-and-records",
+                      "passed":  true,
+                      "detail":  "accepted ZIP and records unchanged"
                   },
                   {
                       "name":  "qualify-package-control-credited-after-staging-refusal",
@@ -542,7 +602,12 @@
                   {
                       "name":  "qualify-fails-when-tests-ran-against-a-different-dll",
                       "passed":  true,
-                      "detail":  "test project\u0027s copy replaced by a valid Release build with one inert extra class (a14c2a44b5b95f38fc0597e2d7dc3addbf428fa6f9e373407cb956f1d3674a6b): exit 1; status \u0027failed: tests did not run against the current DLL\u0027; Build passed: <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll"
+                      "detail":  "test project\u0027s copy replaced by a valid Release build with one inert extra class (a14c2a44b5b95f38fc0597e2d7dc3addbf428fa6f9e373407cb956f1d3674a6b): exit 1; status \u0027failed: tests did not run against the current DLL\u0027; Build passed: <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll"
+                  },
+                  {
+                      "name":  "qualify-identifies-tested-substitute-after-output-restored",
+                      "passed":  true,
+                      "detail":  "tests.json names a14c2a44b5b95f38fc0597e2d7dc3addbf428fa6f9e373407cb956f1d3674a6b (substitute a14c2a44b5b95f38fc0597e2d7dc3addbf428fa6f9e373407cb956f1d3674a6b); status \u0027failed: tests did not run against the current DLL\u0027"
                   },
                   {
                       "name":  "qualify-build-and-test-control-passes",
@@ -552,7 +617,12 @@
                   {
                       "name":  "qualify-build-only-after-source-change-inherits-no-test-pass",
                       "passed":  true,
-                      "detail":  "exit 0; tests 0 (\u0027not run for the current DLL\u0027)"
+                      "detail":  "exit 0; tests 0 (\u0027not run in this qualification\u0027)"
+                  },
+                  {
+                      "name":  "qualify-build-only-without-runtime-loader-gives-no-test-credit",
+                      "passed":  true,
+                      "detail":  "after a passing -Test run: build-only with no loader directory exit 0; tests 0 (\u0027not run in this qualification\u0027)"
                   },
                   {
                       "name":  "qualify-fd9f30f-shape-contract-records-usable-not-credited",
@@ -597,12 +667,12 @@
                   {
                       "name":  "one-host-second-same-identity-dll-refused",
                       "passed":  true,
-                      "detail":  "second run: ERROR: Loaded assembly binding mismatch: requested <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\bin\\Debug\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll (MVID dc79ecd1-528f-4992-b46e-98cd38d5ac64) but this process has <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\clone with space\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll (MVID 4bcbb685-5152-4399-98e2-19fb6d19c6cd). Run each candidate in its own process."
+                      "detail":  "second run: ERROR: Loaded assembly binding mismatch: requested <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\bin\\Debug\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll (MVID d1bfd50d-fc89-4ec9-b4ec-e366246c2a2b) but this process has <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\clone with space\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll (MVID 4bcbb685-5152-4399-98e2-19fb6d19c6cd). Run each candidate in its own process."
                   },
                   {
                       "name":  "one-host-successive-loader-profiles-second-refused",
                       "passed":  true,
-                      "detail":  "first: Harmony2 0Harmony, Version=2.3.1.1, Culture=neutral, PublicKeyToken=null loaded MVID 6c906b4f-1de4-40f3-a86c-b0ebb3f48ea6; second: ERROR: Loaded Harmony binding mismatch: 0Harmony12 is bound from <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\profiles\\0.31.1\\0Harmony12.dll but the configured file is <temp>\\klap-loader-baseline-b1b03c6add6e4684bcfdb72f7eae1051\\profiles\\0.33.4\\0Harmony12.dll. Run each loader profile in its own process."
+                      "detail":  "first: Harmony2 0Harmony, Version=2.3.1.1, Culture=neutral, PublicKeyToken=null loaded MVID 6c906b4f-1de4-40f3-a86c-b0ebb3f48ea6; second: ERROR: Loaded Harmony binding mismatch: 0Harmony12 is bound from <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\profiles\\0.31.1\\0Harmony12.dll but the configured file is <temp>\\klap-loader-baseline-e855e930c5814b2caea800d442cd0e37\\profiles\\0.33.4\\0Harmony12.dll. Run each loader profile in its own process."
                   },
                   {
                       "name":  "profile-comparison-distinct-profiles-frozen-dll",

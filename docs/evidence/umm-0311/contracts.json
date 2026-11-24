@@ -32,10 +32,10 @@
                                      ],
     "patch_ownership":  "verified-after-application",
     "harmony_activate_replacement_kind":  "System.Reflection.Emit.DynamicMethod",
-    "mod_dll_path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+    "mod_dll_path":  "<temp>\\klap-ev5-ibed\\clone\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
     "mod_dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
     "mod_dll_loaded_mvid":  "4bcbb685-5152-4399-98e2-19fb6d19c6cd",
-    "verification_run_id":  "26016f666ca64c7b876e07b056904a7b",
+    "verification_run_id":  "93dde8f83ea44f5bbe33be28f0ebb012",
     "unity_mod_manager_sha256":  "63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691",
     "legacy_harmony_sha256":  "aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292",
     "harmony2_sha256":  "df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80"
