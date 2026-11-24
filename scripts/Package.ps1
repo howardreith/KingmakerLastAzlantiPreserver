@@ -11,6 +11,7 @@ $receiptBytes = [IO.File]::ReadAllBytes($loaderReceiptPath)
 $loaderReceipt = [Text.Encoding]::UTF8.GetString($receiptBytes).TrimStart([char]0xFEFF) | ConvertFrom-Json
 Assert-PinnedBuildReceipt $loaderReceipt $dll $Configuration
 $packageInputs = Get-PackageInputFingerprint
+$packageRules = Get-PackageRuleFingerprint
 $stageRoot = Join-Path $root 'artifacts\staging'
 $stage = Join-Path $stageRoot 'KingmakerLastAzlantiPreserver'
 Assert-PathWithin $stageRoot $root 'Package staging root'
@@ -30,6 +31,7 @@ if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force 
 
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+if ((Get-PackageInputFingerprint $stage) -cne $packageInputs) { throw 'Package files changed during staging; the package was not built.' }
 $zipStream = [IO.File]::Open($zipPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
 try {
     $archive = [IO.Compression.ZipArchive]::new($zipStream, [IO.Compression.ZipArchiveMode]::Create, $true)
@@ -59,6 +61,7 @@ $result = [ordered]@{
     dll_sha256 = [string] $validated.dll_sha256
     build_inputs_sha256 = $loaderReceipt.build_inputs_sha256
     package_inputs_sha256 = $packageInputs
+    package_rules_sha256 = $packageRules
     producing_commit = $loaderReceipt.source_commit
     producing_dirty = $loaderReceipt.source_dirty
     producing_configuration = $loaderReceipt.configuration

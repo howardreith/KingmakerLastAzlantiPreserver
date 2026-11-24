@@ -23,7 +23,8 @@ function Assert-PathWithin([string] $Path, [string] $Parent, [string] $Label) {
     }
 }
 
-function Get-KingmakerConfiguration([string] $PropsPath = (Join-Path $script:RepositoryRoot 'GamePath.props')) {
+# -AllowMissingLoader: game paths only (build, packaging and qualification summaries do not need the runtime loader).
+function Get-KingmakerConfiguration([string] $PropsPath = (Join-Path $script:RepositoryRoot 'GamePath.props'), [switch] $AllowMissingLoader) {
     Assert-FileExists $PropsPath 'GamePath.props'
     [xml] $xml = Get-Content -LiteralPath $PropsPath -Raw
     $group = @($xml.Project.PropertyGroup) | Where-Object { $_.KingmakerInstallDir } | Select-Object -First 1
@@ -42,8 +43,10 @@ function Get-KingmakerConfiguration([string] $PropsPath = (Join-Path $script:Rep
         ModsDir = [IO.Path]::GetFullPath((Join-Path $install 'Mods'))
     }
     Assert-FileExists (Join-Path $configuration.ManagedDir 'Assembly-CSharp.dll') 'Kingmaker Assembly-CSharp.dll'
-    Assert-FileExists (Join-Path $configuration.UnityModManagerDir 'UnityModManager.dll') 'UnityModManager.dll'
-    Assert-FileExists (Join-Path $configuration.UnityModManagerDir '0Harmony12.dll') '0Harmony12.dll'
+    if (-not $AllowMissingLoader) {
+        Assert-FileExists (Join-Path $configuration.UnityModManagerDir 'UnityModManager.dll') 'UnityModManager.dll'
+        Assert-FileExists (Join-Path $configuration.UnityModManagerDir '0Harmony12.dll') '0Harmony12.dll'
+    }
     return $configuration
 }
 
@@ -200,10 +203,43 @@ function Get-PinnedReferenceIdentities {
 # Material inputs of the production DLL: every tracked or new file under src\, the loader pin, verifier and
 # MSBuild guard, the root build properties and the manifest. Any change invalidates an existing DLL and receipt,
 # so packaging or qualification can never reuse a build made from other inputs.
-function Get-BuildInputFingerprint {
+# The compiler inputs for a configuration as MSBuild itself evaluates them: the exact references Csc receives (after
+# reference-assembly selection), source/resource/analyzer items and compile-affecting properties, as path-free
+# identities (files: kind, name, SHA-256; properties: name=value). Needs the game assemblies and pins, not the loader.
+function Get-CompilerReferenceIdentities([string] $Configuration) {
+    $id = [Guid]::NewGuid().ToString('N')
+    $list = Join-Path ([IO.Path]::GetTempPath()) ("klap-compiler-references-$id.txt")
+    $obj = Join-Path ([IO.Path]::GetTempPath()) ("klap-compiler-references-$id\")
+    $project = Join-Path $script:RepositoryRoot 'src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj'
+    $dotnet = (Get-Command dotnet -ErrorAction Stop).Source
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = $null | & $dotnet msbuild $project /nologo /v:q /nr:false '/t:ResolveReferences;FindReferenceAssembliesForReferences' `
+            "/p:Configuration=$Configuration" /p:Platform=AnyCPU "/p:CompilerReferenceListPath=$list" "/p:IntermediateOutputPath=$obj" 2>&1 | ForEach-Object { "$_" }
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $list)) { throw "Could not resolve the compiler references: $($output -join ' ')" }
+        $rootPrefix = [IO.Path]::GetFullPath($script:RepositoryRoot).TrimEnd('\') + '\'
+        return @(Get-Content -LiteralPath $list -Encoding UTF8 | Where-Object { $_ } | ForEach-Object {
+            $kind, $value = $_ -split '\|', 2
+            if ($kind -ceq 'setting') { [ordered]@{ kind = $kind; name = $value; sha256 = '' } }
+            else {
+                $name = if ($value.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) { $value.Substring($rootPrefix.Length).Replace('\', '/') } else { [IO.Path]::GetFileName($value) }
+                $digest = if (Test-Path -LiteralPath $value -PathType Leaf) { Get-Sha256 $value } else { 'absent' }
+                [ordered]@{ kind = $kind; name = $name; sha256 = $digest }
+            }
+        } | Sort-Object { $_.kind + '|' + $_.name + '|' + $_.sha256 })
+    }
+    finally {
+        $ErrorActionPreference = $previous
+        Remove-Item -LiteralPath $list -Force -ErrorAction SilentlyContinue
+        if ([IO.Directory]::Exists($obj)) { [IO.Directory]::Delete($obj, $true) }
+    }
+}
+
+function Get-BuildInputFingerprint([string] $Configuration = 'Release') {
     $root = $script:RepositoryRoot
-    # Also the production build wrapper (Build-Local.ps1 and Common.ps1 choose the MSBuild invocation) and the SHA-256 of
-    # every game/Unity assembly the project references from the configured Managed directory.
+    # Also the production build wrapper (Build-Local.ps1 and Common.ps1 choose the MSBuild invocation) and the identity of
+    # every assembly Csc receives for the configuration, as resolved by MSBuild (so GamePath.props is read only by MSBuild).
     $paths = @('src', 'Directory.Build.props', '.editorconfig', 'Info.json', 'LoaderReferences.targets',
         'scripts/loader-reference-pins.json', 'scripts/Get-PinnedLoaderReferences.ps1', 'scripts/Build-Local.ps1', 'scripts/Common.ps1')
     $files = @(& git -C $root ls-files --cached --others --exclude-standard -- @paths)
@@ -212,13 +248,7 @@ function Get-BuildInputFingerprint {
         $full = Join-Path $root $file
         if (Test-Path -LiteralPath $full -PathType Leaf) { $file + "`t" + (Get-Sha256 $full) }
     })
-    $managed = (Get-KingmakerConfiguration).ManagedDir
-    [xml] $project = Get-Content -LiteralPath (Join-Path $root 'src\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.csproj') -Raw
-    $hints = @($project.SelectNodes("//*[local-name()='Reference']/*[local-name()='HintPath']") | ForEach-Object { $_.InnerText } | Where-Object { $_.StartsWith('$(KingmakerManagedDir)') })
-    foreach ($hint in ($hints | Sort-Object)) {
-        $file = ([string]$hint).Substring('$(KingmakerManagedDir)'.Length).TrimStart('\')
-        $lines += 'managed:' + $file + "`t" + (Get-Sha256 (Join-Path $managed $file))
-    }
+    foreach ($input in (Get-CompilerReferenceIdentities $Configuration)) { $lines += 'compiler-' + $input.kind + ':' + $input.name + "`t" + $input.sha256 }
     $hasher = [Security.Cryptography.SHA256]::Create()
     try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
     finally { $hasher.Dispose() }
@@ -243,7 +273,7 @@ function Assert-PinnedBuildReceipt($Receipt, [string] $DllPath, [string] $Config
     }
     if ($Receipt.dll_sha256 -ne (Get-Sha256 $DllPath)) { throw 'Build receipt does not match the mod DLL; rebuild first.' }
     if ($Configuration -and $Receipt.configuration -cne $Configuration) { throw "Build receipt is for configuration $($Receipt.configuration), not $Configuration; rebuild first." }
-    if ($Receipt.build_inputs_sha256 -cne (Get-BuildInputFingerprint)) { throw 'Build inputs changed since this DLL was built (source, manifest or loader pins); rebuild first.' }
+    if ($Receipt.build_inputs_sha256 -cne (Get-BuildInputFingerprint $Receipt.configuration)) { throw 'Build inputs changed since this DLL was built (source, manifest or loader pins); rebuild first.' }
     $pins = @(Get-PinnedReferenceDefinitions)
     $recorded = @($Receipt.loader_references)
     if ($recorded.Count -ne $pins.Count) { throw 'Build receipt has an unexpected loader reference count; rebuild first.' }
@@ -337,15 +367,34 @@ function Expand-ValidatedPackage([string] $PackagePath, [string] $Destination) {
 
 # The non-DLL files a package copies from the repository (manifest, documentation, licences). A package is current only
 # while these still hash the same as when it was built.
-function Get-PackageInputFingerprint {
-    $root = $script:RepositoryRoot
+function Get-PackageInputFingerprint([string] $Directory = $script:RepositoryRoot) {
     $lines = foreach ($file in @('Info.json', 'LICENSE', 'README.md', 'THIRD-PARTY-NOTICES.md', 'licenses/FIRST-AZLANTI-MIT.txt')) {
-        $file + "`t" + (Get-Sha256 (Join-Path $root $file))
+        $file + "`t" + (Get-Sha256 (Join-Path $Directory $file))
     }
     $hasher = [Security.Cryptography.SHA256]::Create()
     try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
     finally { $hasher.Dispose() }
     return ([BitConverter]::ToString($digest)).Replace('-', '').ToLowerInvariant()
+}
+
+# The packaging rules a package was produced and validated under; a changed rule withdraws credit from older packages.
+function Get-PackageRuleFingerprint {
+    $lines = foreach ($file in @('scripts/Package.ps1', 'scripts/Validate-Package.ps1')) { $file + "`t" + (Get-Sha256 (Join-Path $script:RepositoryRoot $file)) }
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    try { $digest = $hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))) }
+    finally { $hasher.Dispose() }
+    return ([BitConverter]::ToString($digest)).Replace('-', '').ToLowerInvariant()
+}
+
+# Checks that the loader assemblies bound in this process are the configured files (a reused host would otherwise keep
+# the first profile's Harmony12/Harmony2 while reporting a second profile's identities).
+function Assert-LoadedLoaderStack([string] $Harmony12Path, [string] $Harmony2Path) {
+    foreach ($pair in @(@('0Harmony12', $Harmony12Path), @('0Harmony', $Harmony2Path))) {
+        $loaded = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and $_.GetName().Name -ceq $pair[0] })
+        if ($loaded.Count -ne 1 -or -not [string]::Equals([IO.Path]::GetFullPath($loaded[0].Location), [IO.Path]::GetFullPath($pair[1]), [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Loaded Harmony binding mismatch: $($pair[0]) is bound from $(@($loaded | ForEach-Object Location) -join ', ') but the configured file is $($pair[1]). Run each loader profile in its own process."
+        }
+    }
 }
 
 # Checks that an assembly loaded into this process is the selected file: LoadFrom returns an already-loaded assembly with

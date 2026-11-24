@@ -30,6 +30,8 @@ $result = [ordered]@{
     passed = [int] $match.Groups[2].Value
     failed = [int] $match.Groups[3].Value
     runner = $runner
+    # The product DLL the runner actually loaded (its own output copy), so a record counts only for the bytes tested.
+    dll_sha256 = Get-Sha256 (Join-Path (Split-Path -Parent $runner) 'KingmakerLastAzlantiPreserver.dll')
 }
 Write-JsonFile (Join-Path $root 'artifacts\qualification\tests.json') $result
 if ($exitCode -ne 0 -or $result.failed -ne 0) { throw "Tests failed (exit=$exitCode failed=$($result.failed))." }

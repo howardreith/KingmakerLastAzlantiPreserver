@@ -22,7 +22,7 @@ if ($Install) {
     & (Join-Path $PSScriptRoot 'Install.ps1')
 }
 
-$configurationData = Get-KingmakerConfiguration
+$configurationData = Get-KingmakerConfiguration -AllowMissingLoader
 $gameAssembly = Join-Path $configurationData.ManagedDir 'Assembly-CSharp.dll'
 $git = Get-GitMetadata
 $projectStateText = Get-Content -LiteralPath (Join-Path $root 'PROJECT-STATE.md') -Raw
@@ -71,7 +71,16 @@ $currentGameSha = Get-Sha256 $gameAssembly
 $currentUmmSha = Get-OptionalSha256 (Join-Path $configurationData.UnityModManagerDir 'UnityModManager.dll')
 $currentHarmony2Sha = Get-OptionalSha256 (Join-Path $configurationData.UnityModManagerDir '0Harmony.dll')
 $currentHarmony12Sha = Get-OptionalSha256 (Join-Path $configurationData.UnityModManagerDir '0Harmony12.dll')
+# Both contract records must come from one binding-aware verification (same run, loaded product and Harmony2 recorded)
+# under the loader components configured now; earlier-format or mixed records are not current.
 $contractsCurrent = [bool]($currentDllSha -and $contractReport -and $uiContractReport -and
+    [string] (Get-RecordField $contractReport @('verification_run_id')) -and
+    [string] (Get-RecordField $contractReport @('verification_run_id')) -eq [string] (Get-RecordField $uiContractReport @('verification_run_id')) -and
+    [string] (Get-RecordField $contractReport @('mod_dll_loaded_mvid')) -and [string] (Get-RecordField $uiContractReport @('mod_dll', 'loaded_mvid')) -and
+    [string] (Get-RecordField $uiContractReport @('harmony2', 'loaded_mvid')) -and
+    [string] (Get-RecordField $contractReport @('unity_mod_manager_sha256')) -eq $currentUmmSha -and
+    [string] (Get-RecordField $contractReport @('legacy_harmony_sha256')) -eq $currentHarmony12Sha -and
+    [string] (Get-RecordField $contractReport @('harmony2_sha256')) -eq $currentHarmony2Sha -and
     [string] (Get-RecordField $contractReport @('mod_dll_sha256')) -eq $currentDllSha -and
     [string] (Get-RecordField $uiContractReport @('mod_dll', 'sha256')) -eq $currentDllSha -and
     [string] (Get-RecordField $contractReport @('assembly_sha256')) -eq $currentGameSha -and
@@ -88,9 +97,20 @@ if ($currentDllSha -and $packageReport -and $validationReport -and $recordedPack
         $zipSha -eq [string] (Get-RecordField $validationReport @('package_sha256')) -and
         [string] (Get-RecordField $packageReport @('dll_sha256')) -eq $currentDllSha -and
         [string] (Get-RecordField $validationReport @('dll_sha256')) -eq $currentDllSha -and
-        [string] (Get-RecordField $packageReport @('package_inputs_sha256')) -eq (Get-PackageInputFingerprint)
+        [string] (Get-RecordField $packageReport @('package_inputs_sha256')) -eq (Get-PackageInputFingerprint) -and
+        [string] (Get-RecordField $packageReport @('build_inputs_sha256')) -eq [string] $buildReport.build_inputs_sha256 -and
+        [string] (Get-RecordField $packageReport @('package_rules_sha256')) -eq (Get-PackageRuleFingerprint)
 }
 if (-not $packageCurrent) { $packageReport = $null; $validationReport = $null }
+# A test record counts only for the production DLL it ran against.
+$testsCurrent = [bool]($currentDllSha -and $testReport -and [string] (Get-RecordField $testReport @('dll_sha256')) -eq $currentDllSha -and [string] (Get-RecordField $testReport @('status')) -eq 'passed')
+if (-not $testsCurrent) { $testReport = $null }
+# The stages requested in this run must have produced current evidence for the same candidate.
+$stageProblems = @()
+if (($Build -or $Test -or $VerifyContracts -or $Package) -and -not $buildCurrent) { $stageProblems += "build record not current ($buildProblem)" }
+if ($Test -and -not $testsCurrent) { $stageProblems += 'tests did not run against the current DLL' }
+if ($VerifyContracts -and -not $contractsCurrent) { $stageProblems += 'contract records are not a current verification of this DLL and loader' }
+if ($Package -and -not $packageCurrent) { $stageProblems += 'package is not current for this DLL' }
 $installMatchesCandidate = $false
 if ($installReport -and $buildReport -and
     $installReport.status -eq 'passed' -and
@@ -103,7 +123,7 @@ if ($installReport -and $buildReport -and
 }
 
 $summary = [ordered]@{
-    status = 'non-runtime-qualification-passed'
+    status = if ($stageProblems.Count -eq 0) { 'non-runtime-qualification-passed' } else { 'failed: ' + ($stageProblems -join '; ') }
     branch = $git.Branch
     commit_sha = $git.Commit
     dirty = $git.Dirty
@@ -126,7 +146,7 @@ $summary = [ordered]@{
     optional_patch_ownership = if ($uiContractReport) { $uiContractReport.harmony_ownership.optional_owned_after_application } else { $false }
     optional_unpatch_preserved_core = if ($uiContractReport) { $uiContractReport.harmony_ownership.core_owned_after_optional_unpatch } else { $false }
     test_count = if ($testReport) { $testReport.total } else { 0 }
-    test_result = if ($testReport) { $testReport.status } else { 'not run' }
+    test_result = if ($testReport) { $testReport.status } else { 'not run for the current DLL' }
     compiler_warning_count = if ($buildReport) { $buildReport.compiler_warnings } else { $null }
     compiler_error_count = if ($buildReport) { $buildReport.compiler_errors } else { $null }
     dll_path = if ($buildReport) { $buildReport.dll_path } else { $null }
@@ -180,3 +200,4 @@ Write-Host "Package validation: $($summary.package_validation)"
 Write-Host "Installation matches candidate: $($summary.installation_matches_candidate)"
 Write-Host "Installed target: $($summary.installed_target)"
 Write-Host "Runtime qualification: $($summary.runtime_qualification)"
+if ($stageProblems.Count -gt 0) { throw "Qualification failed: $($stageProblems -join '; ')" }

@@ -3,9 +3,7 @@ param(
     # A folder whose subfolders are loader profiles, each holding UnityModManager.dll, 0Harmony.dll and 0Harmony12.dll.
     [Parameter(Mandatory = $true)][string] $ProfileRoot,
     [ValidateSet('Debug','Release')][string] $Configuration = 'Release',
-    [string] $ReportPath,
-    # Test-only: after the first profile, copy this file over the build output to show the comparison uses frozen bytes.
-    [string] $TestReplaceBuildOutputAfterFirstProfile
+    [string] $ReportPath
 )
 # Managed (out-of-game) contract checks of one candidate DLL against several loader profiles. For each profile the
 # repository's contract verifiers load Assembly-CSharp from the configured game installation and apply, verify and
@@ -14,7 +12,7 @@ param(
 # temporary GamePath.props; the installed loader, mods and saves are not touched. This is not an in-game run.
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-RepositoryRoot
-$gameConfig = Get-KingmakerConfiguration
+$gameConfig = Get-KingmakerConfiguration -AllowMissingLoader
 $dll = Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll"
 Assert-FileExists $dll 'Candidate DLL (build first)'
 $dllSha = Get-Sha256 $dll
@@ -26,7 +24,6 @@ New-Item -ItemType Directory -Path $frozenDirectory | Out-Null
 $frozen = Join-Path $frozenDirectory 'KingmakerLastAzlantiPreserver.dll'
 [IO.File]::Copy($dll, $frozen)
 if ((Get-Sha256 $frozen) -ne $dllSha) { throw 'The build output changed while it was being frozen.' }
-$first = $true
 $results = @()
 try {
     foreach ($profile in @(Get-ChildItem -LiteralPath $ProfileRoot -Directory | Sort-Object Name)) {
@@ -72,11 +69,6 @@ try {
         $results += [ordered]@{ profile = $profile.Name; files = $identities; passed = $passed; detail = $detail }
         Write-Host ("{0} {1} :: {2}" -f $(if ($passed) { 'PASSED ' } else { 'REFUSED' }), $profile.Name, $detail)
         foreach ($identity in $identities) { Write-Host "    $identity" }
-        if ($first -and $TestReplaceBuildOutputAfterFirstProfile) {
-            Copy-Item -LiteralPath $TestReplaceBuildOutputAfterFirstProfile -Destination $dll -Force
-            Write-Host "    (test) build output replaced after the first profile; now $(Get-Sha256 $dll)"
-        }
-        $first = $false
     }
     $summary = [ordered]@{ schema = 'klap.loader-profile-contracts.v2'; configuration = $Configuration; dll_sha256 = $dllSha; frozen_copy_verified = $true; profiles = $results }
     if ($ReportPath) { $summary | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $ReportPath -Encoding UTF8 }

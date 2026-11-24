@@ -16,12 +16,10 @@ if ($PSBoundParameters.ContainsKey('ExpectedDllSha256') -and $ExpectedDllSha256 
 # Inspect and hash one immutable private copy, so the recorded ZIP hash and the inspected contents are the same bytes
 # even if the caller's file is replaced meanwhile.
 $privateDirectory = Join-Path ([IO.Path]::GetTempPath()) ('klap-validate-' + [Guid]::NewGuid().ToString('N'))
-[void][IO.Directory]::CreateDirectory($privateDirectory)
 $inspected = Join-Path $privateDirectory 'package.zip'
-[IO.File]::Copy($PackagePath, $inspected)
-# Test hook (used only by scripts\Test-LoaderBaseline.ps1): replace the caller's file after the private copy is taken.
-if ($env:KLAP_VALIDATE_TEST_REPLACE_INPUT_AFTER_COPY) { [IO.File]::Copy($env:KLAP_VALIDATE_TEST_REPLACE_INPUT_AFTER_COPY, $PackagePath, $true) }
 try {
+[void][IO.Directory]::CreateDirectory($privateDirectory)
+[IO.File]::Copy($PackagePath, $inspected)
 $expectedInfo = Get-Content -LiteralPath (Join-Path $root 'Info.json') -Raw | ConvertFrom-Json
 $allowed = @(
     'KingmakerLastAzlantiPreserver/Info.json',
@@ -35,7 +33,9 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [IO.Compression.ZipFile]::OpenRead($inspected)
 try {
     foreach ($directory in @($archive.Entries | Where-Object { -not $_.FullName -or $_.FullName.EndsWith('/') -or $_.FullName.EndsWith('\') })) {
-        if ($directory.Length -ne 0 -or $directory.CompressedLength -gt 2 -or
+        $directoryStream = $directory.Open()
+        try { $decodedByte = $directoryStream.ReadByte() } finally { $directoryStream.Dispose() }
+        if ($directory.Length -ne 0 -or $decodedByte -ne -1 -or
             @('KingmakerLastAzlantiPreserver/', 'KingmakerLastAzlantiPreserver/licenses/') -cnotcontains $directory.FullName) {
             throw "Unexpected or data-bearing package directory record: '$($directory.FullName)'"
         }

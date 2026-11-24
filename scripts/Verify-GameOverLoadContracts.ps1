@@ -2,7 +2,8 @@
 param(
     [string] $GamePathProps,
     [string] $OutputPath = 'artifacts\qualification\game-over-load-contracts.json',
-    [string] $DllPath
+    [string] $DllPath,
+    [string] $VerificationRunId = ([Guid]::NewGuid().ToString('N'))
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
@@ -251,6 +252,9 @@ try {
         Apply-PatchSpec $coreHarmony $spec $patchApi $harmonyMethodConstructor
     }
     Assert-PatchSpecsOwned $coreHarmony $coreSpecs $coreOwner $getPatchInfo
+    # Ownership is credited only for the configured Harmony stack actually bound in this process.
+    Assert-LoadedLoaderStack $harmonyPath $harmony2Path
+    $loadedHarmony2 = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and $_.GetName().Name -ceq '0Harmony' })[0]
 
     $optionalHarmony = $createHarmony.Invoke($null, @($optionalOwner))
     foreach ($spec in $optionalSpecs) {
@@ -301,10 +305,13 @@ try {
             mvid = $ummMvid
         }
         loader_profile = $loaderVersion
+        verification_run_id = $VerificationRunId
         harmony2 = [ordered]@{
             path = $harmony2Path
             identity = $harmony2Identity.FullName
             sha256 = $harmony2Hash
+            loaded_location = $loadedHarmony2.Location
+            loaded_mvid = $loadedHarmony2.ManifestModule.ModuleVersionId.ToString('D')
         }
         mod_dll = [ordered]@{
             path = $modDll
