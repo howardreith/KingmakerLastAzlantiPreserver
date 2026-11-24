@@ -23,14 +23,22 @@ whatever loader is installed on the build machine.
   identities, the source commit/dirty state (a detached checkout is supported), the
   compiler inventory and a fingerprint of every material build input. The inventory is the exact
   Csc command line (an opt-in `WriteCompilerReferenceList` target in `LoaderReferences.targets`
-  with `ProvideCommandLineArgs`): a `SkipCompilerExecution` pass through `CoreCompile` in a fresh
-  intermediate directory gives every argument Csc would receive for the production project and
-  configuration, including anything `GamePath.props` or another import sets. Each argument is
-  recorded as a path-free identity: every option verbatim (for example `/checked+`,
-  `/baseaddress:...`, `/define:...`), references and sources (generated ones included) by name and
-  SHA-256, and file-valued options (`/win32res`, `/win32icon`, `/keyfile`, `/resource`, rule sets
-  and others) by the content of the file they name. The production compile writes its own command
-  line, which must equal the evaluated one. The fingerprint covers tracked or new files under
+  with `ProvideCommandLineArgs`): a `SkipCompilerExecution` pass through `PrepareResources` and
+  `CoreCompile` in a fresh intermediate directory (resources prepared as the production build
+  prepares them) gives every argument Csc would receive for the production project and
+  configuration, including anything `GamePath.props` or another import sets. The inventory starts
+  with the effective compiler by content (`CscToolPath`/`CscToolExe` when set, otherwise Roslyn's
+  `csc.dll` under `dotnet msbuild` or `csc.exe`) and, without `/noconfig`, the implicit `csc.rsp`;
+  then every argument in the compiler's order, as a path-free identity: every option verbatim (for
+  example `/checked+`, `/baseaddress:...`, `/define:...`), references and sources (generated ones
+  included) by name and SHA-256, and file-valued options (`/win32res`, `/win32icon`, `/keyfile`,
+  `/resource`, rule sets and others) by the content of the file they name. An input that cannot be
+  identified refuses reuse, and forms whose material files the inventory cannot name are refused at
+  the build and at every receipt admission: an explicit compiler response file (`@file`), linked
+  references (`/link`) and wildcard source recursion (`/recurse`). The production compile writes its
+  own command line, which must equal the evaluated one entry by entry; receipt comparisons check the
+  entry count and then kind, name and digest of each entry in order, and a refusal names the first
+  difference. The fingerprint covers tracked or new files under
   `src/`, `Directory.Build.props`, `.editorconfig`, `Info.json`, `LoaderReferences.targets`,
   the pin file and its verifier, `Build-Local.ps1`/`Common.ps1` and that inventory. Building,
   packaging and qualification summaries need the game assemblies and the pins, not the
@@ -52,8 +60,12 @@ whatever loader is installed on the build machine.
   inventory must equal what MSBuild evaluates now) or whose build inputs changed. Staging, the new
   archive and its validation report live in a folder private to the invocation; the documents read
   back from the validated archive must equal the repository files hashed before staging, and the DLL
-  read back must equal the receipt's DLL. Only then is the accepted ZIP replaced and its records
-  written, so a refusal leaves the previous ZIP and records unchanged. The package record names the
+  read back must equal the receipt's DLL. Both records are then prepared privately (the validation
+  record's `package_path` names the published ZIP), and the set of ZIP, `package-validation.json` and
+  `package.json` is published by one publisher at a time (an exclusive lock file removed when its
+  handle closes): backup acquisition, placement and rollback are one recovery scope that tracks exactly
+  the files this invocation moved and placed, so any failure restores the previous set; if
+  restoration itself fails, the previous files are kept (not deleted) and named. The package record names the
   producing build inputs, a fingerprint of the packaged documents and a fingerprint of the packaging
   rules (`Package.ps1`, `Validate-Package.ps1`).
 - The standalone `scripts/Validate-Package.ps1` reads the packaged DLL's AssemblyRef
@@ -75,8 +87,11 @@ whatever loader is installed on the build machine.
   same run id, the loaded product and Harmony2 modules recorded) under the loader
   components configured now, so earlier-format or mixed records are not current; a test
   record counts only when the tests ran in this qualification (`-Test`), and only for the product DLL
-  the runner loaded (the runner executes from a private copy of its output folder, hashed before and
-  after the run), so skipped tests are reported as not run; a package counts
+  the runner loaded (the runner executes from a private copy of its output folder, made inside its
+  cleanup scope and hashed before and after the run), so skipped tests are reported as not run.
+  `Qualify.ps1` reads that result from its own invocation (`Test.ps1 -ResultPath` to a file private to
+  the invocation), never from the shared `artifacts\qualification\tests.json`, which another run can
+  rewrite; a package counts
   only when the ZIP on disk, its package record and its validation record describe that DLL,
   the files it copies are unchanged, its producing build inputs equal the current receipt's
   and the packaging rules are unchanged. Anything else is reported as not current. The
@@ -183,20 +198,28 @@ forwarders. The newest-stable row was selected on 2026-11-23 from the author's N
 feed (0.33.4, published 2026-11-19, the highest version; project URL the Nexus page) and
 confirmed by the author's GitHub HEAD `3d14bf0d` (`<Version>0.33.4</Version>`).
 
-## Evidence for this change (2026-11-24, round 5)
+## Evidence for this change (2026-11-24, round 6)
 
-The build/qualification tooling is at `5d00290`; the product sources are unchanged since round 3, so the
-candidate DLL and package below are byte-identical to the earlier records.
+The build/qualification tooling is at `27c0af5`; the product sources are unchanged since round 3, so the
+candidate DLL is byte-identical to the earlier records.
 
 Candidate DLL (Release, `dotnet msbuild` on Windows against the pinned cache and the
 Kingmaker 2.1.7b managed assemblies): SHA-256
 `fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248`, MVID
 `4bcbb685-5152-4399-98e2-19fb6d19c6cd`; AssemblyRefs UnityModManager 0.31.1.0 and
-0Harmony12 1.2.0.1; 0 compiler warnings/errors. `Qualify.ps1 -Build -Test -VerifyContracts
--Package` on `5d00290`: 84/84 deterministic tests run against that DLL, Kingmaker and game-over
-load contracts from one binding-aware verification (installed profile 0.33.0 + Harmony2 2.3.6.0),
-package SHA-256 `83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc`, validation passed.
-`Test-LoaderBaseline.ps1` on `5d00290`: 128/128.
+0Harmony12 1.2.0.1; 0 compiler warnings/errors. The qualification summary, build, package and
+validation records in the index come from the round-6 qualify run (the index names its commit).
+`Test-LoaderBaseline.ps1` on the round-6 tooling: see `loader-baseline.json` (the index gives its commit
+and counts). Round 6 added: a neutral EmbeddedResource from outside `src` (old receipt refused, rebuild
+embeds it), imported sources reordered (refused, rebuild accepted), a changed compiler selection
+(refused), a response file under ignored artifacts (refused at package and build), the package record
+held during a distinct replacement (all three public files unchanged, retry publishes the set),
+`package_path` reopening the published ZIP, a control `tests.json` substituted after `Test.ps1` returns
+(the substitute run still fails), and a failed private test-run copy leaving no directory.
+
+Earlier rounds (history): round 5 recorded `Test-LoaderBaseline.ps1` 128/128 and `Qualify.ps1 -Build -Test
+-VerifyContracts -Package` (84/84 tests, package `83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc`)
+on `5d00290`.
 
 Machine-generated records for the candidate are committed as structured files in
 [`docs/evidence/umm-0311/`](evidence/umm-0311/INDEX.md) (qualification summary, build,
