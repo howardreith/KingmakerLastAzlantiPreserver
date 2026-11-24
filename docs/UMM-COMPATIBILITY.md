@@ -28,11 +28,16 @@ whatever loader is installed on the build machine.
   prepares them) gives every argument Csc would receive for the production project and
   configuration, including anything `GamePath.props` or another import sets. The inventory starts
   with the effective compiler by content (`CscToolPath`/`CscToolExe` when set, otherwise Roslyn's
-  `csc.dll` under `dotnet msbuild` or `csc.exe`) and, without `/noconfig`, the implicit `csc.rsp`;
-  then every argument in the compiler's order, as a path-free identity: every option verbatim (for
-  example `/checked+`, `/baseaddress:...`, `/define:...`), references and sources (generated ones
-  included) by name and SHA-256, and file-valued options (`/win32res`, `/win32icon`, `/keyfile`,
-  `/resource`, rule sets and others) by the content of the file they name. An input that cannot be
+  `csc.dll` under `dotnet msbuild` or `csc.exe`; a relative selector is resolved against the project
+  directory, where MSBuild runs the compiler, never against the caller's directory) and, without
+  `/noconfig`, the implicit `csc.rsp`; then every argument in the compiler's order, as a path-free
+  identity: every option verbatim (for example `/checked+`, `/baseaddress:...`, `/define:...`),
+  references and sources (generated ones included) by name and SHA-256, and file-valued options (`/win32res`, `/win32icon`, `/keyfile`,
+  `/resource`, rule sets and others) by the content of the file they name. A source outside the repository (for example one imported by
+  `GamePath.props`) also carries the SHA-256 of its compiler-visible full path
+  (`external:<name>@path-sha256=<digest>`), because that path reaches the DLL (`CallerFilePath`,
+  diagnostics), so a byte-identical copy elsewhere is a different input; references stay identified by
+  content, so a byte-identical reference elsewhere is the same input. An input that cannot be
   identified refuses reuse, and forms whose material files the inventory cannot name are refused at
   the build and at every receipt admission: an explicit compiler response file (`@file`), linked
   references (`/link`) and wildcard source recursion (`/recurse`). The production compile writes its
@@ -68,6 +73,12 @@ whatever loader is installed on the build machine.
   restoration itself fails, the previous files are kept (not deleted) and named. The package record names the
   producing build inputs, a fingerprint of the packaged documents and a fingerprint of the packaging
   rules (`Package.ps1`, `Validate-Package.ps1`).
+- The published `package-validation.json` has one owner, the publication above. A standalone
+  `Validate-Package.ps1` whose report path is that receipt (its default) refreshes it only under the
+  same publication lock and only when the published ZIP's bytes are the bytes it validated (its
+  `package_path` then names the published ZIP); validation of any other archive, or of a published
+  archive replaced while it was validating, leaves the receipt unchanged and says so. Validation with
+  an explicit other `-ReportPath` is unaffected.
 - The standalone `scripts/Validate-Package.ps1` reads the packaged DLL's AssemblyRef
   table (in Windows PowerShell in a separate process, so several packages can be
   validated in one session), inspects and hashes one private copy of the ZIP, requires
@@ -137,7 +148,8 @@ Lib.Harmony 2.3.1.1 / 2.4.3 and UnityModManager 0.33.4 NuGet packages that compl
 disposable 0.31.1 and 0.33.4 profiles, the genuine v0.1.3 release (SHA-256 `8b59d76d…887d2fbed`, its DLL compiled against
 UnityModManager 0.33.0.0) and the author's UnityModManager 0.32.4 NuGet package
 (`a8438e92…082c9ec9`, DLL `1387468b…7bfd88`) as the known distinct wrong-loader fixture;
-the owner's installed loader is only measured. Its 128 checks cover cache bytes; dropped
+the owner's installed loader is only measured. Its checks (the current count is in
+`docs/evidence/umm-0311/loader-baseline.json`, listed in the evidence index; round 5 recorded 128) cover cache bytes; dropped
 or misnamed pins and raised/array-typed manifests; direct and incremental builds (quoted
 compiler paths, manifest-only and pin-only changes); resolved-input probes (identical
 copy elsewhere, same-stem `.exe`, renamed copy, 0.32.4 fixture); packaging and
@@ -198,10 +210,23 @@ forwarders. The newest-stable row was selected on 2026-11-23 from the author's N
 feed (0.33.4, published 2026-11-19, the highest version; project URL the Nexus page) and
 confirmed by the author's GitHub HEAD `3d14bf0d` (`<Version>0.33.4</Version>`).
 
-## Evidence for this change (2026-11-24, round 6)
+## Evidence for this change (2026-11-24, round 7)
 
-The build/qualification tooling is at `27c0af5`; the product sources are unchanged since round 3, so the
-candidate DLL is byte-identical to the earlier records.
+Round 7 changes only build, packaging and test tooling (`LoaderReferences.targets`, `Common.ps1`,
+`Package.ps1`, `Validate-Package.ps1`, `Test-LoaderBaseline.ps1`); the product sources are unchanged since
+round 3, so the candidate DLL bytes are those of the earlier records, which keep their original identities
+in the index. `Test-LoaderBaseline.ps1` on the round-7 tooling (`loader-baseline.json`; the index gives its
+commit and counts) adds: the compiler selection changed alone on the props of the accepted receipt (control
+accepted, refused at entry 0 with the entry count unchanged, accepted after restoring; each step records the
+selected compiler); a project-relative selector with a different same-named file below the repository root
+(the receipt and package admission name the project-selected binary; replacing that binary refuses reuse);
+a `CallerFilePath` source moved to a byte-identical copy in another folder (refused; the rebuild differs
+and is accepted); and the published validation receipt (another archive leaves it unchanged, the published
+bytes refresh it, and a validation of ZIP A overlapping the publication of ZIP B leaves ZIP, `package.json`
+and `package-validation.json` all describing B). `r1f1-reproduction.txt` shows the inventory on the round-6
+commit naming the caller-relative file and on the round-7 commit naming the project-selected binary.
+
+Round 6 (history): tooling at `27c0af5`.
 
 Candidate DLL (Release, `dotnet msbuild` on Windows against the pinned cache and the
 Kingmaker 2.1.7b managed assemblies): SHA-256
@@ -209,8 +234,8 @@ Kingmaker 2.1.7b managed assemblies): SHA-256
 `4bcbb685-5152-4399-98e2-19fb6d19c6cd`; AssemblyRefs UnityModManager 0.31.1.0 and
 0Harmony12 1.2.0.1; 0 compiler warnings/errors. The qualification summary, build, package and
 validation records in the index come from the round-6 qualify run (the index names its commit).
-`Test-LoaderBaseline.ps1` on the round-6 tooling: see `loader-baseline.json` (the index gives its commit
-and counts). Round 6 added: a neutral EmbeddedResource from outside `src` (old receipt refused, rebuild
+`Test-LoaderBaseline.ps1` on the round-6 tooling recorded 145/145 at `27c0af5` (the current
+`loader-baseline.json` is the round-7 run). Round 6 added: a neutral EmbeddedResource from outside `src` (old receipt refused, rebuild
 embeds it), imported sources reordered (refused, rebuild accepted), a changed compiler selection
 (refused), a response file under ignored artifacts (refused at package and build), the package record
 held during a distinct replacement (all three public files unchanged, retry publishes the set),
