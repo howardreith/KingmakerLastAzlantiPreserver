@@ -546,11 +546,11 @@ try {
     $oneItem = { param([string] $Path) '<ItemGroup><Compile Include="' + [Security.SecurityElement]::Escape($Path) + '" /></ItemGroup>' }
     $externalEntry = { @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references | Where-Object { $_.kind -eq 'compile' -and $_.name -like 'external:LoaderBaselineCallerPath.cs@path-sha256=*' }) }
     [IO.File]::WriteAllText($gamePath, (& $withItems (& $oneItem $pathSrc1)))
-    $p1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p1Dll = Get-Sha256 $dll; $p1Entry = & $externalEntry
+    $p1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p1Dll = Get-Sha256 $dll; $p1Entry = @(& $externalEntry)
     Expect-Accepted 'package-with-external-caller-path-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     [IO.File]::WriteAllText($gamePath, (& $withItems (& $oneItem $pathSrc2)))
     Expect-Rejected 'package-reuse-after-external-source-moved-to-identical-copy-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry \d+ name'
-    $p2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p2Dll = Get-Sha256 $dll; $p2Entry = & $externalEntry
+    $p2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p2Dll = Get-Sha256 $dll; $p2Entry = @(& $externalEntry)
     $ok = $p1.ExitCode -eq 0 -and $p2.ExitCode -eq 0 -and $p1Entry.Count -eq 1 -and $p2Entry.Count -eq 1 -and $p1Entry[0].sha256 -ceq $p2Entry[0].sha256 -and $p1Entry[0].name -cne $p2Entry[0].name -and $p1Dll -ne $p2Dll -and (Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)
     Add-Case 'rebuild-from-moved-external-source-records-its-path-and-differs' $ok ("builds exit $($p1.ExitCode)/$($p2.ExitCode); source bytes equal: $((Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)); entries '$(@($p1Entry | ForEach-Object name) -join ',')' / '$(@($p2Entry | ForEach-Object name) -join ',')'; DLL $p1Dll / $p2Dll")
     Expect-Accepted 'package-after-rebuild-from-moved-external-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
