@@ -458,6 +458,51 @@ try {
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
     $rebuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     Add-Case 'rebuild-without-imported-options-reproduces-first-dll' ($rebuild.ExitCode -eq 0 -and (Get-Sha256 $dll) -eq $firstDllSha) "DLL $(Get-Sha256 $dll)"
+    $withItems = { param([string] $Items) $gamePathOriginal.Replace('</Project>', $Items + '</Project>') }
+    # R5-F1: a neutral EmbeddedResource from outside src added through GamePath.props. The comparison evaluation prepares
+    # resources as the production build does, so the old receipt is refused; the matching rebuild is accepted and the
+    # resource is in the rebuilt assembly.
+    $neutral = Join-Path $temp 'neutral resource\loader-baseline-neutral.txt'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $neutral) -Force | Out-Null
+    [IO.File]::WriteAllText($neutral, 'loader-baseline neutral resource')
+    [IO.File]::WriteAllText($gamePath, (& $withItems ('<ItemGroup><EmbeddedResource Include="' + [Security.SecurityElement]::Escape($neutral) + '" LogicalName="LoaderBaselineNeutral.txt" /></ItemGroup>')))
+    Expect-Rejected 'package-reuse-after-external-embedded-resource-added-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ'
+    $rr = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    $resourceNames = @([Reflection.Assembly]::Load([IO.File]::ReadAllBytes($dll)).GetManifestResourceNames())
+    Add-Case 'rebuild-with-external-embedded-resource-embeds-it' ($rr.ExitCode -eq 0 -and $resourceNames -ccontains 'LoaderBaselineNeutral.txt') ("exit $($rr.ExitCode); manifest resources: $($resourceNames -join ', ')")
+    Expect-Accepted 'package-after-embedded-resource-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    # R1-F1: imported sources keep their order. Two inert external sources imported through GamePath.props: the matching
+    # build is accepted; the same two in the opposite order refuse the receipt (an ordered entry differs); the rebuild in
+    # that order is accepted.
+    $srcA = Join-Path $temp 'imported sources\LoaderBaselineImportA.cs'; $srcB = Join-Path $temp 'imported sources\LoaderBaselineImportB.cs'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $srcA) -Force | Out-Null
+    [IO.File]::WriteAllText($srcA, 'namespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineImportA { } }')
+    [IO.File]::WriteAllText($srcB, 'namespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineImportB { } }')
+    $importItems = { param([string] $First, [string] $Second) '<ItemGroup><Compile Include="' + [Security.SecurityElement]::Escape($First) + '" /><Compile Include="' + [Security.SecurityElement]::Escape($Second) + '" /></ItemGroup>' }
+    [IO.File]::WriteAllText($gamePath, (& $withItems (& $importItems $srcA $srcB)))
+    $ab = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    Expect-Accepted 'package-with-imported-sources-a-then-b-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    [IO.File]::WriteAllText($gamePath, (& $withItems (& $importItems $srcB $srcA)))
+    Expect-Rejected 'package-reuse-after-imported-sources-reordered-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ \(entry \d+ name'
+    $ba = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    Add-Case 'rebuild-with-imported-sources-reordered-accepted' ($ab.ExitCode -eq 0 -and $ba.ExitCode -eq 0) "builds exit $($ab.ExitCode)/$($ba.ExitCode)"
+    Expect-Accepted 'package-after-reordered-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    # R1-F1: a changed compiler selection (CscToolPath/CscToolExe naming another csc.exe) refuses the receipt: the
+    # effective compiler is the first inventory entry, by content.
+    $otherCsc = Join-Path $temp 'other compiler'; New-Item -ItemType Directory -Path $otherCsc -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') -Destination $otherCsc
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal.Replace('</PropertyGroup>', '<CscToolPath>' + [Security.SecurityElement]::Escape($otherCsc) + '</CscToolPath><CscToolExe>csc.exe</CscToolExe></PropertyGroup>'))
+    Expect-Rejected 'package-reuse-after-compiler-selection-change-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ \(entry 0 '
+    # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
+    # refused at package admission and at Build-Local, never recorded as text.
+    $rspDir = Join-Path $base 'artifacts\response'; New-Item -ItemType Directory -Path $rspDir -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $rspDir 'compiler.rsp'), "/baseaddress:0x12000000`r`n")
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal.Replace('</PropertyGroup>', '<CompilerResponseFile>..\..\artifacts\response\compiler.rsp</CompilerResponseFile></PropertyGroup>'))
+    Expect-Rejected 'package-with-compiler-response-file-refused' (Invoke-Isolated @('-File', $package)) 'Unsupported compiler input: the response file'
+    Expect-Rejected 'build-with-compiler-response-file-refused' (Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))) 'Unsupported compiler input: the response file'
+    [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
+    $rebuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
+    Add-Case 'rebuild-after-import-cases-reproduces-first-dll' ($rebuild.ExitCode -eq 0 -and (Get-Sha256 $dll) -eq $firstDllSha) "DLL $(Get-Sha256 $dll)"
     # Build and packaging need the game assemblies and pins, not the runtime loader; the managed contract check does.
     Write-GamePath $gamePath (Join-Path $temp 'no loader here')
     $noLoader = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
@@ -674,6 +719,29 @@ try {
     Expect-Rejected 'package-document-restaged-before-archive-rejected' (Invoke-Isolated @('-File', $restage)) 'archived documents differ'
     Remove-Item -LiteralPath $restage
     Add-Case 'restage-refusal-preserves-accepted-zip-and-records' ((@($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';') -ceq $before) 'accepted ZIP and records unchanged'
+    # R5-F4: package-validation.json names the published archive in package_path; the ZIP opened through that path alone
+    # has the recorded digest, and no private staging folder is left.
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $pv = Get-Content -LiteralPath (Join-Path $base 'artifacts\qualification\package-validation.json') -Raw | ConvertFrom-Json
+    $opened = 0; try { $z = [IO.Compression.ZipFile]::OpenRead([string]$pv.package_path); $opened = $z.Entries.Count; $z.Dispose() } catch { $opened = 0 }
+    $stagingLeft = @(Get-ChildItem -LiteralPath (Join-Path $base 'artifacts') -Directory -Force -Filter '.package-*').Count
+    Add-Case 'validation-receipt-package-path-opens-the-published-zip' ($opened -gt 0 -and (Get-Sha256 ([string]$pv.package_path)) -eq [string]$pv.package_sha256 -and $stagingLeft -eq 0) ("package_path $([IO.Path]::GetFileName([string]$pv.package_path)); entries $opened; SHA-256 matches: $((Get-Sha256 ([string]$pv.package_path)) -eq [string]$pv.package_sha256); staging folders left $stagingLeft")
+    # R5-F2: package.json held against writes and deletion while a distinct valid replacement (README changed) is
+    # published: the publication fails and the accepted ZIP, package.json and package-validation.json keep their hashes;
+    # after the handle closes, a retry publishes the replacement as one consistent set.
+    $readme = Join-Path $base 'README.md'
+    [IO.File]::AppendAllText($readme, "`r`n<!-- distinct replacement -->`r`n")
+    $before = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
+    $hold = [IO.File]::Open((Join-Path $base 'artifacts\qualification\package.json'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+    try { $held = Invoke-Isolated @('-File', $package) } finally { $hold.Dispose() }
+    $after = @($acceptedRecords | ForEach-Object { if (Test-Path -LiteralPath $_) { Get-Sha256 $_ } else { 'missing' } }) -join ';'
+    Add-Case 'held-package-record-keeps-the-accepted-set' ($held.ExitCode -ne 0 -and $after -ceq $before) ("exit $($held.ExitCode); all three public hashes unchanged: $($after -ceq $before); " + (Get-Reason $held.Output))
+    $retry = Invoke-Isolated @('-File', $package)
+    $zipSha = Get-Sha256 $acceptedZip
+    $pj = Get-Content -LiteralPath $acceptedRecords[1] -Raw | ConvertFrom-Json; $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json
+    Add-Case 'retry-after-handle-closed-publishes-the-replacement-set' ($retry.ExitCode -eq 0 -and $zipSha -ne ($before -split ';')[0] -and $pj.package_sha256 -eq $zipSha -and $pv.package_sha256 -eq $zipSha -and $pv.package_path -eq $acceptedZip) "exit $($retry.ExitCode); ZIP $zipSha"
+    & git -C $base checkout -q -- README.md
+    Invoke-Isolated @('-File', $package) | Out-Null
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-package-control-credited-after-staging-refusal' ($qs.package_current_for_candidate -and $qs.package_validation -eq 'passed') ("package $($qs.package_sha256) '$($qs.package_validation)'")
@@ -712,6 +780,32 @@ try {
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-build-and-test-control-passes' ($q.ExitCode -eq 0 -and $qs.test_result -eq 'passed') ("exit $($q.ExitCode); tests $($qs.test_count) ($($qs.test_result)); status '$($qs.status)'")
+    $controlTests = Join-Path $inputs 'control-tests.json'
+    Copy-Item -LiteralPath (Join-Path $base 'artifacts\qualification\tests.json') -Destination $controlTests -Force
+    [IO.File]::WriteAllText($testProject, $testProjectText.Substring(0, $testProjectText.LastIndexOf('</Project>')) + $probe)
+    $qualifyText = [IO.File]::ReadAllText($qualify)
+    $testLine = "if (`$Test) { & (Join-Path `$PSScriptRoot 'Test.ps1') -Configuration `$Configuration -ResultPath `$invocationTestResult }"
+    if ($qualifyText.IndexOf($testLine) -lt 0) { throw 'Qualify.ps1 test anchor not found.' }
+    [IO.File]::WriteAllText($qualify, $qualifyText.Replace($testLine, $testLine + "`r`nCopy-Item -LiteralPath $(Quote $controlTests) -Destination (Join-Path `$root 'artifacts\qualification\tests.json') -Force"))
+    $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    & git -C $base checkout -q -- scripts/Qualify.ps1
+    & git -C $base checkout -q -- 'tests/KingmakerLastAzlantiPreserver.Tests/KingmakerLastAzlantiPreserver.Tests.csproj'
+    $shared = Get-Content -LiteralPath (Join-Path $base 'artifacts\qualification\tests.json') -Raw | ConvertFrom-Json
+    Add-Case 'qualify-substitute-fails-despite-control-tests-record-in-shared-file' ($q.ExitCode -ne 0 -and [string]$qs.status -match 'tests did not run against the current DLL' -and $shared.dll_sha256 -eq (Get-Content -LiteralPath $controlTests -Raw | ConvertFrom-Json).dll_sha256) ("shared tests.json replaced by the control's record ($($shared.dll_sha256)) after Test.ps1 returned; exit $($q.ExitCode); status '$($qs.status)'")
+    $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
+    $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+    Add-Case 'qualify-build-and-test-control-passes-again' ($q.ExitCode -eq 0 -and $qs.test_result -eq 'passed') ("exit $($q.ExitCode); tests $($qs.test_count) ($($qs.test_result))")
+    # R5-F5: a copy failure of the private test run (a file in the runner folder held exclusively) leaves no partial
+    # klap-test-run directory.
+    $heldFile = Join-Path $base 'artifacts\tests\Release\loader-baseline-held.bin'
+    [IO.File]::WriteAllText($heldFile, 'held')
+    $runDirs = { @(Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Directory -Filter 'klap-test-run-*' -ErrorAction SilentlyContinue | ForEach-Object { $_.Name } | Sort-Object) -join ',' }
+    $dirsBefore = & $runDirs
+    $hold = [IO.File]::Open($heldFile, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    try { $t = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Test.ps1')) } finally { $hold.Dispose() }
+    Remove-Item -LiteralPath $heldFile -Force
+    Add-Case 'test-run-copy-failure-leaves-no-partial-run-directory' ($t.ExitCode -ne 0 -and (& $runDirs) -ceq $dirsBefore) ("exit $($t.ExitCode); klap-test-run directories unchanged: $((& $runDirs) -ceq $dirsBefore)")
     [IO.File]::AppendAllText((Join-Path $base $marker), "`r`nnamespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineQualifyMarker { } }`r`n")
     $q = Invoke-Isolated @('-File', $qualify, '-Build')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json

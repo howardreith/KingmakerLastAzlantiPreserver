@@ -12,7 +12,10 @@ param(
 $root = Get-RepositoryRoot
 Assert-RepositorySafety
 if ($Build) { & (Join-Path $PSScriptRoot 'Build-Local.ps1') -Configuration $Configuration }
-if ($Test) { & (Join-Path $PSScriptRoot 'Test.ps1') -Configuration $Configuration }
+# Test credit comes only from this invocation's own test run (an invocation-specific result file), never from the shared
+# artifacts\qualification\tests.json that another run can rewrite.
+$invocationTestResult = Join-Path ([IO.Path]::GetTempPath()) ('klap-qualify-tests-' + [Guid]::NewGuid().ToString('N') + '.json')
+if ($Test) { & (Join-Path $PSScriptRoot 'Test.ps1') -Configuration $Configuration -ResultPath $invocationTestResult }
 if ($VerifyContracts) {
     & (Join-Path $PSScriptRoot 'Verify-KingmakerContracts.ps1') -DllPath (Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll")
 }
@@ -33,14 +36,14 @@ else {
     'NOT RUNTIME-QUALIFIED; disposable Last Azlanti campaign smoke test required'
 }
 $buildReportPath = Join-Path $root 'artifacts\qualification\build.json'
-$testReportPath = Join-Path $root 'artifacts\qualification\tests.json'
 $contractReportPath = Join-Path $root 'artifacts\qualification\contracts.json'
 $uiContractReportPath = Join-Path $root 'artifacts\qualification\game-over-load-contracts.json'
 $packageReportPath = Join-Path $root 'artifacts\qualification\package.json'
 $validationReportPath = Join-Path $root 'artifacts\qualification\package-validation.json'
 $installReportPath = Join-Path $root 'artifacts\qualification\install.json'
 $buildReport = if (Test-Path -LiteralPath $buildReportPath) { Get-Content -LiteralPath $buildReportPath -Raw | ConvertFrom-Json } else { $null }
-$testReport = if (Test-Path -LiteralPath $testReportPath) { Get-Content -LiteralPath $testReportPath -Raw | ConvertFrom-Json } else { $null }
+$testReport = if ($Test -and (Test-Path -LiteralPath $invocationTestResult)) { Get-Content -LiteralPath $invocationTestResult -Raw | ConvertFrom-Json } else { $null }
+Remove-Item -LiteralPath $invocationTestResult -Force -ErrorAction SilentlyContinue
 $contractReport = if (Test-Path -LiteralPath $contractReportPath) { Get-Content -LiteralPath $contractReportPath -Raw | ConvertFrom-Json } else { $null }
 $uiContractReport = if (Test-Path -LiteralPath $uiContractReportPath) { Get-Content -LiteralPath $uiContractReportPath -Raw | ConvertFrom-Json } else { $null }
 $packageReport = if (Test-Path -LiteralPath $packageReportPath) { Get-Content -LiteralPath $packageReportPath -Raw | ConvertFrom-Json } else { $null }

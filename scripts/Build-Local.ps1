@@ -25,7 +25,8 @@ $errorCount = @($output | Where-Object { $_ -match ': error [A-Z]+\d+:' }).Count
 if ($exitCode -ne 0 -or $warningCount -ne 0 -or $errorCount -ne 0) {
     throw "Production build failed or emitted diagnostics (exit=$exitCode warnings=$warningCount errors=$errorCount)."
 }
-if ((ConvertTo-CompilerInventoryText $produced) -cne (ConvertTo-CompilerInventoryText $compilerReferences)) {
+$difference = Get-CompilerInventoryDifference $produced $compilerReferences
+if ($difference) {
     throw 'The production compile used different compiler inputs from the evaluated inventory; the build is not recorded.'
 }
 $dll = Join-Path $root "artifacts\bin\$Configuration\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll"

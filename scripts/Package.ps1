@@ -20,6 +20,7 @@ Assert-PathWithin $zipPath $root 'Package path'
 # its records are replaced only after the new archive passed validation and its archived documents match the repository
 # files verified before staging; any failure leaves the previous ZIP and records exactly as they were.
 $private = Join-Path $root ('artifacts\.package-' + [Guid]::NewGuid().ToString('N'))
+$keepPrivate = $false
 Assert-PathWithin $private $root 'Private package folder'
 try {
     $stageRoot = Join-Path $private 'staging'
@@ -80,16 +81,61 @@ try {
         validated_package_sha256 = $validated.package_sha256
         validated_dll_sha256 = $validated.dll_sha256
     }
-    [IO.Directory]::CreateDirectory($packageDirectory) | Out-Null
-    if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
-    [IO.File]::Move($newZip, $zipPath)
-    if ((Get-Sha256 $zipPath) -cne $newZipSha) { throw 'The published package differs from the validated archive.' }
+    # The validation receipt names the published archive (package_path, the established field, and package); both records
+    # are prepared privately before any public file changes.
+    $validated | Add-Member -NotePropertyName package_path -NotePropertyValue $zipPath -Force
     $validated | Add-Member -NotePropertyName package -NotePropertyValue $zipPath -Force
-    Write-JsonFile (Join-Path $root 'artifacts\qualification\package-validation.json') $validated
-    Write-JsonFile (Join-Path $root 'artifacts\qualification\package.json') $result
+    $validationFinal = Join-Path $private 'package-validation.final.json'
+    $resultFinal = Join-Path $private 'package.final.json'
+    Write-JsonFile $validationFinal $validated
+    Write-JsonFile $resultFinal $result
+    # Publication of the set {ZIP, package-validation.json, package.json}: one publisher at a time (an exclusive lock file
+    # removed when its handle closes); backup acquisition, placement and rollback are one recovery scope that tracks
+    # exactly the files this invocation moved and placed; if restoration itself fails, the backups are kept and named.
+    [IO.Directory]::CreateDirectory($packageDirectory) | Out-Null
+    $qualification = Join-Path $root 'artifacts\qualification'
+    [IO.Directory]::CreateDirectory($qualification) | Out-Null
+    $publishLock = $null
+    $deadline = [DateTime]::UtcNow.AddSeconds(300)
+    while ($null -eq $publishLock) {
+        try { $publishLock = [IO.FileStream]::new((Join-Path $packageDirectory '.publish.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None, 1, [IO.FileOptions]::DeleteOnClose) }
+        catch [IO.IOException] {
+            if ([DateTime]::UtcNow -gt $deadline) { throw "Another package publication holds $packageDirectory; nothing was changed." }
+            Start-Sleep -Milliseconds 200
+        }
+    }
+    try {
+        $previous = Join-Path $private 'previous'; New-Item -ItemType Directory -Path $previous | Out-Null
+        $pairs = @(@($newZip, $zipPath), @($validationFinal, (Join-Path $qualification 'package-validation.json')), @($resultFinal, (Join-Path $qualification 'package.json')))
+        $moved = New-Object System.Collections.Generic.List[string]
+        $placed = New-Object System.Collections.Generic.List[string]
+        try {
+            foreach ($pair in $pairs) {
+                if (Test-Path -LiteralPath $pair[1]) { [IO.File]::Move($pair[1], (Join-Path $previous ([IO.Path]::GetFileName($pair[1])))); $moved.Add($pair[1]) }
+            }
+            foreach ($pair in $pairs) {
+                [IO.File]::Move($pair[0], $pair[1]); $placed.Add($pair[1])
+                if ($pair[1] -ceq $zipPath -and (Get-Sha256 $zipPath) -cne $newZipSha) { throw 'The published package differs from the validated archive.' }
+            }
+        }
+        catch {
+            $failure = $_
+            $unrestored = @()
+            for ($i = $placed.Count - 1; $i -ge 0; $i--) { try { [IO.File]::Delete($placed[$i]) } catch { $unrestored += $placed[$i] } }
+            for ($i = $moved.Count - 1; $i -ge 0; $i--) {
+                try { [IO.File]::Move((Join-Path $previous ([IO.Path]::GetFileName($moved[$i]))), $moved[$i]) } catch { $unrestored += $moved[$i] }
+            }
+            if ($unrestored.Count -gt 0) {
+                $keepPrivate = $true
+                throw "Publication failed ($($failure.Exception.Message)) and the previous package set could not be fully restored ($($unrestored -join ', ')); the previous files are kept in $previous."
+            }
+            throw $failure
+        }
+    }
+    finally { $publishLock.Dispose() }
 }
 finally {
-    if ([IO.Directory]::Exists($private)) { [IO.Directory]::Delete($private, $true) }
+    if (-not $keepPrivate -and [IO.Directory]::Exists($private)) { [IO.Directory]::Delete($private, $true) }
 }
 Write-Host "Package: $zipPath"
 Write-Host "Package SHA-256: $($result.package_sha256)"

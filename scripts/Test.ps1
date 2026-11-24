@@ -1,5 +1,9 @@
 [CmdletBinding()]
-param([ValidateSet('Debug','Release')][string] $Configuration = 'Release')
+param(
+    [ValidateSet('Debug','Release')][string] $Configuration = 'Release',
+    # Also write this invocation's result here (Qualify reads its own run's result from this path, never the shared record).
+    [string] $ResultPath
+)
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-RepositoryRoot
@@ -10,10 +14,11 @@ Assert-FileExists $builtRunner 'Deterministic test runner'
 # The runner executes from a private copy of its output folder: the product DLL it loads cannot be replaced between the
 # run and the record, and the recorded identity is that copy's.
 $privateRun = Join-Path ([IO.Path]::GetTempPath()) ('klap-test-run-' + [Guid]::NewGuid().ToString('N'))
+try {
+# The private copy is made inside the cleanup scope: a partial copy is removed too.
 Copy-Item -LiteralPath (Split-Path -Parent $builtRunner) -Destination $privateRun -Recurse
 $runner = Join-Path $privateRun 'KingmakerLastAzlantiPreserver.Tests.exe'
 $testedDll = Join-Path $privateRun 'KingmakerLastAzlantiPreserver.dll'
-try {
 $testedDllSha = Get-Sha256 $testedDll
 $testedMvid = [Reflection.AssemblyName]::GetAssemblyName($testedDll).FullName
 $configurationPaths = Get-KingmakerConfiguration
@@ -45,6 +50,7 @@ $result = [ordered]@{
 }
 if ((Get-Sha256 $testedDll) -cne $testedDllSha) { throw 'The tested product DLL changed during the test run.' }
 Write-JsonFile (Join-Path $root 'artifacts\qualification\tests.json') $result
+if ($ResultPath) { Write-JsonFile $ResultPath $result }
 if ($exitCode -ne 0 -or $result.failed -ne 0) { throw "Tests failed (exit=$exitCode failed=$($result.failed))." }
 Write-Host "Tests passed: $($result.passed)/$($result.total)"
 }
