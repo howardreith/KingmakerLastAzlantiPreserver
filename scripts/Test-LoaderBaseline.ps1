@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     # Optional local copies of the two downloaded fixtures; otherwise they are downloaded. Both are hash-checked and
     # only ever read: the suite works on private copies.
@@ -526,6 +526,7 @@ try {
     $qualify = Join-Path $base 'scripts\Qualify.ps1'
     $summaryPath = Join-Path $base 'artifacts\qualification\qualification-summary.json'
     $q = Invoke-Isolated @('-File', $qualify, '-Package')
+    if (-not (Test-Path -LiteralPath $summaryPath)) { throw "Qualify -Package wrote no summary (exit $($q.ExitCode)): $($q.Output)" }
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-credits-current-package' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip"))) ("package_validation $($qs.package_validation); package $($qs.package_sha256)")
     Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip) | Out-Null
