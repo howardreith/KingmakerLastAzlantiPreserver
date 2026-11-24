@@ -184,7 +184,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'git clone failed.' }
     & git -C $base checkout -q --detach $commit
     Write-GamePath (Join-Path $base 'GamePath.props') $baselineProfile
-    # Disposable instrumented script copies made by some cases are local to the clone and never part of its status.
+    # Disposable instrumented script copies made by some cases are local to the clone, never part of its status, and
+    # removed right after use (they embed temporary paths that the repository's source scan refuses).
     Add-Content -LiteralPath (Join-Path $base '.git\info\exclude') -Value 'scripts/*-instrumented.ps1'
     function New-InstrumentedScript([string] $Name, [string] $After, [string] $Inject) {
         $text = [IO.File]::ReadAllText((Join-Path $base "scripts\$Name.ps1"))
@@ -468,6 +469,7 @@ try {
     $mixReport = Join-Path $inputs 'mix-report.json'
     $replacingValidator = New-InstrumentedScript 'Validate-Package' '[IO.File]::Copy($PackagePath, $inspected)' ('[IO.File]::Copy(' + (Quote $secondZip) + ', $PackagePath, $true)')
     $mix = Invoke-Isolated @('-File', $replacingValidator, '-PackagePath', $callerZip, '-ReportPath', $mixReport)
+    Remove-Item -LiteralPath $replacingValidator
     $mr = if (Test-Path -LiteralPath $mixReport) { Get-Content -LiteralPath $mixReport -Raw | ConvertFrom-Json } else { $null }
     $ok = $mix.ExitCode -eq 0 -and $mr -and $mr.package_sha256 -eq (Get-Sha256 $candidateZip) -and $mr.dll_sha256 -eq $firstDllSha -and (Get-Sha256 $callerZip) -eq (Get-Sha256 $secondZip)
     Add-Case 'validator-report-describes-one-zip-when-caller-file-replaced' $ok ("report ZIP $($mr.package_sha256) with DLL $($mr.dll_sha256); caller path now holds $(Get-Sha256 $callerZip)")
@@ -588,6 +590,7 @@ try {
     # A packaged document changed during staging (by a disposable instrumented Package.ps1) is refused before archiving.
     $stagingEdit = New-InstrumentedScript 'Package' '$packageRules = Get-PackageRuleFingerprint' ('[IO.File]::AppendAllText((Join-Path $root ''README.md''), "`r`n<!-- edited during staging -->`r`n")')
     Expect-Rejected 'package-document-changed-during-staging-rejected' (Invoke-Isolated @('-File', $stagingEdit)) 'changed during staging'
+    Remove-Item -LiteralPath $stagingEdit
     & git -C $base checkout -q -- README.md
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
@@ -682,6 +685,7 @@ try {
     $frozenReport = Join-Path $inputs 'profiles-frozen.json'
     $profilesReplacing = New-InstrumentedScript 'Test-LoaderProfiles' '        foreach ($identity in $identities) { Write-Host "    $identity" }' ('        if (-not $script:replacedOnce) { Copy-Item -LiteralPath ' + (Quote $legacyDll) + ' -Destination $dll -Force; $script:replacedOnce = $true }')
     $fr = Invoke-Isolated @('-File', $profilesReplacing, '-ProfileRoot', $profileRoot, '-ReportPath', $frozenReport)
+    Remove-Item -LiteralPath $profilesReplacing
     $frj = if (Test-Path -LiteralPath $frozenReport) { Get-Content -LiteralPath $frozenReport -Raw | ConvertFrom-Json } else { $null }
     $rows = if ($frj) { @($frj.profiles) } else { @() }
     $ok = $fr.ExitCode -eq 0 -and $rows.Count -eq 2 -and @($rows | Where-Object { $_.passed -and $_.detail -match [regex]::Escape($firstDllSha) }).Count -eq 2 -and (Get-Sha256 $dll) -ne $firstDllSha -and
