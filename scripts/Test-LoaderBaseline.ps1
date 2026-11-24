@@ -404,12 +404,12 @@ try {
     $uiBytes = [IO.File]::ReadAllBytes((Join-Path $managedCopy 'UnityEngine.CoreModule.dll'))
     $uiBytes[$uiBytes.Length - 1] = $uiBytes[$uiBytes.Length - 1] -bxor 0x01
     [IO.File]::WriteAllBytes((Join-Path $managedCopy 'UnityEngine.CoreModule.dll'), $uiBytes)
-    Expect-Rejected 'package-reuse-after-resolved-managed-reference-change-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    Expect-Rejected 'package-reuse-after-resolved-managed-reference-change-rejected' (Invoke-Isolated @('-File', $package)) '(Build inputs changed|compiler inputs differ)'
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
     # An effective compiler setting imported from GamePath.props (checked arithmetic) is a build input; a rebuild with it
     # records it and is accepted, and removing it again needs another rebuild.
     Write-GamePath $gamePath $baselineProfile -Extra '<CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>'
-    Expect-Rejected 'package-reuse-after-imported-compiler-setting-change-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    Expect-Rejected 'package-reuse-after-imported-compiler-setting-change-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ'
     $settingBuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     $settingReceipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
     $settingSha = Get-Sha256 $dll
@@ -419,7 +419,7 @@ try {
     Add-Case 'rebuild-with-imported-compiler-setting-records-it' $ok "exit $($settingBuild.ExitCode); DLL $settingSha (committed configuration: $firstDllSha); receipt compiler inputs include CheckForOverflowUnderflow=true"
     Expect-Accepted 'package-after-rebuild-with-imported-compiler-setting-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
-    Expect-Rejected 'package-reuse-after-imported-setting-removed-rejected' (Invoke-Isolated @('-File', $package)) 'Build inputs changed'
+    Expect-Rejected 'package-reuse-after-imported-setting-removed-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ'
     $rebuild = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1'))
     Add-Case 'rebuild-without-imported-setting-reproduces-first-dll' ($rebuild.ExitCode -eq 0 -and (Get-Sha256 $dll) -eq $firstDllSha) "DLL $(Get-Sha256 $dll)"
     # Build and packaging need the game assemblies and pins, not the runtime loader; the managed contract check does.
@@ -431,6 +431,20 @@ try {
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
     $savedReceipt = Join-Path $inputs 'genuine-receipt.json'
     Copy-Item -LiteralPath $receiptPath -Destination $savedReceipt -Force
+    # The receipt's reference inventory (captured from the production compile) equals the /reference list of the direct
+    # normal-verbosity compile above; a changed or missing inventory is refused on the ordinary package route.
+    $cscLine = @($direct.Output -split "`r?`n" | Where-Object { $_ -match 'csc\.(exe|dll)' }) -join "`n"
+    $basePrefix = [IO.Path]::GetFullPath($base).TrimEnd('\') + '\'
+    $cscRefs = @([regex]::Matches($cscLine, '/reference:(?:"([^"]+)"|(\S+))') | ForEach-Object { if ($_.Groups[1].Success) { $_.Groups[1].Value } else { $_.Groups[2].Value } } | ForEach-Object {
+        $n = if ($_.StartsWith($basePrefix, [StringComparison]::OrdinalIgnoreCase)) { $_.Substring($basePrefix.Length).Replace('\', '/') } else { [IO.Path]::GetFileName($_) }
+        $n + '|' + (Get-Sha256 $_) } | Sort-Object)
+    $receiptRefs = @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references | Where-Object { $_.kind -eq 'reference' } | ForEach-Object { $_.name + '|' + $_.sha256 } | Sort-Object)
+    Add-Case 'receipt-reference-inventory-equals-csc-inputs' ($cscRefs.Count -gt 0 -and ($cscRefs -join ';') -ceq ($receiptRefs -join ';')) ("$($cscRefs.Count) Csc /reference inputs; receipt records $($receiptRefs.Count); equal: $(($cscRefs -join ';') -ceq ($receiptRefs -join ';'))")
+    Edit-Json $receiptPath { param($j) @($j.compiler_references | Where-Object { $_.kind -eq 'reference' })[0].sha256 = ('0' * 64) }
+    Expect-Rejected 'package-receipt-with-changed-reference-digest-rejected' (Invoke-Isolated @('-File', $package)) 'compiler inputs differ'
+    Get-Content -LiteralPath $savedReceipt -Raw | ConvertFrom-Json | Select-Object -Property * -ExcludeProperty compiler_references | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath -Encoding UTF8
+    Expect-Rejected 'package-receipt-without-compiler-inventory-rejected' (Invoke-Isolated @('-File', $package)) 'no compiler_references'
+    Copy-Item -LiteralPath $savedReceipt -Destination $receiptPath -Force
     foreach ($bad in @(
         @{ Name = 'dll-digest-array'; Edit = { param($j) $j.dll_sha256 = @($j.dll_sha256) } },
         @{ Name = 'dll-digest-boolean'; Edit = { param($j) $j.dll_sha256 = $true } },
@@ -458,12 +472,32 @@ try {
     Expect-Rejected 'package-data-bearing-directory-record-rejected' (& $v $p) 'data-bearing package directory record'
     $p = Join-Path $inputs 'own-directory-with-data.zip'; Edit-Zip $candidateZip $p { param($a) $w = [IO.StreamWriter]::new($a.CreateEntry("$modFolder/").Open()); try { $w.Write('inert marker') } finally { $w.Dispose() } }
     Expect-Rejected 'package-own-directory-record-with-data-rejected' (& $v $p) 'data-bearing package directory record'
-    $p = Join-Path $inputs 'deflate-level0-directory.zip'
-    Copy-Item -LiteralPath $candidateZip -Destination $p
+    # A level-0 DEFLATE empty directory record: the fixture writer's exit status and the finished archive are checked
+    # (six files plus the directory; method 8; compressed size above two bytes; zero decoded bytes) before validating.
     $python = (Get-Command python -ErrorAction Stop).Source
-    $zipInfo = & $python -I -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1],'a'); i=zipfile.ZipInfo('KingmakerLastAzlantiPreserver/licenses/'); z.writestr(i,b'',compress_type=zipfile.ZIP_DEFLATED,compresslevel=0); z.close(); z=zipfile.ZipFile(sys.argv[1]); print([(x.filename,x.compress_type,x.compress_size) for x in z.infolist() if x.filename.endswith('/')])" $p
-    $r = & $v $p
-    Add-Case 'package-level0-deflate-empty-directory-accepted' ($r.ExitCode -eq 0 -and $r.Output -match 'Package validation passed') ("directory records $zipInfo; " + $(if ($r.ExitCode -eq 0) { 'accepted' } else { Get-Reason $r.Output }))
+    function New-Level0DirectoryFixture([string] $From, [string] $To) {
+        $writer = "import sys,zipfile,shutil; shutil.copyfile(sys.argv[1],sys.argv[2]); z=zipfile.ZipFile(sys.argv[2],'a'); i=zipfile.ZipInfo('KingmakerLastAzlantiPreserver/licenses/'); z.writestr(i,b'',compress_type=zipfile.ZIP_DEFLATED,compresslevel=0); z.close(); z=zipfile.ZipFile(sys.argv[2]); d=[x for x in z.infolist() if x.filename.endswith('/')]; f=[x for x in z.infolist() if not x.filename.endswith('/')]; print('FIXTURE files=%d dirs=%s' % (len(f), ';'.join('%s,%d,%d,%d' % (x.filename,x.compress_type,x.compress_size,x.file_size) for x in d)))"
+        $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        try { $out = (& $python -I -c $writer $From $To 2>&1 | ForEach-Object { "$_" }) -join ' '; $exit = $LASTEXITCODE }
+        finally { $ErrorActionPreference = $previous }
+        $m = [regex]::Match($out, 'FIXTURE files=(\d+) dirs=KingmakerLastAzlantiPreserver/licenses/,(\d+),(\d+),(\d+)$')
+        $ok = $exit -eq 0 -and $m.Success -and [int]$m.Groups[1].Value -eq 6 -and [int]$m.Groups[2].Value -eq 8 -and [int]$m.Groups[3].Value -gt 2 -and [int]$m.Groups[4].Value -eq 0
+        return [pscustomobject]@{ Ok = $ok; Exit = $exit; Description = $out.Trim() }
+    }
+    $p = Join-Path $inputs 'deflate-level0-directory.zip'
+    $fixture = New-Level0DirectoryFixture $candidateZip $p
+    $r = if ($fixture.Ok) { & $v $p } else { $null }
+    Add-Case 'package-level0-deflate-empty-directory-accepted' ($fixture.Ok -and $r.ExitCode -eq 0 -and $r.Output -match 'Package validation passed') ("writer exit $($fixture.Exit): $($fixture.Description); " + $(if (-not $fixture.Ok) { 'fixture invalid (case fails)' } elseif ($r.ExitCode -eq 0) { 'accepted' } else { Get-Reason $r.Output }))
+    $failedFixture = New-Level0DirectoryFixture (Join-Path $inputs 'no such source.zip') (Join-Path $inputs 'never-written.zip')
+    Add-Case 'level0-fixture-generation-failure-fails-the-case' (-not $failedFixture.Ok -and $failedFixture.Exit -ne 0) ("writer exit $($failedFixture.Exit); fixture accepted as valid: $($failedFixture.Ok)")
+    # An exclusively held input: the copy failure is reported and no klap-validate-* directory is left behind.
+    $held = Join-Path $inputs 'held.zip'
+    Copy-Item -LiteralPath $candidateZip -Destination $held
+    $validateDirsBefore = @(Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Directory -Filter 'klap-validate-*' | ForEach-Object Name | Sort-Object) -join ';'
+    $lock = [IO.File]::Open($held, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
+    try { $r = & $v $held } finally { $lock.Dispose() }
+    $validateDirsAfter = @(Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Directory -Filter 'klap-validate-*' | ForEach-Object Name | Sort-Object) -join ';'
+    Add-Case 'validator-copy-failure-reported-and-cleaned' ($r.ExitCode -ne 0 -and ($r.Output -replace '\s+', ' ') -match 'being used by another process' -and $validateDirsBefore -ceq $validateDirsAfter) ("exit $($r.ExitCode): " + (Get-Reason $r.Output) + "; klap-validate-* directories unchanged: $($validateDirsBefore -ceq $validateDirsAfter)")
     # The validator hashes and inspects one private copy. The harness (a disposable instrumented copy of the validator)
     # replaces the caller's file right after that copy: the report still describes one consistent snapshot.
     $callerZip = Join-Path $inputs 'caller-path.zip'
@@ -602,13 +636,15 @@ try {
     # A valid substitute that behaves identically: the committed source plus one inert class.
     [IO.File]::AppendAllText((Join-Path $base $marker), "`r`nnamespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineSubstituteMarker { } }`r`n")
     Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')) | Out-Null
-    $substituteDll = Join-Path $inputs 'inert-marker-build.dll'
+    # Kept in the clone's ignored artifacts and named project-relative: the repository safety scan refuses absolute
+    # personal paths in project files.
+    $substituteDll = Join-Path $base 'artifacts\inert-marker-build.dll'
     Copy-Item -LiteralPath $dll -Destination $substituteDll
     & git -C $base checkout -q -- ($marker.Replace('\', '/'))
     Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')) | Out-Null
     $testProject = Join-Path $base 'tests\KingmakerLastAzlantiPreserver.Tests\KingmakerLastAzlantiPreserver.Tests.csproj'
     $testProjectText = [IO.File]::ReadAllText($testProject)
-    $probe = '<Target Name="LoaderBaselineProbeReplace" AfterTargets="Build"><Copy SourceFiles="' + [Security.SecurityElement]::Escape($substituteDll) + '" DestinationFiles="$(OutDir)KingmakerLastAzlantiPreserver.dll" /></Target></Project>'
+    $probe = '<Target Name="LoaderBaselineProbeReplace" AfterTargets="Build"><Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\artifacts\inert-marker-build.dll" DestinationFiles="$(OutDir)KingmakerLastAzlantiPreserver.dll" /></Target></Project>'
     [IO.File]::WriteAllText($testProject, $testProjectText.Substring(0, $testProjectText.LastIndexOf('</Project>')) + $probe)
     $q = Invoke-Isolated @('-File', $qualify, '-Build', '-Test')
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
