@@ -492,7 +492,7 @@ try {
     $otherCsc = Join-Path $temp 'other compiler'; New-Item -ItemType Directory -Path $otherCsc -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') -Destination $otherCsc
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal.Replace('</PropertyGroup>', '<CscToolPath>' + [Security.SecurityElement]::Escape($otherCsc) + '</CscToolPath><CscToolExe>csc.exe</CscToolExe></PropertyGroup>'))
-    Expect-Rejected 'package-reuse-after-compiler-selection-change-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry 0 '
+    Expect-Rejected 'package-reuse-after-compiler-selection-change-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \((entry 0 |entry count)'
     # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
     # refused at package admission and at Build-Local, never recorded as text.
     $rspDir = Join-Path $base 'artifacts\response'; New-Item -ItemType Directory -Path $rspDir -Force | Out-Null
