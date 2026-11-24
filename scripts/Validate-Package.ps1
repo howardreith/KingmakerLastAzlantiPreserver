@@ -132,7 +132,8 @@ else {
     $packageDirectory = Join-Path $root 'artifacts\packages'
     $publishedZip = Join-Path $packageDirectory 'KingmakerLastAzlantiPreserver-0.1.3.zip'
     $written = $false
-    if (Test-Path -LiteralPath $publishedZip -PathType Leaf) {
+    # A preview (-WhatIf from a caller such as Install.ps1) changes no published record.
+    if (-not $WhatIfPreference -and (Test-Path -LiteralPath $publishedZip -PathType Leaf)) {
         $publishLock = Enter-PackagePublishLock $packageDirectory
         try {
             if ((Get-Sha256 $publishedZip) -ceq $result.package_sha256) {
