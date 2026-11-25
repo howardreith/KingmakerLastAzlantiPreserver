@@ -558,6 +558,20 @@ try {
     $ok = $p1.ExitCode -eq 0 -and $p2.ExitCode -eq 0 -and $p1Entry.Count -eq 1 -and $p2Entry.Count -eq 1 -and $p1Entry[0].sha256 -ceq $p2Entry[0].sha256 -and $p1Entry[0].name -cne $p2Entry[0].name -and $p1Dll -ne $p2Dll -and (Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2) -and ($p1Generated -join ',') -ceq $msbuildGenerated -and ($p2Generated -join ',') -ceq $msbuildGenerated
     Add-Case 'rebuild-from-moved-external-source-records-its-path-and-differs' $ok ("builds exit $($p1.ExitCode)/$($p2.ExitCode); source bytes equal: $((Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)); entries '$(@($p1Entry | ForEach-Object name) -join ',')' / '$(@($p2Entry | ForEach-Object name) -join ',')'; generated entries '$($p1Generated -join ',')' / '$($p2Generated -join ',')'; DLL $p1Dll / $p2Dll")
     Expect-Accepted 'package-after-rebuild-from-moved-external-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    # R8-F1: with framework-attribute generation off (GenerateTargetFrameworkAttribute false), the same CallerFilePath
+    # fixture placed at the configured TargetFrameworkMonikerAssemblyAttributesPath is an ordinary external source: no
+    # generated: entry, its path digest recorded. Accepted at first; relocated (item and configured path) to the
+    # identical copy, the old receipt is refused; the differing rebuild is accepted.
+    $generationOff = { param([string] $Path) $gamePathOriginal.Replace('</Project>', '<PropertyGroup><GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute><TargetFrameworkMonikerAssemblyAttributesPath>' + [Security.SecurityElement]::Escape($Path) + '</TargetFrameworkMonikerAssemblyAttributesPath></PropertyGroup>' + (& $oneItem $Path) + '</Project>') }
+    [IO.File]::WriteAllText($gamePath, (& $generationOff $pathSrc1))
+    $g1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $g1Dll = Get-Sha256 $dll; $g1Entry = @(& $externalEntry); $g1Generated = @(& $generatedEntries)
+    Add-Case 'generation-off-attribute-path-source-recorded-as-external' ($g1.ExitCode -eq 0 -and $g1Entry.Count -eq 1 -and $g1Generated.Count -eq 0) ("build exit $($g1.ExitCode); entries '$(@($g1Entry | ForEach-Object name) -join ',')'; generated entries '$($g1Generated -join ',')'; DLL $g1Dll" + $(if ($g1.ExitCode) { '; ' + (Get-Reason $g1.Output) } else { '' }))
+    Expect-Accepted 'package-with-generation-off-attribute-path-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
+    [IO.File]::WriteAllText($gamePath, (& $generationOff $pathSrc2))
+    Expect-Rejected 'package-reuse-after-generation-off-attribute-path-source-moved-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry \d+ name'
+    $g2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $g2Dll = Get-Sha256 $dll; $g2Entry = @(& $externalEntry); $g2Generated = @(& $generatedEntries)
+    Add-Case 'rebuild-from-moved-generation-off-source-records-its-path-and-differs' ($g2.ExitCode -eq 0 -and $g2Entry.Count -eq 1 -and $g2Generated.Count -eq 0 -and $g1Entry.Count -eq 1 -and $g2Entry[0].name -cne $g1Entry[0].name -and $g2Dll -ne $g1Dll) ("build exit $($g2.ExitCode); entries '$(@($g1Entry | ForEach-Object name) -join ',')' / '$(@($g2Entry | ForEach-Object name) -join ',')'; DLL $g1Dll / $g2Dll")
+    Expect-Accepted 'package-after-generation-off-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
     # refused at package admission and at Build-Local, never recorded as text.
     $rspDir = Join-Path $base 'artifacts\response'; New-Item -ItemType Directory -Path $rspDir -Force | Out-Null
@@ -713,13 +727,13 @@ try {
     if (-not (Test-Path -LiteralPath $summaryPath)) { throw "Qualify -Package wrote no summary (exit $($q.ExitCode)): $($q.Output)" }
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-credits-current-package' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip"))) ("package_validation $($qs.package_validation); package $($qs.package_sha256)")
-    # A standalone validation of another archive leaves the published validation receipt to the publication (R5-F2), so
+    # A standalone validation of another archive never writes the published validation receipt (Package.ps1 owns it), so
     # Qualify still credits exactly the published package and nothing of the other archive.
     $publishedReceiptBefore = Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')
     $otherValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip)
     $q = Invoke-Isolated @('-File', $qualify)
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
-    Add-Case 'qualify-ignores-validation-of-another-zip' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Published validation receipt not written' -and (Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore -and $q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip")) -and $qs.package_sha256 -ne (Get-Sha256 $secondZip)) ("after validating the changed-source ZIP $(Get-Sha256 $secondZip): published receipt unchanged $((Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore); package_validation '$($qs.package_validation)' for $($qs.package_sha256)")
+    Add-Case 'qualify-ignores-validation-of-another-zip' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Validation report not written' -and (Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore -and $q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip")) -and $qs.package_sha256 -ne (Get-Sha256 $secondZip)) ("after validating the changed-source ZIP $(Get-Sha256 $secondZip): published receipt unchanged $((Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore); package_validation '$($qs.package_validation)' for $($qs.package_sha256)")
     Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip") -Force
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null
     Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip") -Force
@@ -810,26 +824,40 @@ try {
     Add-Case 'retry-after-handle-closed-publishes-the-replacement-set' ($retry.ExitCode -eq 0 -and $zipSha -ne ($before -split ';')[0] -and $pj.package_sha256 -eq $zipSha -and $pv.package_sha256 -eq $zipSha -and $pv.package_path -eq $acceptedZip) "exit $($retry.ExitCode); ZIP $zipSha"
     & git -C $base checkout -q -- README.md
     Invoke-Isolated @('-File', $package) | Out-Null
-    # R5-F2: the published validation receipt has one owner. Controls first: a standalone validation of another archive
-    # leaves the receipt unchanged; one of a private copy of the published bytes refreshes it for the published ZIP.
+    # The published validation receipt has one owner, Package.ps1: a standalone validation writes no report unless one is
+    # requested elsewhere, never takes the publication lock, and refuses the canonical receipt path.
     $aSha = Get-Sha256 $acceptedZip
     $pvBefore = Get-Sha256 $acceptedRecords[2]
     $otherValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip)
-    Add-Case 'standalone-validation-of-another-zip-leaves-the-published-receipt' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Published validation receipt not written' -and (Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore) ("exit $($otherValidation.ExitCode); receipt unchanged $((Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore)")
-    # R7-F1: the published ZIP held with FileShare.None while a distinct valid ZIP is validated with the default report
-    # path: the supplied bytes pass, the optional receipt refresh is skipped, and the published ZIP, package.json and
-    # package-validation.json keep their hashes.
+    Add-Case 'standalone-validation-of-another-zip-leaves-the-published-receipt' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Validation report not written' -and (Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore) ("exit $($otherValidation.ExitCode); receipt unchanged $((Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore)")
+    # R7-F1: the published ZIP held with FileShare.None while a distinct valid ZIP is validated without a report: the
+    # supplied bytes pass and the published ZIP, package.json and package-validation.json keep their hashes.
     $publicBefore = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
     $hold = [IO.File]::Open($acceptedZip, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
     try { $heldValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip) } finally { $hold.Dispose() }
     $publicAfter = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
     $heldText = $heldValidation.Output -replace '\s+', ' '
-    $ok = $heldValidation.ExitCode -eq 0 -and $heldText -match ('Package validation passed: ' + [regex]::Escape($secondZip)) -and $heldText -match 'Published validation receipt not written: the published package .* cannot be read now' -and $publicAfter -ceq $publicBefore
-    Add-Case 'validation-of-another-zip-while-published-zip-is-held-passes' $ok ("exit $($heldValidation.ExitCode); supplied ZIP $(Get-Sha256 $secondZip); public ZIP, package.json and package-validation.json unchanged: $($publicAfter -ceq $publicBefore); " + $(if ($heldValidation.ExitCode) { Get-Reason $heldValidation.Output } else { (@($heldValidation.Output -split "`r?`n" | Where-Object { $_ -match 'Published validation receipt not written' }) | Select-Object -First 1) }))
+    $ok = $heldValidation.ExitCode -eq 0 -and $heldText -match ('Package validation passed: ' + [regex]::Escape($secondZip)) -and $heldText -match 'Validation report not written' -and $publicAfter -ceq $publicBefore
+    Add-Case 'validation-of-another-zip-while-published-zip-is-held-passes' $ok ("exit $($heldValidation.ExitCode); supplied ZIP $(Get-Sha256 $secondZip); public ZIP, package.json and package-validation.json unchanged: $($publicAfter -ceq $publicBefore); " + $(if ($heldValidation.ExitCode) { Get-Reason $heldValidation.Output } else { (@($heldValidation.Output -split "`r?`n" | Where-Object { $_ -match 'Validation report not written' }) | Select-Object -First 1) }))
+    # R8-F2: the publication lock (artifacts\packages\.publish.lock) held exclusively while the distinct ZIP is validated
+    # without a report: validation passes at once and the public records keep their hashes.
+    $lockPath = Join-Path $base 'artifacts\packages\.publish.lock'
+    $lockHold = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    try { $lockedValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip) } finally { $lockHold.Dispose(); Remove-Item -LiteralPath $lockPath -Force -ErrorAction SilentlyContinue }
+    $publicAfterLock = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
+    Add-Case 'validation-of-another-zip-while-publication-lock-is-held-passes' ($lockedValidation.ExitCode -eq 0 -and ($lockedValidation.Output -replace '\s+', ' ') -match ('Package validation passed: ' + [regex]::Escape($secondZip)) -and $publicAfterLock -ceq $publicBefore) ("exit $($lockedValidation.ExitCode); public records unchanged: $($publicAfterLock -ceq $publicBefore)" + $(if ($lockedValidation.ExitCode) { '; ' + (Get-Reason $lockedValidation.Output) } else { '' }))
+    # An explicit canonical report path is refused (no second writer of the published receipt); the public records stay.
+    $canonical = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip, '-ReportPath', 'artifacts\qualification\package-validation.json')
+    $publicAfterCanonical = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
+    Add-Case 'explicit-canonical-report-path-refused' ($canonical.ExitCode -ne 0 -and ($canonical.Output -replace '\s+', ' ') -match 'written only by Package\.ps1' -and $publicAfterCanonical -ceq $publicBefore) ("exit $($canonical.ExitCode); public records unchanged: $($publicAfterCanonical -ceq $publicBefore); " + (Get-Reason $canonical.Output))
+    # An explicitly requested separate report that cannot be written (its path is a directory) fails the validation.
+    $reportDirectory = Join-Path $inputs 'report path is a directory'; New-Item -ItemType Directory -Path $reportDirectory -Force | Out-Null
+    $unwritable = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip, '-ReportPath', $reportDirectory)
+    Add-Case 'explicit-report-write-error-fails-validation' ($unwritable.ExitCode -ne 0 -and $unwritable.Output -notmatch 'Package validation passed') ("exit $($unwritable.ExitCode); " + (Get-Reason $unwritable.Output))
     $copyOfA = Join-Path $inputs 'published-a.zip'; Copy-Item -LiteralPath $acceptedZip -Destination $copyOfA -Force
     $sameValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $copyOfA)
     $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json
-    Add-Case 'standalone-validation-of-the-published-bytes-refreshes-the-receipt' ($sameValidation.ExitCode -eq 0 -and $sameValidation.Output -notmatch 'not written' -and $pv.package_sha256 -eq $aSha -and $pv.package_path -eq $acceptedZip -and $pv.package -eq $acceptedZip) ("exit $($sameValidation.ExitCode); receipt package $($pv.package_sha256) at $([IO.Path]::GetFileName([string]$pv.package_path))")
+    Add-Case 'standalone-validation-of-the-published-bytes-leaves-the-receipt-to-package' ($sameValidation.ExitCode -eq 0 -and $sameValidation.Output -match 'Validation report not written' -and (Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore -and $pv.package_sha256 -eq $aSha -and $pv.package_path -eq $acceptedZip) ("exit $($sameValidation.ExitCode); receipt unchanged $((Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore), package $($pv.package_sha256) at $([IO.Path]::GetFileName([string]$pv.package_path))")
     # Overlap with a deterministic synchronization point: the instrumented validator takes its private snapshot of the
     # published ZIP A, then publishes a distinct valid ZIP B (README changed) through Package.ps1 and only then finishes
     # validating A. Afterwards the published ZIP, package.json and package-validation.json all describe B, the validator
@@ -843,7 +871,7 @@ try {
     $pj = Get-Content -LiteralPath $acceptedRecords[1] -Raw | ConvertFrom-Json; $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json
     $leftovers = @(Get-ChildItem -LiteralPath (Join-Path $base 'artifacts\qualification') -Force -Filter 'package-validation.json.*.tmp').Count + @(Get-ChildItem -LiteralPath (Join-Path $base 'artifacts\packages') -Force -Filter '.publish.lock').Count
     $publisher = if (Test-Path -LiteralPath $overlapMarker) { [IO.File]::ReadAllText($overlapMarker) } else { 'publisher did not run' }
-    $ok = $overlap.ExitCode -eq 0 -and $publisher -ceq 'publisher exit 0' -and $overlap.Output -match 'Published validation receipt not written' -and $overlap.Output -match 'Package validation passed' -and $bSha -ne $aSha -and $pj.package_sha256 -eq $bSha -and $pv.package_sha256 -eq $bSha -and $pv.package_path -eq $acceptedZip -and $leftovers -eq 0
+    $ok = $overlap.ExitCode -eq 0 -and $publisher -ceq 'publisher exit 0' -and $overlap.Output -match 'Validation report not written' -and $overlap.Output -match 'Package validation passed' -and $bSha -ne $aSha -and $pj.package_sha256 -eq $bSha -and $pv.package_sha256 -eq $bSha -and $pv.package_path -eq $acceptedZip -and $leftovers -eq 0
     Add-Case 'overlapping-standalone-validation-keeps-the-replacement-receipt' $ok ("validator exit $($overlap.ExitCode) (validated snapshot A $aSha); $publisher; published ZIP B $bSha; package.json $($pj.package_sha256); package-validation.json $($pv.package_sha256); temporary receipts or locks left $leftovers")
     & git -C $base checkout -q -- README.md
     Invoke-Isolated @('-File', $package) | Out-Null

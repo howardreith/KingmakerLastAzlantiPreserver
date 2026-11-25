@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string] $PackagePath,
-    [string] $ReportPath = 'artifacts\qualification\package-validation.json',
+    # A report is written only when requested. The published artifacts\qualification\package-validation.json belongs to
+    # Package.ps1's publication and is refused here.
+    [string] $ReportPath = '',
     # When packaging, the DLL SHA-256 recorded by the build receipt: the archived DLL must be exactly that DLL.
     [string] $ExpectedDllSha256
 )
@@ -10,6 +12,13 @@ param(
 $root = Get-RepositoryRoot
 $PackagePath = [IO.Path]::GetFullPath($PackagePath)
 Assert-FileExists $PackagePath 'Package ZIP'
+$resolvedReport = $null
+if ($ReportPath) {
+    $resolvedReport = [IO.Path]::GetFullPath($(if ([IO.Path]::IsPathRooted($ReportPath)) { $ReportPath } else { Join-Path $root $ReportPath }))
+    if ($resolvedReport -ieq [IO.Path]::GetFullPath((Join-Path $root 'artifacts\qualification\package-validation.json'))) {
+        throw 'artifacts\qualification\package-validation.json is the published validation receipt, written only by Package.ps1 with the package it publishes; pass another -ReportPath, or none.'
+    }
+}
 if ($PSBoundParameters.ContainsKey('ExpectedDllSha256') -and $ExpectedDllSha256 -cnotmatch '^[0-9a-f]{64}$') {
     throw 'ExpectedDllSha256 must be a lowercase SHA-256 string.'
 }
@@ -121,47 +130,8 @@ $result = [ordered]@{
     display_name = [string] $info.DisplayName
     author = [string] $info.Author
 }
-$resolvedReport = [IO.Path]::GetFullPath($(if ([IO.Path]::IsPathRooted($ReportPath)) { $ReportPath } else { Join-Path $root $ReportPath }))
-$publishedReceipt = [IO.Path]::GetFullPath((Join-Path $root 'artifacts\qualification\package-validation.json'))
-if ($resolvedReport -ine $publishedReceipt) { Write-JsonFile $resolvedReport $result }
-else {
-    # The published validation receipt belongs to the publication of {ZIP, package-validation.json, package.json}
-    # (Package.ps1). A standalone validation refreshes it only for the archive published now: under the publication lock,
-    # and only when the published ZIP's bytes are the bytes validated here (its package_path then names the published
-    # ZIP). Validation of any other archive, or of a published archive replaced meanwhile, leaves the receipt unchanged.
-    # The refresh is optional: a published ZIP that cannot be read now (held by another process) leaves the receipt
-    # unchanged and does not fail validation of the supplied archive; writing the receipt, once its bytes match, can.
-    $packageDirectory = Join-Path $root 'artifacts\packages'
-    $publishedZip = Join-Path $packageDirectory 'KingmakerLastAzlantiPreserver-0.1.3.zip'
-    $written = $false
-    $notWritten = 'this archive is not the published package now (artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip), so artifacts\qualification\package-validation.json keeps describing the published package'
-    # A preview (-WhatIf from a caller such as Install.ps1) changes no published record.
-    if ($WhatIfPreference) { $notWritten = 'a preview (-WhatIf) changes no published record' }
-    elseif (Test-Path -LiteralPath $publishedZip -PathType Leaf) {
-        $publishLock = Enter-PackagePublishLock $packageDirectory
-        try {
-            $publishedSha = $null
-            try { $publishedSha = Get-Sha256 $publishedZip }
-            catch [IO.IOException] { $notWritten = 'the published package (artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip) cannot be read now (' + $_.Exception.Message.Trim() + '), so artifacts\qualification\package-validation.json is left unchanged' }
-            catch [UnauthorizedAccessException] { $notWritten = 'the published package (artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip) cannot be read now (' + $_.Exception.Message.Trim() + '), so artifacts\qualification\package-validation.json is left unchanged' }
-            if ($publishedSha -and $publishedSha -ceq $result.package_sha256) {
-                $result.package_path = $publishedZip
-                $result['package'] = $publishedZip
-                $temporaryReport = $publishedReceipt + '.' + [Guid]::NewGuid().ToString('N') + '.tmp'
-                try {
-                    Write-JsonFile $temporaryReport $result
-                    if ([IO.File]::Exists($publishedReceipt)) { [IO.File]::Replace($temporaryReport, $publishedReceipt, [NullString]::Value) } else { [IO.File]::Move($temporaryReport, $publishedReceipt) }
-                    $written = $true
-                }
-                finally { if ([IO.File]::Exists($temporaryReport)) { [IO.File]::Delete($temporaryReport) } }
-            }
-        }
-        finally { $publishLock.Dispose() }
-    }
-    if (-not $written) {
-        Write-Host "Published validation receipt not written: $notWritten. Pass -ReportPath to keep a report of this validation."
-    }
-}
+if ($resolvedReport) { Write-JsonFile $resolvedReport $result }
+else { Write-Host 'Validation report not written (no -ReportPath); the published artifacts\qualification\package-validation.json is written only by Package.ps1.' }
 Write-Host "Package validation passed: $PackagePath"
 Write-Host "Packaged DLL SHA-256: $dllSha256; MVID: $($dllIdentity.Mvid); loader references: $((@($dllIdentity.LoaderReferences) | ForEach-Object { $_.name + ' ' + $_.version }) -join ', ')"
 }
