@@ -561,15 +561,17 @@ try {
     # R8-F1: with framework-attribute generation off (GenerateTargetFrameworkAttribute false), the same CallerFilePath
     # fixture placed at the configured TargetFrameworkMonikerAssemblyAttributesPath is an ordinary external source: no
     # generated: entry, its path digest recorded. Accepted at first; relocated (item and configured path) to the
-    # identical copy, the old receipt is refused; the differing rebuild is accepted.
-    $generationOff = { param([string] $Path) $gamePathOriginal.Replace('</Project>', '<PropertyGroup><GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute><TargetFrameworkMonikerAssemblyAttributesPath>' + [Security.SecurityElement]::Escape($Path) + '</TargetFrameworkMonikerAssemblyAttributesPath></PropertyGroup>' + (& $oneItem $Path) + '</Project>') }
+    # identical copy, the old receipt is refused; the differing rebuild is accepted. The fixture also turns off the clean
+    # of that path (TargetFrameworkMonikerAssemblyAttributesFileClean), which Rebuild would otherwise apply to the source.
+    $dllOrMissing = { if (Test-Path -LiteralPath $dll -PathType Leaf) { Get-Sha256 $dll } else { 'missing' } }
+    $generationOff = { param([string] $Path) $gamePathOriginal.Replace('</Project>', '<PropertyGroup><GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute><TargetFrameworkMonikerAssemblyAttributesFileClean>false</TargetFrameworkMonikerAssemblyAttributesFileClean><TargetFrameworkMonikerAssemblyAttributesPath>' + [Security.SecurityElement]::Escape($Path) + '</TargetFrameworkMonikerAssemblyAttributesPath></PropertyGroup>' + (& $oneItem $Path) + '</Project>') }
     [IO.File]::WriteAllText($gamePath, (& $generationOff $pathSrc1))
-    $g1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $g1Dll = Get-Sha256 $dll; $g1Entry = @(& $externalEntry); $g1Generated = @(& $generatedEntries)
+    $g1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $g1Dll = & $dllOrMissing; $g1Entry = @(& $externalEntry); $g1Generated = @(& $generatedEntries)
     Add-Case 'generation-off-attribute-path-source-recorded-as-external' ($g1.ExitCode -eq 0 -and $g1Entry.Count -eq 1 -and $g1Generated.Count -eq 0) ("build exit $($g1.ExitCode); entries '$(@($g1Entry | ForEach-Object name) -join ',')'; generated entries '$($g1Generated -join ',')'; DLL $g1Dll" + $(if ($g1.ExitCode) { '; ' + (Get-Reason $g1.Output) } else { '' }))
     Expect-Accepted 'package-with-generation-off-attribute-path-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     [IO.File]::WriteAllText($gamePath, (& $generationOff $pathSrc2))
     Expect-Rejected 'package-reuse-after-generation-off-attribute-path-source-moved-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry \d+ name'
-    $g2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $g2Dll = Get-Sha256 $dll; $g2Entry = @(& $externalEntry); $g2Generated = @(& $generatedEntries)
+    $g2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $g2Dll = & $dllOrMissing; $g2Entry = @(& $externalEntry); $g2Generated = @(& $generatedEntries)
     Add-Case 'rebuild-from-moved-generation-off-source-records-its-path-and-differs' ($g2.ExitCode -eq 0 -and $g2Entry.Count -eq 1 -and $g2Generated.Count -eq 0 -and $g1Entry.Count -eq 1 -and $g2Entry[0].name -cne $g1Entry[0].name -and $g2Dll -ne $g1Dll) ("build exit $($g2.ExitCode); entries '$(@($g1Entry | ForEach-Object name) -join ',')' / '$(@($g2Entry | ForEach-Object name) -join ',')'; DLL $g1Dll / $g2Dll")
     Expect-Accepted 'package-after-generation-off-rebuild-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
