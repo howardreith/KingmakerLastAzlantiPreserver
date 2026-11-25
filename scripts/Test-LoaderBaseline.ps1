@@ -535,24 +535,28 @@ try {
     Expect-Rejected 'relative-compiler-selector-after-project-selected-binary-replaced-rejected' (& $fromRoot $package) 'resolves now \(entry 0 sha256'
     Remove-Item -LiteralPath $projectSelected, $callerDecoy -Recurse -Force
     [IO.File]::WriteAllText($gamePath, $gamePathOriginal)
-    # R6-F2: an external source's compiler-visible path is part of its identity (CallerFilePath puts it in the DLL). A
-    # source using CallerFilePath imported from one folder builds and is accepted; a byte-identical copy with the same
-    # name in another folder refuses the receipt; the rebuild from that folder differs and its receipt is accepted.
-    $pathSrc1 = Join-Path $temp 'caller path one\LoaderBaselineCallerPath.cs'; $pathSrc2 = Join-Path $temp 'caller path two\LoaderBaselineCallerPath.cs'
+    # R6-F2: an external source's compiler-visible path is part of its identity (CallerFilePath puts it in the DLL), even
+    # when its name matches MSBuild's generated attribute file (Shared.AssemblyAttributes.cs). A source using
+    # CallerFilePath imported from one folder builds and is accepted; a byte-identical copy with the same name in another
+    # folder refuses the receipt; the rebuild from that folder differs and its receipt is accepted. Only the source
+    # MSBuild generated is named generated: in each receipt.
+    $pathSrc1 = Join-Path $temp 'caller path one\Shared.AssemblyAttributes.cs'; $pathSrc2 = Join-Path $temp 'caller path two\Shared.AssemblyAttributes.cs'
     foreach ($p in @($pathSrc1, $pathSrc2)) {
         New-Item -ItemType Directory -Path (Split-Path -Parent $p) -Force | Out-Null
         [IO.File]::WriteAllText($p, 'namespace KingmakerLastAzlantiPreserver { internal static class LoaderBaselineCallerPath { internal static readonly string Here = Of(); private static string Of([System.Runtime.CompilerServices.CallerFilePath] string path = "") { return path; } } }')
     }
     $oneItem = { param([string] $Path) '<ItemGroup><Compile Include="' + [Security.SecurityElement]::Escape($Path) + '" /></ItemGroup>' }
-    $externalEntry = { @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references | Where-Object { $_.kind -eq 'compile' -and $_.name -like 'external:LoaderBaselineCallerPath.cs@path-sha256=*' }) }
+    $externalEntry = { @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references | Where-Object { $_.kind -eq 'compile' -and $_.name -like 'external:Shared.AssemblyAttributes.cs@path-sha256=*' }) }
+    $generatedEntries = { @((Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json).compiler_references | Where-Object { $_.kind -eq 'compile' -and $_.name -like 'generated:*' } | ForEach-Object { $_.name }) }
     [IO.File]::WriteAllText($gamePath, (& $withItems (& $oneItem $pathSrc1)))
-    $p1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p1Dll = Get-Sha256 $dll; $p1Entry = @(& $externalEntry)
+    $p1 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p1Dll = Get-Sha256 $dll; $p1Entry = @(& $externalEntry); $p1Generated = @(& $generatedEntries)
     Expect-Accepted 'package-with-external-caller-path-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     [IO.File]::WriteAllText($gamePath, (& $withItems (& $oneItem $pathSrc2)))
     Expect-Rejected 'package-reuse-after-external-source-moved-to-identical-copy-rejected' (Invoke-Isolated @('-File', $package)) 'resolves now \(entry \d+ name'
-    $p2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p2Dll = Get-Sha256 $dll; $p2Entry = @(& $externalEntry)
-    $ok = $p1.ExitCode -eq 0 -and $p2.ExitCode -eq 0 -and $p1Entry.Count -eq 1 -and $p2Entry.Count -eq 1 -and $p1Entry[0].sha256 -ceq $p2Entry[0].sha256 -and $p1Entry[0].name -cne $p2Entry[0].name -and $p1Dll -ne $p2Dll -and (Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)
-    Add-Case 'rebuild-from-moved-external-source-records-its-path-and-differs' $ok ("builds exit $($p1.ExitCode)/$($p2.ExitCode); source bytes equal: $((Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)); entries '$(@($p1Entry | ForEach-Object name) -join ',')' / '$(@($p2Entry | ForEach-Object name) -join ',')'; DLL $p1Dll / $p2Dll")
+    $p2 = Invoke-Isolated @('-File', (Join-Path $base 'scripts\Build-Local.ps1')); $p2Dll = Get-Sha256 $dll; $p2Entry = @(& $externalEntry); $p2Generated = @(& $generatedEntries)
+    $msbuildGenerated = 'generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs'
+    $ok = $p1.ExitCode -eq 0 -and $p2.ExitCode -eq 0 -and $p1Entry.Count -eq 1 -and $p2Entry.Count -eq 1 -and $p1Entry[0].sha256 -ceq $p2Entry[0].sha256 -and $p1Entry[0].name -cne $p2Entry[0].name -and $p1Dll -ne $p2Dll -and (Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2) -and ($p1Generated -join ',') -ceq $msbuildGenerated -and ($p2Generated -join ',') -ceq $msbuildGenerated
+    Add-Case 'rebuild-from-moved-external-source-records-its-path-and-differs' $ok ("builds exit $($p1.ExitCode)/$($p2.ExitCode); source bytes equal: $((Get-Sha256 $pathSrc1) -eq (Get-Sha256 $pathSrc2)); entries '$(@($p1Entry | ForEach-Object name) -join ',')' / '$(@($p2Entry | ForEach-Object name) -join ',')'; generated entries '$($p1Generated -join ',')' / '$($p2Generated -join ',')'; DLL $p1Dll / $p2Dll")
     Expect-Accepted 'package-after-rebuild-from-moved-external-source-accepted' (Invoke-Isolated @('-File', $package)) 'Package validation passed'
     # R1-F1: a project-relative response file under ignored artifacts (changing /baseaddress) is an unsupported input form:
     # refused at package admission and at Build-Local, never recorded as text.
@@ -812,6 +816,16 @@ try {
     $pvBefore = Get-Sha256 $acceptedRecords[2]
     $otherValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip)
     Add-Case 'standalone-validation-of-another-zip-leaves-the-published-receipt' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Published validation receipt not written' -and (Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore) ("exit $($otherValidation.ExitCode); receipt unchanged $((Get-Sha256 $acceptedRecords[2]) -ceq $pvBefore)")
+    # R7-F1: the published ZIP held with FileShare.None while a distinct valid ZIP is validated with the default report
+    # path: the supplied bytes pass, the optional receipt refresh is skipped, and the published ZIP, package.json and
+    # package-validation.json keep their hashes.
+    $publicBefore = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
+    $hold = [IO.File]::Open($acceptedZip, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
+    try { $heldValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip) } finally { $hold.Dispose() }
+    $publicAfter = @($acceptedRecords | ForEach-Object { Get-Sha256 $_ }) -join ';'
+    $heldText = $heldValidation.Output -replace '\s+', ' '
+    $ok = $heldValidation.ExitCode -eq 0 -and $heldText -match ('Package validation passed: ' + [regex]::Escape($secondZip)) -and $heldText -match 'Published validation receipt not written: the published package .* cannot be read now' -and $publicAfter -ceq $publicBefore
+    Add-Case 'validation-of-another-zip-while-published-zip-is-held-passes' $ok ("exit $($heldValidation.ExitCode); supplied ZIP $(Get-Sha256 $secondZip); public ZIP, package.json and package-validation.json unchanged: $($publicAfter -ceq $publicBefore); " + $(if ($heldValidation.ExitCode) { Get-Reason $heldValidation.Output } else { (@($heldValidation.Output -split "`r?`n" | Where-Object { $_ -match 'Published validation receipt not written' }) | Select-Object -First 1) }))
     $copyOfA = Join-Path $inputs 'published-a.zip'; Copy-Item -LiteralPath $acceptedZip -Destination $copyOfA -Force
     $sameValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $copyOfA)
     $pv = Get-Content -LiteralPath $acceptedRecords[2] -Raw | ConvertFrom-Json

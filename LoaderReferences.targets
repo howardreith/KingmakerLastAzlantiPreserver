@@ -59,6 +59,9 @@
       <_EffectiveCscTool>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(_EffectiveCscTool)'))))</_EffectiveCscTool>
     </PropertyGroup>
     <WriteLinesToFile File="$(CompilerReferenceListPath)" Lines="compiler|$(_EffectiveCscTool)" Overwrite="false" Encoding="UTF-8" />
+    <!-- The one source MSBuild generates for the target-framework attribute (GenerateTargetFrameworkMonikerAttribute),
+         as an absolute path, so only that exact file is named as generated input. -->
+    <WriteLinesToFile Condition="'$(TargetFrameworkMonikerAssemblyAttributesPath)' != ''" File="$(CompilerReferenceListPath)" Lines="generated|$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(TargetFrameworkMonikerAssemblyAttributesPath)'))))" Overwrite="false" Encoding="UTF-8" />
     <WriteLinesToFile File="$(CompilerReferenceListPath)" Lines="@(CscCommandLineArgs->'arg|%(Identity)')" Overwrite="false" Encoding="UTF-8" />
   </Target>
 </Project>

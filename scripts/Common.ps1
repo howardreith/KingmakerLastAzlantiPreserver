@@ -217,7 +217,8 @@ function Get-PinnedReferenceIdentities {
 
 # Reads a compiler-input list written by the WriteCompilerReferenceList target (the intermediate directory, then every Csc
 # argument) into path-free identities in a canonical order: kind reference/compile/file-option with the file's name
-# (repository-relative, obj:<name> for generated files in the intermediate directory, otherwise the file name) and
+# (repository-relative, generated:<name> for the recorded MSBuild-generated attribute source, obj:<name> for other
+# generated files in the intermediate directory, otherwise the file name) and
 # SHA-256; kind option for every other argument verbatim; kind output for output locations (file name only). A source
 # outside the repository and the intermediate directory also carries the SHA-256 of its compiler-visible full path
 # (external:<name>@path-sha256=<digest>), because that path reaches the DLL (CallerFilePath, diagnostics); references
@@ -230,10 +231,15 @@ function ConvertFrom-CompilerInputList([string] $ListPath) {
     $projectDirectory = $lines[1].Substring('project|'.Length)
     # Csc arguments name files relative to the project directory.
     function Resolve-InputPath([string] $Path) { return [IO.Path]::GetFullPath([IO.Path]::Combine($projectDirectory, $Path.Trim('"'))) }
+    # The target records the exact path of the attribute source MSBuild generates (TargetFrameworkMonikerAssemblyAttributesPath,
+    # in the intermediate or the temporary directory); only that file is named generated:<name>. Any other source with
+    # a matching file name is an ordinary source (an external one carries its path digest).
+    $argStart = 3
+    $generatedPath = $null
+    if ($lines.Count -gt 3 -and $lines[3].StartsWith('generated|')) { $generatedPath = [IO.Path]::GetFullPath($lines[3].Substring('generated|'.Length)); $argStart = 4 }
     function Get-InputName([string] $Path) {
         $full = Resolve-InputPath $Path
-        # MSBuild's generated target-framework attribute file lives in the intermediate or the temporary directory.
-        if ([IO.Path]::GetFileName($full) -like '*.AssemblyAttributes.cs') { return 'generated:' + [IO.Path]::GetFileName($full) }
+        if ($generatedPath -and [string]::Equals($full, $generatedPath, [StringComparison]::OrdinalIgnoreCase)) { return 'generated:' + [IO.Path]::GetFileName($full) }
         if ($full.StartsWith($objPrefix, [StringComparison]::OrdinalIgnoreCase)) { return 'obj:' + $full.Substring($objPrefix.Length).Replace('\', '/') }
         if ($full.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) { return $full.Substring($rootPrefix.Length).Replace('\', '/') }
         return [IO.Path]::GetFileName($full)
@@ -256,7 +262,8 @@ function ConvertFrom-CompilerInputList([string] $ListPath) {
     # resolved against the recorded project directory too, never against the caller's directory.
     $compiler = Resolve-InputPath $lines[2].Substring('compiler|'.Length)
     $compilerEntry = [ordered]@{ kind = 'compiler'; name = [IO.Path]::GetFileName($compiler); sha256 = $(if (Test-Path -LiteralPath $compiler -PathType Leaf) { Get-Sha256 $compiler } else { 'absent' }) }
-    $cscArgs = @($lines[3..($lines.Count - 1)] | ForEach-Object { if (-not $_.StartsWith('arg|')) { throw "Compiler input list is malformed: $_" }; $_.Substring(4) })
+    if ($lines.Count -le $argStart) { throw "Compiler input list is malformed: $ListPath" }
+    $cscArgs = @($lines[$argStart..($lines.Count - 1)] | ForEach-Object { if (-not $_.StartsWith('arg|')) { throw "Compiler input list is malformed: $_" }; $_.Substring(4) })
     $implicit = @()
     if ($cscArgs -notcontains '/noconfig') {
         $rsp = Join-Path (Split-Path -Parent $compiler) 'csc.rsp'
