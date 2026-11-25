@@ -191,6 +191,14 @@ the staging refusal keeping the accepted ZIP and records; the test runner's outp
 the run (the record still names the substitute it loaded); and a build-only qualification without a
 runtime loader after a passing test run (no test credit).
 
+Test-only prerequisite: the relative-compiler-selector cases copy the Roslyn compiler folder of
+a Visual Studio installation (Visual Studio Build Tools is enough) as the project-selected
+compiler. The suite finds it with `%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+-latest -products * -find MSBuild\Current\Bin\Roslyn\csc.exe`; without such an installation
+`relative-compiler-selector-receipt-names-the-project-selected-binary` fails (its detail reports
+`Roslyn csc.exe source: not found`) and the selector's package case fails with it. The product
+build, packaging and the other cases use the .NET SDK's `dotnet msbuild` and do not need it.
+
 `Test-LoaderProfiles.ps1` takes a folder of profile subfolders, each holding
 `UnityModManager.dll`, `0Harmony.dll` and `0Harmony12.dll`. For each it writes a
 temporary `GamePath.props` (game assemblies from the configured installation, loader
@@ -210,13 +218,30 @@ forwarders. The newest-stable row was selected on 2026-11-23 from the author's N
 feed (0.33.4, published 2026-11-19, the highest version; project URL the Nexus page) and
 confirmed by the author's GitHub HEAD `3d14bf0d` (`<Version>0.33.4</Version>`).
 
-## Evidence for this change (2026-11-24, round 7)
+## Evidence for this change (2026-11-25, round 8)
+
+Round 8 changes only build-evidence, validation and test tooling (`LoaderReferences.targets`, `Common.ps1`,
+`Validate-Package.ps1`, `Test-LoaderBaseline.ps1`) and this guide; the product sources and the candidate DLL
+bytes are unchanged, and earlier records keep their original identities in the index. The compiler-input
+list now records the exact path of the attribute source MSBuild generates
+(`TargetFrameworkMonikerAssemblyAttributesPath`), and only that file is named `generated:` in the build
+receipt; any other source, including an external file named like `Shared.AssemblyAttributes.cs`, keeps
+its path digest. A standalone validation with the default report path treats the published-receipt
+refresh as optional: when the published ZIP cannot be read (held by another process) the supplied archive's
+validation still passes and the public ZIP, `package.json` and `package-validation.json` stay unchanged;
+failures validating the supplied archive or writing an explicitly requested report still fail. A preview
+(`-WhatIf`) reports that it changes no published record. `Test-LoaderBaseline.ps1` on the round-8 tooling
+(`loader-baseline.json`; the index gives its commit and counts) runs the `CallerFilePath` fixture as
+`Shared.AssemblyAttributes.cs` (accepted, refused after relocation to a byte-identical copy, the differing
+rebuild accepted; each receipt names only MSBuild's `.NETFramework,Version=v4.7.2.AssemblyAttributes.cs` as
+generated) and validates a distinct ZIP while the published ZIP is held with `FileShare.None`.
+
+### Round 7 (history)
 
 Round 7 changes only build, packaging and test tooling (`LoaderReferences.targets`, `Common.ps1`,
 `Package.ps1`, `Validate-Package.ps1`, `Test-LoaderBaseline.ps1`); the product sources are unchanged since
 round 3, so the candidate DLL bytes are those of the earlier records, which keep their original identities
-in the index. `Test-LoaderBaseline.ps1` on the round-7 tooling (`loader-baseline.json`; the index gives its
-commit and counts) adds: the compiler selection changed alone on the props of the accepted receipt (control
+in the index. `Test-LoaderBaseline.ps1` on the round-7 tooling (157/157 at `c39b471`) added: the compiler selection changed alone on the props of the accepted receipt (control
 accepted, refused at entry 0 with the entry count unchanged, accepted after restoring; each step records the
 selected compiler); a project-relative selector with a different same-named file below the repository root
 (the receipt and package admission name the project-selected binary; replacing that binary refuses reuse);
