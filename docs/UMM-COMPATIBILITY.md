@@ -74,11 +74,9 @@ whatever loader is installed on the build machine.
   producing build inputs, a fingerprint of the packaged documents and a fingerprint of the packaging
   rules (`Package.ps1`, `Validate-Package.ps1`).
 - The published `package-validation.json` has one owner, the publication above. A standalone
-  `Validate-Package.ps1` whose report path is that receipt (its default) refreshes it only under the
-  same publication lock and only when the published ZIP's bytes are the bytes it validated (its
-  `package_path` then names the published ZIP); validation of any other archive, or of a published
-  archive replaced while it was validating, leaves the receipt unchanged and says so. Validation with
-  an explicit other `-ReportPath` is unaffected.
+  `Validate-Package.ps1` never writes it and never takes the publication lock: it writes a report only to an
+  explicitly requested other `-ReportPath` (a write failure there fails the validation), says when it wrote
+  none, and refuses the canonical receipt path as `-ReportPath`. An invalid ZIP still fails.
 - The standalone `scripts/Validate-Package.ps1` reads the packaged DLL's AssemblyRef
   table (in Windows PowerShell in a separate process, so several packages can be
   validated in one session), inspects and hashes one private copy of the ZIP, requires
@@ -218,7 +216,21 @@ forwarders. The newest-stable row was selected on 2026-11-23 from the author's N
 feed (0.33.4, published 2026-11-19, the highest version; project URL the Nexus page) and
 confirmed by the author's GitHub HEAD `3d14bf0d` (`<Version>0.33.4</Version>`).
 
-## Evidence for this change (2026-11-25, round 8)
+## Evidence for this change (2026-11-25, round 9)
+
+Round 9 changes only build-evidence, validation and test tooling (`LoaderReferences.targets`,
+`Validate-Package.ps1`, `Test-LoaderBaseline.ps1`) and this guide; the product sources and the candidate DLL
+bytes are unchanged, and earlier records keep their original identities in the index. The compiler-input list
+names MSBuild's attribute source as generated only when MSBuild generates it (`GenerateTargetFrameworkAttribute`
+true, attribute text present, sources present); with generation off, a file at the configured attribute path is an
+ordinary source with its path digest. Standalone validation no longer refreshes the published receipt (see
+above). `Test-LoaderBaseline.ps1` on the round-9 tooling (`loader-baseline.json`; the index gives its commit and
+counts) runs the `CallerFilePath` fixture with generation off at the configured attribute path (no generated
+entry; accepted, refused after relocation to an identical copy, the differing rebuild accepted), validates a
+distinct ZIP while the publication lock is held exclusively (passes; public records unchanged), refuses the
+canonical receipt as `-ReportPath`, and fails when an explicit report cannot be written.
+
+### Round 8 (history)
 
 Round 8 changes only build-evidence, validation and test tooling (`LoaderReferences.targets`, `Common.ps1`,
 `Validate-Package.ps1`, `Test-LoaderBaseline.ps1`) and this guide; the product sources and the candidate DLL
@@ -226,12 +238,9 @@ bytes are unchanged, and earlier records keep their original identities in the i
 list now records the exact path of the attribute source MSBuild generates
 (`TargetFrameworkMonikerAssemblyAttributesPath`), and only that file is named `generated:` in the build
 receipt; any other source, including an external file named like `Shared.AssemblyAttributes.cs`, keeps
-its path digest. A standalone validation with the default report path treats the published-receipt
-refresh as optional: when the published ZIP cannot be read (held by another process) the supplied archive's
-validation still passes and the public ZIP, `package.json` and `package-validation.json` stay unchanged;
-failures validating the supplied archive or writing an explicitly requested report still fail. A preview
-(`-WhatIf`) reports that it changes no published record. `Test-LoaderBaseline.ps1` on the round-8 tooling
-(`loader-baseline.json`; the index gives its commit and counts) runs the `CallerFilePath` fixture as
+its path digest. In round 8 a standalone validation with the default report path treated the published-receipt
+refresh as optional (replaced in round 9 by no refresh at all). `Test-LoaderBaseline.ps1` on the round-8 tooling
+(158/158 at `4b31509`) ran the `CallerFilePath` fixture as
 `Shared.AssemblyAttributes.cs` (accepted, refused after relocation to a byte-identical copy, the differing
 rebuild accepted; each receipt names only MSBuild's `.NETFramework,Version=v4.7.2.AssemblyAttributes.cs` as
 generated) and validates a distinct ZIP while the published ZIP is held with `FileShare.None`.
@@ -259,8 +268,8 @@ Kingmaker 2.1.7b managed assemblies): SHA-256
 `4bcbb685-5152-4399-98e2-19fb6d19c6cd`; AssemblyRefs UnityModManager 0.31.1.0 and
 0Harmony12 1.2.0.1; 0 compiler warnings/errors. The qualification summary, build, package and
 validation records in the index come from the round-6 qualify run (the index names its commit).
-`Test-LoaderBaseline.ps1` on the round-6 tooling recorded 145/145 at `27c0af5` (the current
-`loader-baseline.json` is the round-7 run). Round 6 added: a neutral EmbeddedResource from outside `src` (old receipt refused, rebuild
+`Test-LoaderBaseline.ps1` on the round-6 tooling recorded 145/145 at `27c0af5` (the evidence index names the
+current `loader-baseline.json` run). Round 6 added: a neutral EmbeddedResource from outside `src` (old receipt refused, rebuild
 embeds it), imported sources reordered (refused, rebuild accepted), a changed compiler selection
 (refused), a response file under ignored artifacts (refused at package and build), the package record
 held during a distinct replacement (all three public files unchanged, retry publishes the set),
