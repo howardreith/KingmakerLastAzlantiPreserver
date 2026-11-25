@@ -1,6 +1,6 @@
 # UMM 0.31.1 baseline evidence
 
-Machine-generated outputs exported 2026-11-24 21:13 UTC for candidate commit `c39b471eaad5b853e793c1594c8845def74a3680`. Each row names what produced that output (its
+Machine-generated outputs exported 2026-11-25 10:06 UTC for candidate commit `4b315097fd61e0c1d095d5a962ba92c0da1b0056`. Each row names what produced that output (its
 source commit, or the reused input it describes); outputs produced at another commit are identified there.
 Only local path prefixes were replaced: `<repo>` (this checkout or its temporary clone root), `<temp>`, `<game>`
 (the Kingmaker installation, read-only), `<buildtools>`, `<reference-assemblies>`, `<dotnet>`, `<controller>` (the agent-review controller), `<dev>` (the owner's development folder), `<steam>`, `<user-profile>`, `<fleet>` (the owner's fleet mission folder,
@@ -24,8 +24,9 @@ python -c "import hashlib,subprocess,sys; print(hashlib.sha256(subprocess.check_
 | `game-over-load-contracts.json` | 4b4b3ec (same qualify run) | `1a65419065d48407c2de62e682f592cab16384fdf542596cee38046cd3b00285` (original output, from its first export) | `e45a749abcf9cb0480389f37ad59d5eaa2c6dd7a0ee3da7cb2fdad6f524fe4c1` |
 | `package.json` | 4b4b3ec (same qualify run) | `56724c1ed82bd9c352e86cbb5aec849e5a142b231fc4dfc92022b4f254eae945` (original output, from its first export) | `3c757835fa85fd61494851badd686d337c610a48cc14dc4509bb0e7c0c53030c` |
 | `package-validation.json` | 4b4b3ec (same qualify run) | `5bfb8c6eb10797ae2cd64eb73089ca56087cb251bf5d755dc7d4d5775ee4fc85` (original output, from its first export) | `29706049d26aa267cb9642d9a8c5d7957fcba6007adf68d82f5cd846e772f2b5` |
-| `loader-baseline.json` | c39b471 (temporary clone; 157/157) | `15538a3542350d383cc8493afda1773d02ddcb90d00d3a5736dc4b27f2a6112b` | `d2608aba534d5e0c7ac929631de3d37591825146f1c594c2ef9477d82e2121d6` |
-| `r1f1-reproduction.txt` | focused reproduction on temporary clones of d16445d and 6352498 | `7a869b1113a58f86adae6d6c8febd3ad606fff3aa0dcd3bc18e443cadf0fee54` | `300789c5fc6681bbcf39c39122e4718e57210ea140d24335019052d0de1c07a5` |
+| `loader-baseline.json` | 4b31509 (temporary clone; 158/158) | `0bda090df6ccbe60d9bbe3c3bd71c6597a46e527e3c01109ce1a8a024a17dac5` | `75cbb5d2d54b32e84894326c707dd9378ee5c75935561886e2bab3d2b6c61fa8` |
+| `r1f1-reproduction.txt` | round-7 focused reproduction on temporary clones of d16445d and 6352498 (reused) | `7a869b1113a58f86adae6d6c8febd3ad606fff3aa0dcd3bc18e443cadf0fee54` (original output, from its first export) | `300789c5fc6681bbcf39c39122e4718e57210ea140d24335019052d0de1c07a5` |
+| `r6f2-reproduction.txt` | focused reproduction: compiler-input reader of 6d4dc37 (old) and 6055b2c (new) on lists naming two external Shared.AssemblyAttributes.cs files | `52b407efa5eefc4a4d91bd6ef526b204f3e9f1a0f27a457aa14df558ef45fc04` | `c610a1bfb674ffb22acc8c2c63e9847c35cb547e50be6a6c849e18c75ef5779e` |
 | `docs-link-check.json` | `4b4b3ec` | `64b18869dfa5adf15f474c7653288cbe5a513869b0f7805deaf314703a843848` (original output, from its first export) | `4846d9427e30426d3a208698e72154d2d77688d6567670604f8afbf0cff11487` |
 | `loader-profiles-managed.json` | reused managed loader-profile results for the unchanged DLL fadf2dab | `4c7fab048afa6350dd5b439d2208c00250cc56ec81bf2cf9ca465fb9220b0af9` (original output, from its first export) | `a84539352817f11bc11f49c9539f1027c5bd0a970e857d2531085d70cff51737` |
 | `api-audit.json` | reused static audit of the unchanged DLL fadf2dab | `106fde3968a78d951116982c7911f68d468c85c16362b58d6a07412d20f32f41` (original output, from its first export) | `66ef3435dfcf708929a4602d00a909f989961761e3f80037330c775216e9f5be` |
