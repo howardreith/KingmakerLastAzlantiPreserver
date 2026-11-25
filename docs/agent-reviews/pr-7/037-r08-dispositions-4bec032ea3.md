@@ -1,0 +1,21 @@
+<!-- agent-review:v1 enrollment=klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01 key=r08-dispositions-4bec032ea3 part=1/1 sha256=4bec032ea3cbc16e4f0b5aa02ffdbc39027334c7987a479ba4099b61e758cabc -->
+### Claude Opus — finding dispositions — round 8
+
+Candidate after corrections: `f0d490b14eefc8267ccd92fff492a43dc4b7f7ce`
+
+- **R8-F1** — `fixed` — commits: `278f511`, `d95aea7`, `c6cc638`, `f0d490b`
+  docs/evidence/umm-0311/loader-baseline.json (166/166 on a temporary clone of d95aea7): the existing CallerFilePath fixture (Shared.AssemblyAttributes.cs) with GenerateTargetFrameworkAttribute false and the Compile item at the configured TargetFrameworkMonikerAssemblyAttributesPath: generation-off-attribute-path-source-recorded-as-external (entry external:Shared.AssemblyAttributes.cs@path-sha256=03bedf4b..., no generated: entry), package-with-generation-off-attribute-path-source-accepted (initial acceptance), package-reuse-after-generation-off-attribute-path-source-moved-rejected (item and configured path moved to the identical copy: refused), rebuild-from-moved-generation-off-source-records-its-path-and-differs (path digest 61bca799..., DLL differs), package-after-generation-off-rebuild-accepted; the generation-on cases (rebuild-from-moved-external-source-records-its-path-and-differs naming only MSBuild's generated file) still pass.
+- **R8-F2** — `fixed` — commits: `278f511`, `d95aea7`, `c6cc638`, `f0d490b`
+  docs/evidence/umm-0311/loader-baseline.json (166/166 on a temporary clone of d95aea7): validation-of-another-zip-while-publication-lock-is-held-passes (artifacts/packages/.publish.lock held with FileShare.None, both ZIPs readable, the distinct ZIP validated with the default (no) report: exit 0 at once, public ZIP, package.json and package-validation.json unchanged), validation-of-another-zip-while-published-zip-is-held-passes, explicit-canonical-report-path-refused (exit 1, 'written only by Package.ps1', public records unchanged), explicit-report-write-error-fails-validation (an explicit report path that is a directory: exit 1, UnauthorizedAccessException), standalone-validation-of-the-published-bytes-leaves-the-receipt-to-package, overlapping-standalone-validation-keeps-the-replacement-receipt, qualify-ignores-validation-of-another-zip, package-legacy-0.33.0-dll-with-lowered-manifest-rejected (invalid ZIP still fails), validator-copy-failure-reported-and-cleaned; the publication cases held-package-record-keeps-the-accepted-set and retry-after-handle-closed-publishes-the-replacement-set keep Package.ps1's locked publication.
+- **R8-F3** — `fixed` — commits: `c6cc638`
+  Optional. docs/UMM-COMPATIBILITY.md round-6 paragraph: 'the evidence index names the current loader-baseline.json run' instead of a stale round reference; the round-8 paragraph gives its own count (158/158 at 4b31509).
+
+**Validation (developer-reported):**
+
+| Command | Required | Result | Duration | Scope and limits |
+|---|---|---|---|---|
+| python C:/Dev/agent-review/agent_review.py verify --enrollment klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01 --gate qualify | yes | pass | 12.1s | Controller receipt on f0d490b (log gate-qualify-f0d490b14eef-d5949d9212e-ad7d609636c-20261125T153534614979Z.log): the configured qualify gate (84 tests, contracts, DLL fadf2dab). |
+| scripts/Test-LoaderBaseline.ps1 (temporary clone of d95aea7) | no | pass | 374s | docs/evidence/umm-0311/loader-baseline.json (166/166 on a temporary clone of d95aea7). The first run on c6cc638 stopped after 74 cases (154 s) in the new generation-off case: setting TargetFrameworkMonikerAssemblyAttributesPath also makes that path a Clean item (TargetFrameworkMonikerAssemblyAttributesFileClean), so Rebuild deleted the fixture source and the build failed; d95aea7 sets that flag false in the fixture and makes a missing DLL fail the case rather than the suite. No production change between the runs. |
+| Native checks on four loader rows | no | not_run | 0 | Runtime qualification needs the disposable-campaign procedure (docs/SMOKE-TEST.md); no approved disposable environment in this mission. |
+
+_Model-generated developer response (Claude opus / high), posted by the agent-review controller through the owner's GitHub account; not a human review._

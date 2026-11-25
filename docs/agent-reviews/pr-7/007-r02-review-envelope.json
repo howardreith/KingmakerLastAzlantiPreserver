@@ -1,0 +1,399 @@
+{
+  "B": "a2e2af2d724e77e7f9749969d00667c0d8e6481c",
+  "H": "fd9f30f7620d87a9de53c37563ad903f31801073",
+  "M": "a2e2af2d724e77e7f9749969d00667c0d8e6481c",
+  "amendment_revision": null,
+  "amendment_sha256": "none",
+  "checkpoint_id": "final",
+  "checkpoint_type": "final",
+  "fatal": false,
+  "guidance_revision": null,
+  "guidance_sha256": "none",
+  "invocation": {
+    "completed": true,
+    "duration_s": 729.4,
+    "errors": [],
+    "exit_code": 0,
+    "failed": false,
+    "observed": {
+      "approval_policy": "never",
+      "cli_version": "0.170.0",
+      "network": "restricted",
+      "observed_effort": "max",
+      "observed_model": "gpt-6.2-astra",
+      "plan_type": "pro",
+      "rollout_found": true,
+      "sandbox": "read-only",
+      "source": "Codex session rollout (CLI-recorded thread settings; not model-authored)",
+      "subagent_suspected": false,
+      "turn_efforts": [
+        "max"
+      ],
+      "turn_models": [
+        "gpt-6.2-astra"
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 2208000,
+        "input_tokens": 2369408,
+        "output_tokens": 30199,
+        "reasoning_output_tokens": 19971,
+        "total_tokens": 2399607
+      }
+    },
+    "requested": {
+      "effort": "max",
+      "model": "gpt-6.2-astra",
+      "sandbox": "read-only"
+    },
+    "thread_id": "01a20a81-7b71-78c3-b3e2-40b8f7180df9",
+    "timed_out": false
+  },
+  "mission": {
+    "id": "kingmaker-umm-0311-mission-20261123",
+    "sha256": "f7d990f396c858ad663020133baba66e0cefb57f2b8be54a26d96186f86b24d5"
+  },
+  "ok": true,
+  "path": "~\\.agent-review\\state\\klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01\\rounds\\r02\\envelope-1.json",
+  "pr": 7,
+  "project_sha256": "ceb624acbcdff709800a28d9bcb3fa654b69aef736020b588820824ddba5b8af",
+  "protocol": "agent-review.v1",
+  "publication": "r02-review",
+  "published": [
+    {
+      "comment_id": 7115937822,
+      "of": 1,
+      "part": 1,
+      "url": "https://github.com/howardreith/KingmakerLastAzlantiPreserver/pull/7#issuecomment-7115937822"
+    }
+  ],
+  "raw_result_if_rejected": null,
+  "reasons": [],
+  "repository": "howardreith/KingmakerLastAzlantiPreserver",
+  "request_id": "klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01-r02-40e907",
+  "response_sha256": "a1db99437d87a2981ab7d964556662f92de2e3e64861850b710e7226f4853cea",
+  "result": {
+    "candidate_commit": "fd9f30f7620d87a9de53c37563ad903f31801073",
+    "checkpoint_id": "final",
+    "checkpoint_type": "final",
+    "decision": "changes_required",
+    "decision_rationale": "The controller confirmed a clean Release build, 84 passing tests and managed contract checks on the installed 0.33.0 profile. The compiler guard still checks an earlier reference list than the one Csc consumes, and qualification can credit stale build, package and profile records. The required legacy-package regression and four-loader audit also lack reviewer-visible execution results.\n\n## Continuation for Claude\n\nCheck the two loader references at the point where MSBuild has selected the files passed to Csc. Complete the build fingerprint and validate the selected DLL and its receipt before reusing qualification records. Bind archive validation to one open ZIP, account for every entry, and treat older or different-profile receipts as historical. For managed comparisons, freeze the candidate bytes and check the identity of the assembly that supplied the patch methods.\n\nRerun the configured gate and focused regressions on the corrected candidate. Supply scoped, machine-produced results through an evidence route the controller includes in the review packet. Include the actual compiler inputs, standalone acceptance and legacy rejection, receipt-reuse cases, and separate static and managed results for each loader. The mixed-session transcript is withheld, so printing results there or naming external report files does not deliver them to review.\n\nKeep the correction within Preserver's build, validation and compatibility tooling. Preserve the product identity, gameplay, historical releases and owner installation. The native rows can remain NOT RUN under the mission's disposable-fixture condition.",
+    "evidence_assessment": {
+      "executed_verification": [
+        "The candidate-bound qualify receipt and its full log agree. The log SHA-256 matched the receipt. Qualify.ps1 -Build -Test -VerifyContracts exited 0 on clean fd9f30f with 0 compiler warnings, 0 errors and 84/84 tests passing.",
+        "The gate observed Release DLL SHA-256 fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248, installed UMM 0.33.0.0, Harmony12 1.2.0.1 and Harmony2 2.3.6.0. It reported five core and fifteen optional patches with ownership isolation verified.",
+        "The gate summary reported ZIP SHA-256 83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc from cached package records. Its command omitted -Package.",
+        "Read-only reviewer checks confirmed HEAD, the enrolled mission digest and a clean git diff --check. The corrected detached-branch expression returned the exact candidate SHA, and the compiler-reference regex retained both quoted paths containing spaces.",
+        "An isolated PowerShell evaluation of the package-reuse predicate returned true with different build-input fingerprints. A separate StrictMode evaluation of the new field access on an older contract-record shape raised a missing-property error."
+      ],
+      "inspected": [
+        "The mission, AGENTS.md, full feature diff, correction commits, all eleven prior findings, developer report, transcript notice, controller receipt and full gate log.",
+        "The production project, pin definitions and acquisition helper, build and qualification scripts, package validator and installer, both contract verifiers, regression scripts, and relevant build and smoke-test documentation.",
+        "The installed .NET SDK 8.0.424 targets that construct ReferencePathWithRefAssemblies and pass it to Csc."
+      ],
+      "limitations": [
+        "The fixed review packet contains one gate receipt and log. The developer transcript says the mixed foreground session was withheld. The separately named baseline, profile and API reports are absent.",
+        "Reviewer execution was limited to read-only checks. There was no reviewer build, package, installation or game run.",
+        "Native preservation, recovery, manual deletion, non-Azlanti controls and fresh-process reload are NOT RUN on all four loaders. The mission permits that disposition for an unavailable approved fixture. No combined-stack result is claimed."
+      ],
+      "required_gaps": [
+        "Execution output tied to the candidate for the standalone validator, genuine lowered-manifest v0.1.3 regression, compiler inputs and failure-boundary suite.",
+        "A reproducible static audit and machine-produced per-profile results for the frozen DLL, including evidence for the newest-stable selection and the reported managed profile checks.",
+        "Focused verification of final compiler-reference selection, receipt freshness, archive identity and managed DLL identity after correction."
+      ],
+      "source_inspection_only": [
+        "The shipping manifest declares 0.31.1. The pin file contains the enrolled UMM and Harmony12 hashes and versions. Both production references use Private=False. The feature diff contains no gameplay C# changes.",
+        "The source implements archive AssemblyRef inspection, archived-DLL comparison, checks on allowlisted text files, private-copy extraction and forwarding of the selected configuration's DLL.",
+        "The temporary-clone suite contains the reported regression cases. Its 62/62 result, Debug run, packaged MVID and per-case rejection reasons are developer claims in this packet.",
+        "The profile verifier contains four exact UMM/Harmony2 mappings. The controller log establishes execution for the owner-installed row only."
+      ]
+    },
+    "findings": [
+      {
+        "acceptance_ids": [
+          "\u00a75",
+          "\u00a76"
+        ],
+        "actual": "The guard now requires both canonical pins and compares exact paths in ReferencePath. SDK 8.0.424 subsequently constructs ReferencePathWithRefAssemblies from ReferenceAssembly metadata, and Csc consumes that later list. The substitution is outside the guard. The negative probe projects stop at ResolveAssemblyReferences.",
+        "blocking_rationale": "A direct build can pass the pin checks while supplying a different reference assembly to the compiler.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "The final UMM and Harmony12 paths supplied to Csc must be the verified files, including when MSBuild selects a reference assembly.",
+        "id": "R1-F3",
+        "location": {
+          "file": "LoaderReferences.targets",
+          "line": 30
+        },
+        "priority": "P1",
+        "requested_correction": "Retain the canonical pin checks and enforce the exact paths after reference-assembly selection, before compilation.",
+        "requested_evidence": "Show a direct build refusing a substituted compiler reference while its earlier ReferencePath is valid. Show a successful direct build with both genuine paths on the Csc command line.",
+        "title": "Verify the loader files that Csc actually receives",
+        "trigger": "A resolved pinned loader reference carries ReferenceAssembly metadata selecting another file."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a75",
+          "\u00a76"
+        ],
+        "actual": "Get-BuildInputFingerprint covers production source, the project, the pins and several root files. It omits Build-Local.ps1, which sets the MSBuild arguments, and the compile-relevant selection made through the imported GamePath.props. The receipt contains no digest of the selected game or Unity references.",
+        "blocking_rationale": "Changing a compiler option in the production wrapper or changing a referenced game assembly leaves the old DLL eligible for packaging.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "A material change to the supported production build must invalidate reuse of the previous DLL and receipt.",
+        "id": "R1-F1",
+        "location": {
+          "file": "scripts/Common.ps1",
+          "line": 205
+        },
+        "priority": "P1",
+        "requested_correction": "Include the production build invocation, material imported settings and selected compile dependencies in the receipt comparison. Keep the runtime-only loader selection independent.",
+        "requested_evidence": "In a temporary checkout, change a compiler-affecting wrapper option and a compile-relevant imported input. Show the old receipt being refused and the matching rebuild being accepted.",
+        "title": "Cover the production build invocation and imported inputs in the fingerprint",
+        "trigger": "Change a production compiler option or the selected game reference after building, then package the existing DLL."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a75",
+          "\u00a76",
+          "\u00a78"
+        ],
+        "actual": "Qualify.ps1 takes currentDllSha directly from build.json. It checks the ZIP and recorded DLL hashes but never validates that receipt against the selected on-disk DLL, current inputs or configuration. It also ignores the package record's build_inputs_sha256. Test.ps1 can rebuild the production project without updating build.json, and a change to the packaged README can leave every compared hash unchanged.",
+        "blocking_rationale": "The summary can attribute an earlier DLL and ZIP to the current source commit after a supported partial qualification.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "A current package pass must belong to the selected candidate and its package inputs. A skipped stage may be reported as unrun.",
+        "id": "R1-F2",
+        "location": {
+          "file": "scripts/Qualify.ps1",
+          "line": 51
+        },
+        "priority": "P1",
+        "requested_correction": "Validate the current build receipt and actual selected DLL before crediting cached results. When packaging is omitted, report it as unrun or establish the freshness of the build and packaged files as well as the ZIP digest.",
+        "requested_evidence": "Show the result of Qualify -Test after a source change and of qualification after a packaged README change. Neither should credit the old package to the new candidate. Include a matching fresh package as the positive control.",
+        "title": "Establish the current candidate before crediting a cached package",
+        "trigger": "Retain the build and package records, change production source or a packaged document, then qualify without -Package."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a75",
+          "\u00a76"
+        ],
+        "actual": "Validate-Package.ps1 releases the archive at line 89 and reopens PackagePath to compute its digest at line 94. A replacement in between gives the record one archive's DLL metadata and another archive's ZIP hash.",
+        "blocking_rationale": "The new qualification checks rely on that digest as the identity of the archive whose contents passed inspection.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "The archive digest and extracted-DLL observations in one validation record must come from the same bytes.",
+        "id": "R2-F1",
+        "location": {
+          "file": "scripts/Validate-Package.ps1",
+          "line": 94
+        },
+        "priority": "P2",
+        "requested_correction": "Hash and inspect the same open file or immutable private copy, and use that result when recording package success.",
+        "requested_evidence": "Use disposable archives to show that replacing the caller's path cannot produce a report combining one ZIP's hash with the other's DLL.",
+        "title": "Hash the same ZIP that the standalone validator inspected",
+        "trigger": "A package path is replaced between closing the inspected archive and recording its SHA-256."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a75",
+          "\u00a76"
+        ],
+        "actual": "The validator filters out every entry whose name ends in a slash before checking lengths, paths or contents. A directory-marked record carrying binary data is invisible to both the six-file count and the new content checks.",
+        "blocking_rationale": "A supplied ZIP can carry excluded binary bytes and receive a standalone validation pass before extraction.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "The validator must account for every archive entry. Legitimate directory records should be empty and belong to the expected package layout.",
+        "id": "R2-F2",
+        "location": {
+          "file": "scripts/Validate-Package.ps1",
+          "line": 25
+        },
+        "priority": "P2",
+        "requested_correction": "Validate directory records before excluding them from the regular-file count. Reject data-bearing directories and directories outside the allowed layout.",
+        "requested_evidence": "Show standalone rejection of a data-bearing directory record and acceptance of the genuine package with its normal directory layout.",
+        "title": "Include directory records in archive-content validation",
+        "trigger": "A supplied ZIP contains the six expected files and a nonempty directory-marked entry."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a77",
+          "\u00a78"
+        ],
+        "actual": "The contract-reuse predicate compares only the mod DLL hash. Changing UnityModManagerDir leaves the previous profile's ownership result eligible. An older contracts.json from aeef5c8 instead raises a StrictMode error because it lacks mod_dll_sha256. The summary also reads build_inputs_sha256 unconditionally from any existing build report.",
+        "blocking_rationale": "A supported partial qualification can either credit another profile's checks or abort on records written by the preceding version.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "Cached contract evidence should describe the selected game and loader profile. Older records lacking the required identity fields should remain historical.",
+        "id": "R2-F3",
+        "location": {
+          "file": "scripts/Qualify.ps1",
+          "line": 53
+        },
+        "priority": "P2",
+        "requested_correction": "Check the receipt shape before reading new fields. Reuse contract results only after matching the selected candidate, game and loader components, or report that the contracts were unrun for this invocation.",
+        "requested_evidence": "Run partial qualification with prior-format records and after switching between two disposable loader profiles for the same DLL. Show a usable summary in both cases and no current credit for the old profile.",
+        "title": "Handle historical contract records across schema and profile changes",
+        "trigger": "Run Qualify without -VerifyContracts after changing the selected loader or retaining records produced by the previous scripts."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a76",
+          "\u00a77"
+        ],
+        "actual": "Both contract verifiers use Assembly.LoadFrom and record a hash read from the requested file path. Release and Debug share assembly identity 0.1.3.0. In a reused Windows PowerShell process, LoadFrom can return the assembly already loaded under that identity. Neither verifier checks that the assembly supplying the patch methods matches the requested bytes.",
+        "blocking_rationale": "Patch ownership can be observed on one build while the receipt names another build's hash.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "The assembly used to obtain and apply the patch methods must match the DLL identified in the contract receipt.",
+        "id": "R2-F4",
+        "location": {
+          "file": "scripts/Verify-KingmakerContracts.ps1",
+          "line": 170
+        },
+        "priority": "P2",
+        "requested_correction": "Isolate contract runs by process or verify the returned assembly's location and module identity against the selected bytes. Record the identity actually used.",
+        "requested_evidence": "Invoke the supported checks successively from one PowerShell host with two different DLLs sharing the product identity. Show that each result identifies its actual loaded DLL or explicitly rejects a binding mismatch.",
+        "title": "Bind managed contract results to the assembly loaded in the process",
+        "trigger": "A PowerShell session checks Release and then checks a different Debug DLL with the same assembly identity."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a76",
+          "\u00a77"
+        ],
+        "actual": "Test-LoaderProfiles.ps1 hashes the build output once and passes that mutable path to every child process. A row is marked passed before its reported DLL digest is read. That digest is printed in detail text but never compared with the run's digest.",
+        "blocking_rationale": "A rebuild between rows can produce a passing comparison attributed to one candidate even though the rows exercised different DLLs.",
+        "blocks_readiness": true,
+        "category": "defect",
+        "expected": "Every credited profile row must exercise the frozen DLL named by the comparison.",
+        "id": "R2-F5",
+        "location": {
+          "file": "scripts/Test-LoaderProfiles.ps1",
+          "line": 47
+        },
+        "priority": "P2",
+        "requested_correction": "Give every verifier the same private frozen DLL and require its reported digest to match before crediting the row.",
+        "requested_evidence": "Show that changing the original build output between disposable profile runs either leaves every row on the frozen digest or yields an explicit mismatch.",
+        "title": "Freeze the DLL used across loader-profile comparisons",
+        "trigger": "The production build output changes after the profile harness records its initial SHA-256."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a75",
+          "\u00a76",
+          "\u00a78"
+        ],
+        "actual": "The controller log prints the matching DLL and cached ZIP digests. It contains no Test-LoaderBaseline execution, standalone validator output, packaged MVID or AssemblyRefs, or genuine v0.1.3 rejection. The transcript notice and developer report provide no machine-produced substitute for those observations.",
+        "blocking_rationale": "The required package and failure-boundary outcomes cannot be confirmed from the gate or the suite's source.",
+        "blocks_readiness": true,
+        "category": "evidence_gap",
+        "expected": "Reviewer-visible execution results must identify the candidate archive that passed and the genuine older DLL whose lowered manifest was rejected before installation.",
+        "id": "R1-F10",
+        "location": {
+          "file": "docs/UMM-COMPATIBILITY.md",
+          "line": 123
+        },
+        "priority": "P1",
+        "requested_correction": "Deliver scoped machine-produced output in the controller's review inputs and align the documented result with the artifact that output identifies.",
+        "requested_evidence": "Include source SHA, build and archived DLL hashes, reference identities, MVID, ZIP hash, verified legacy release identity and exact standalone outcomes. Include the cache, direct-build, receipt, dependency, detached-checkout and Debug cases, with the distinct wrong-loader fixture exercised under baseline and newer disposable configurations.",
+        "title": "Supply execution evidence for the package and legacy regression",
+        "trigger": "Verify the documented 62/62 result and legacy-package rejection against the fixed review packet."
+      },
+      {
+        "acceptance_ids": [
+          "\u00a77",
+          "\u00a78"
+        ],
+        "actual": "The document describes LoaderApiAudit but supplies neither an accessible tool location nor a runnable audit invocation. The gate covers the owner-installed managed profile. The packet contains no four-profile static output, managed comparison output, mismatched-stack refusal or machine-produced evidence for the newest-stable selection.",
+        "blocking_rationale": "The claimed API counts and cross-loader conclusions cannot be independently tied to the frozen DLL or reproduced from the supplied procedure.",
+        "blocks_readiness": true,
+        "category": "evidence_gap",
+        "expected": "The audit must be reproducible, with an observed result and component provenance for each exact loader row.",
+        "id": "R1-F11",
+        "location": {
+          "file": "docs/UMM-COMPATIBILITY.md",
+          "line": 105
+        },
+        "priority": "P1",
+        "requested_correction": "Document an accessible audit tool or equivalent runnable procedure. Supply its scoped results, the official distribution observation used for selection and the managed outcomes as distinct evidence.",
+        "requested_evidence": "For 0.31.1, 0.32.4, owner-installed 0.33.0 and the selected newest stable release, show the same DLL digest, exact UMM/Harmony identities and hashes, provenance, and resolved or failed API counts. Include the measured newest-profile contract result and mismatched-Harmony refusal.",
+        "title": "Make the four-loader compatibility evidence reproducible",
+        "trigger": "Verify the compatibility table and its selection of 0.33.4 against the evidence available to the reviewer."
+      }
+    ],
+    "prior_finding_assessments": [
+      {
+        "assessment": "fix_rejected",
+        "finding_id": "R1-F1",
+        "rationale": "The new fingerprint covers source, the project, pin file, verifier and loader targets. The production wrapper and compile-relevant imported inputs still fall outside it."
+      },
+      {
+        "assessment": "fix_rejected",
+        "finding_id": "R1-F2",
+        "rationale": "Fresh packaging now compares the archived DLL with the receipt, and the gate's ZIP hash agrees with the developer report. Partial qualification still trusts a potentially stale build.json and ignores package-input freshness."
+      },
+      {
+        "assessment": "fix_rejected",
+        "finding_id": "R1-F3",
+        "rationale": "Both required assembly-to-file mappings and exact reference-resolution paths are enforced. Inspection of the installed compiler targets confirms that reference-assembly substitution occurs after the list this guard checks."
+      },
+      {
+        "assessment": "fix_verified",
+        "finding_id": "R1-F4",
+        "rationale": "The four allowlisted ancillary files now undergo PE-header, NUL-byte and strict UTF-8 checks. This closes the reported renamed-text-file defect by inspection. R1-F10 tracks execution evidence, and R2-F2 addresses the separate directory-entry case."
+      },
+      {
+        "assessment": "fix_verified",
+        "finding_id": "R1-F5",
+        "rationale": "The verifier admits the exact 0.33.4 and Harmony2 2.4.3.0 pair, retains the earlier profiles and checks and records Harmony2. The gate confirms propagation on the owner row. The latest-profile and refusal outputs remain outstanding under R1-F11."
+      },
+      {
+        "assessment": "fix_verified",
+        "finding_id": "R1-F6",
+        "rationale": "Qualify now derives the DLL path from Configuration and passes it through both verifiers. The Release gate confirms the hash was reported. The separate PowerShell assembly-reuse issue is R2-F4, and the claimed Debug run lacks visible output."
+      },
+      {
+        "assessment": "fix_verified",
+        "finding_id": "R1-F7",
+        "rationale": "The empty branch output is handled before Trim. Evaluating the corrected branch and commit expressions in this detached snapshot returned '(detached HEAD)' and the exact candidate SHA. The controller gate confirms an ordinary branch build."
+      },
+      {
+        "assessment": "fix_verified",
+        "finding_id": "R1-F8",
+        "rationale": "The wrong-cache and wrong-receipt cases now use the separately hash-checked 0.32.4 fixture. The installed UMM only supplies a measurement for those cases. R1-F10 tracks the missing integration output."
+      },
+      {
+        "assessment": "fix_verified",
+        "finding_id": "R1-F9",
+        "rationale": "The parser consumes an entire quoted reference argument. Its regex returned both complete loader paths in a read-only quoted-path check. The actual Csc output remains part of R1-F10."
+      },
+      {
+        "assessment": "fix_rejected",
+        "finding_id": "R1-F10",
+        "rationale": "The supplied transcript explicitly withholds the session output. The only recorded gate omitted packaging and the regression suite, so it cannot establish the claimed standalone acceptance and rejection."
+      },
+      {
+        "assessment": "fix_rejected",
+        "finding_id": "R1-F11",
+        "rationale": "The documentation now explains profile construction and the audit algorithm. The executable procedure, per-profile outputs and official release-selection observation are still missing from the reviewable material."
+      }
+    ],
+    "request_id": "klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01-r02-40e907",
+    "round": 2,
+    "schema_version": "agent-review.review.v1",
+    "summary": {
+      "delivered_behavior": "The mod declares UMM 0.31.1 and uses hash-pinned UMM 0.31.1.0 and Harmony12 1.2.0.1 references in its production project. The candidate built and passed the existing deterministic tests and owner-profile managed contracts. Packaging now inspects the archived DLL's references and compares its digest with the build receipt.",
+      "pending_later_phase_work": [],
+      "remaining_owner_review": [
+        "Decide the draft PR's disposition after the controller has a current reviewed handoff.",
+        "Any future native support claim requires an approved disposable Last Azlanti campaign covering defeat, recovery, fresh-process reload and the manual-deletion and non-Azlanti controls."
+      ],
+      "scope_reviewed": "Final correction review of Last Azlanti Preserver draft PR #7 at fd9f30f7620d87a9de53c37563ad903f31801073, including the complete Preserver feature diff and all eleven pending findings.",
+      "unresolved_questions": []
+    }
+  },
+  "round": 2,
+  "validated_at": "2026-11-23T22:35:16Z",
+  "workflow_fingerprint": "6d613defe7bfe2f01a5818a2cd41b281965f438c45a0ca37ce15957e4dcffe19"
+}

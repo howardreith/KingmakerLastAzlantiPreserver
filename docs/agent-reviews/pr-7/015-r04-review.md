@@ -1,0 +1,344 @@
+<!-- agent-review:v1 enrollment=klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01 key=r04-review part=1/1 sha256=6a1afc8c04cb54d5050671f206cdd7cb56eecc6919b16dab6fc4476f4372cb68 -->
+### Codex GPT-6.2 Astra — review — round 4 — candidate `2db8f79bc2`
+
+**Decision:** `changes_required` — The candidate passed the configured gate and the packaged DLL has the required loader references. Packaging can still accept a stale build after a material compiler change. Package and test receipts can also describe different bytes or a different loader configuration from the ones checked.
+
+Continuation for Claude
+
+Keep the corrections in Preserver’s build, packaging and qualification tooling. Cover effective compiler inputs beyond the current property list. Build and validate a private replacement archive, verify its document digests, and publish it only after validation succeeds. Capture the tested DLL identity during execution. A partial qualification can report skipped tests as unrun, which avoids carrying a pass across loader or test-suite changes.
+
+Exercise the specific cases in the findings in a disposable checkout, retain the genuine v0.1.3 rejection and matching-candidate controls, and rerun the configured qualify gate on the corrected commit. Keep the existing pins, product identities and native qualification boundary. The mission permits the four native rows to be recorded as NOT RUN while the disposable fixture is unavailable.
+
+#### Findings
+
+**R1-F1** · P1 · defect · blocks readiness — Cover compiler options and file-backed inputs omitted from the build receipt
+- Location: `LoaderReferences.targets:44`; acceptance: §5, §6
+- Trigger: Change BaseAddress in the imported GamePath.props, or update a Win32Resource file outside the fingerprinted source tree while keeping its configured path.
+- Expected: A change that affects the compiler output must invalidate frozen-binary reuse. A runtime-only profile change should preserve it.
+- Actual: WriteCompilerReferenceList enumerates 38 settings and omits BaseAddress, which controls the DLL’s PE image base. It records Win32Resource as a path string with an empty digest. Replacing a valid external resource at that path changes compiler input bytes without changing the receipt. Both the production and comparison inventories use this same incomplete list.
+- Why it blocks / does not: Package.ps1 can accept the old DLL when rebuilding the selected project would produce different bytes.
+- Requested correction: Bind reuse to the effective compiler options and the contents of file-valued inputs. A conservative invalidation for unaccounted imported inputs is also sufficient. Preserve the existing control for byte-identical Managed references in another directory.
+- Requested evidence: Change BaseAddress in GamePath.props after a genuine build, then separately replace an external Win32Resource at the same path. Show that packaging refuses each old receipt and accepts each matching rebuild. Record the changed image base or resource and DLL hash.
+
+**R1-F2** · P2 · defect · blocks readiness — Bind the document fingerprint to the archived bytes
+- Location: `scripts/Package.ps1:34`; acceptance: §5, §6, §8
+- Trigger: Two packaging invocations overlap while the packaged README changes, and the second invocation replaces the first invocation’s staged copy.
+- Expected: The document fingerprint credited to a package must describe the bytes in that ZIP.
+- Actual: Package.ps1 checks the shared artifacts/staging tree at line 34, then reopens each staged file while writing the ZIP. A second package invocation can restage README.md between those operations. The validator accepts valid UTF-8 README content and checks the DLL digest. The package receipt retains the first README fingerprint.
+- Why it blocks / does not: A successful package receipt can identify different documentation from the archive it accompanies. Restoring the first source README can then give that archive current package credit.
+- Requested correction: Use staging private to the invocation or compute and compare the non-DLL fingerprint from the same archive snapshot that passes validation.
+- Requested evidence: In a disposable checkout, restage a different valid README after the staging comparison and before its archive read. Show that the package either contains the originally verified bytes or is refused. Keep the matching-package control.
+
+**R4-F1** · P2 · defect · blocks readiness — Capture the tested DLL identity before its output path can be reused
+- Location: `scripts/Test.ps1:34`; acceptance: §4, §6
+- Trigger: The test-output DLL is replaced after the child process exits and before Test.ps1 hashes that path.
+- Expected: The test receipt must identify the product assembly used by the running tests.
+- Actual: The runner emits test counts. After it exits, Test.ps1 prints its output and hashes the DLL currently beside the executable. If another build restores the selected DLL in that interval, tests run on a different DLL acquire the selected DLL’s digest and pass Qualify’s comparison.
+- Why it blocks / does not: The requested test stage can credit a candidate that the runner did not exercise.
+- Requested correction: Have the runner report the identity of its loaded product assembly, or keep the tested copy immutable across execution and hashing.
+- Requested evidence: Extend the existing inert-class substitution case by restoring the selected DLL after the runner exits and before the wrapper records the result. Qualification must still identify the substitute or refuse credit.
+
+**R4-F2** · P2 · defect · blocks readiness — Scope cached test results to the suite and loader that ran
+- Location: `scripts/Qualify.ps1:106`; acceptance: §6, §7, §8
+- Trigger: Keep the product DLL unchanged and switch UnityModManagerDir or change only the tests before a build-only qualification.
+- Expected: A partial qualification should credit tests only for the suite and environment that ran, or report the test stage as unrun.
+- Actual: The reuse predicate checks only the product DLL hash and passed status. With the supplied tests.json it returned true even when the configured loader hashes were missing. Test.ps1 itself requires the loader directory and uses it to resolve dependencies. The same predicate also credits old results after a test-only source change.
+- Why it blocks / does not: A build-only summary can report 84 passing tests for a configuration in which the test command cannot start, or for a suite that has since changed.
+- Requested correction: Report skipped tests as unrun, or include the tested suite and required runtime identities in the receipt and compare them before reuse.
+- Requested evidence: After a passing test run, use the same DLL for a build-only qualification with the runtime loader directory absent. Show zero current test credit. If cached test credit is retained, also exercise a test-only source change and a matching control.
+
+**R4-F3** · P2 · defect · blocks readiness — Preserve the accepted ZIP when staging validation fails
+- Location: `scripts/Package.ps1:30`; acceptance: §5, §6
+- Trigger: A validated ZIP already exists and a repository document changes during the next staging operation.
+- Expected: A rejected replacement should preserve the last validated ZIP and its matching record.
+- Actual: Package.ps1 removes the existing ZIP at line 30. The new staging check can throw at line 34 before a replacement ZIP is created. The recovery test runs Qualify -Package again, which recreates the ZIP and does not check what survived the refusal.
+- Why it blocks / does not: An ordinary packaging refusal deletes the previous validated candidate and leaves its successful package record pointing to a missing file.
+- Requested correction: Stage and validate the replacement before replacing the current ZIP and publishing its receipt.
+- Requested evidence: Start with a validated ZIP, trigger the existing document-change refusal, and verify the previous ZIP and receipt immediately afterward without repackaging.
+
+**R4-F4** · P3 · optional_polish · non-blocking — Identify the shell for the Git-blob checksum pipeline
+- Location: `docs/evidence/umm-0311/INDEX.md:12`; acceptance: §8
+- Trigger: Run the first documented verification command in the repository’s Windows PowerShell 5.1 environment.
+- Expected: Readers should know which shell can run the first checksum example verbatim.
+- Actual: In Windows PowerShell 5.1 the displayed git-to-sha256sum pipeline produced digests starting 22488ba2 and f3089682 for the two auditor exports. A native byte-preserving pipe reproduced the indexed be870827 and 93989652 digests.
+- Why it blocks / does not: The index identifies the correct bytes and also gives a byte-preserving Python recipe. This affects the first example’s usability.
+- Requested correction: Label the first pipeline for Git Bash or cmd.exe and identify the Python example for Windows PowerShell.
+- Requested evidence: The command designated for Windows PowerShell should reproduce both indexed auditor hashes.
+
+#### Prior finding assessments
+
+- **R1-F1** — `fix_rejected` — The overflow-setting control now rejects the old receipt, produces a different DLL on rebuild, and accepts the rebuilt output. The 11 recorded references also match the recorded Csc inputs. BaseAddress and external resource contents still escape the inventory.
+- **R1-F2** — `fix_rejected` — The producing-build and packaging-rule comparisons now work, and the suite catches a README change before staging completes. The shared staged files can still change between the new digest check and the archive read.
+- **R2-F3** — `fix_verified` — The two reports share a verification run ID and record binding and loader evidence. The exported controls and my in-memory checks reject older records, mixed runs and changed profiles, while the matching pair receives credit.
+- **R3-F1** — `fix_verified` — The production overwrite hook is gone and private-copy creation is within the cleanup scope. The suite records an intact caller ZIP after standalone validation and installation preview, consistent snapshot reporting during harness replacement, and cleanup after a locked-input failure.
+- **R3-F2** — `fix_verified` — Build and package resolve compiler inputs independently of the runtime loader directory. The missing-directory control built the same DLL and packaged it successfully. The managed verifier reported its missing loader prerequisite.
+- **R3-F3** — `fix_verified` — Qualify now fails when a requested stage’s recorded identity disagrees with the selected candidate. The stable substitute-DLL case exited 1, the matching run passed, and a build-only run on a changed DLL credited zero tests. R4-F1 and R4-F2 address how the new test identity is collected and reused.
+- **R3-F4** — `fix_verified` — Both verifiers check the loaded Harmony modules before crediting ownership. The one-host control recorded the baseline Harmony2 MVID and refused the second profile on a binding mismatch. Separate processes passed on the two distinct stacks.
+- **R3-F5** — `fix_verified` — The validator checks decoded emptiness. The verified level-zero fixture contained six files and an allowed directory with five compressed bytes and zero decoded bytes. It passed, while data-bearing directory controls were refused.
+- **R3-F6** — `fix_verified` — The clone starts on disposable 0.31.1. Switching to known-distinct 0.33.4 withdrew contract credit, and moving to a byte-identical baseline copy retained it.
+- **R3-F7** — `fix_verified` — The index now specifies LF Git-blob bytes and gives a raw-byte subprocess method. All 16 blob hashes matched, including both auditor sources. R4-F4 concerns the shell used for the additional pipeline example.
+
+#### Evidence assessment
+
+- **Inspected:** The mission, AGENTS.md, developer report, transcript notice, prior ledger, controller gate receipt and log, and the full 4,622-line feature diff. The supplied diff matched Git’s merge-base-to-candidate diff.; The production project and loader targets, reference acquisition, build and package receipts, standalone validator and installation preview, test runner, qualification scripts, managed verifiers, boundary fixtures and compatibility documentation.; The exported static audit reports 9 types and 25 members resolved on UMM 0.31.1, 0.32.4, owner-installed 0.33.0 and newest-selected 0.33.4. The managed profile records report four passes on frozen DLL bytes and refusal of the mismatched Harmony2 profile.
+- **Executed verification:** The controller ran Qualify.ps1 -Build -Test -VerifyContracts at the exact candidate. Its receipt and raw log agree by SHA-256. It exited 0 on a clean worktree with zero compiler warnings or errors, 84/84 tests and managed ownership checks on UMM 0.33.0 with Harmony2 2.3.6.0. The command credited a retained package.; The committed boundary report records 114 distinct passing cases on a clean clone of 363c484, including standalone acceptance of the candidate and rejection of the genuine UMM 0.33.0-compiled v0.1.3 DLL with its manifest lowered. Git history confirms that only documentation and evidence changed afterward.; I matched all 16 indexed Git-blob digests, all 42 recorded product source hashes, and the package-input and packaging-rule digests. The build, tests, package, standalone validation, static audit and profile records identify the same DLL.; I evaluated the candidate’s qualification predicates in memory against the exported records. Matching contract records received credit. A different run ID, changed loader hash and earlier core-record format each lost credit. The test predicate still returned true with the matching DLL and all three configured loader hashes missing.
+- **Source inspection only:** The omitted compiler inputs, the shared staging-directory interleaving, deletion of the previous ZIP on staging refusal, and the post-exit test DLL hash were established from the candidate source. I did not execute those build or filesystem scenarios.
+- **Required gaps:** Demonstrate stale-build refusal for the omitted compiler option and file-backed input in R1-F1.; Demonstrate that package receipts describe the archived documents and a refused replacement preserves the previous validated ZIP.; Demonstrate that the requested test stage identifies the DLL executed and that partial qualification cannot present a pass from a different test environment as current.
+- **Limitations:** The review snapshot was read-only. Only the exact-candidate gate had a controller command receipt and raw log. The controller withheld the mixed-project foreground transcript. The other run results are attributed to the committed machine-readable exports.; The full qualification export at 363c484 records a dirty worktree. The clean boundary clone records the same DLL and ZIP hashes, and the controller gate rebuilt the same DLL at the clean candidate.; Native preservation, recovery, fresh-process reload and manual-deletion controls were NOT RUN on all four loaders. No disposable game copy was available. No combined-stack run is recorded.
+
+#### Summary
+
+- **Delivered behavior:** The shipping manifest declares UMM 0.31.1. The Release DLL has SHA-256 fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248, MVID 4bcbb685-5152-4399-98e2-19fb6d19c6cd, and AssemblyRefs to UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1. The recorded six-file ZIP has SHA-256 83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc. Static and out-of-game managed observations cover all four selected loader versions.
+- **Scope reviewed:** Final checkpoint for the Preserver enrollment, including all ten pending findings, the correction commits, their directly affected consumers and the supplied validation evidence.
+- **Pending later-phase work:** none
+- **Unresolved questions:** none
+- **Remaining owner review:** Disposition of draft PR #7 after the blocking tooling findings are resolved.; Owner acceptance of disposable-campaign defeat, preservation, recovery, fresh-process reload and manual-deletion controls before any native compatibility claim.
+
+#### Provenance (controller-recorded)
+
+| | Requested | Observed |
+|---|---|---|
+| Model | `gpt-6.2-astra` | `gpt-6.2-astra` (turns ['gpt-6.2-astra']) |
+| Reasoning effort | `max` | `max` (turns ['max']) |
+| Sandbox / approvals | read-only / never | `read-only` / `never` |
+
+Owner guidance bound to this review: none.
+
+Owner amendments bound to this review: none.
+
+Codex CLI `0.170.0`, thread `01a20b09-0103-7661-b2bf-44bb87051368`, duration 788.5s, response sha256 `db44bf06ddec58d3d337c4a659ab660e07bbdb9c3dcf00e2fb90841c91fed21e`, request `klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01-r04-c60519`. Observed values come from the Codex session rollout's recorded thread settings, not from the model's own statements; the serving backend's model identity is not separately exposed.
+
+<details><summary>Complete structured review (agent-review.review.v1)</summary>
+
+```json
+{
+  "candidate_commit": "2db8f79bc293387f2bcb7769fcc1c06c9af0cd0e",
+  "checkpoint_id": "final",
+  "checkpoint_type": "final",
+  "decision": "changes_required",
+  "decision_rationale": "The candidate passed the configured gate and the packaged DLL has the required loader references. Packaging can still accept a stale build after a material compiler change. Package and test receipts can also describe different bytes or a different loader configuration from the ones checked.\n\nContinuation for Claude\n\nKeep the corrections in Preserver\u2019s build, packaging and qualification tooling. Cover effective compiler inputs beyond the current property list. Build and validate a private replacement archive, verify its document digests, and publish it only after validation succeeds. Capture the tested DLL identity during execution. A partial qualification can report skipped tests as unrun, which avoids carrying a pass across loader or test-suite changes.\n\nExercise the specific cases in the findings in a disposable checkout, retain the genuine v0.1.3 rejection and matching-candidate controls, and rerun the configured qualify gate on the corrected commit. Keep the existing pins, product identities and native qualification boundary. The mission permits the four native rows to be recorded as NOT RUN while the disposable fixture is unavailable.",
+  "evidence_assessment": {
+    "executed_verification": [
+      "The controller ran Qualify.ps1 -Build -Test -VerifyContracts at the exact candidate. Its receipt and raw log agree by SHA-256. It exited 0 on a clean worktree with zero compiler warnings or errors, 84/84 tests and managed ownership checks on UMM 0.33.0 with Harmony2 2.3.6.0. The command credited a retained package.",
+      "The committed boundary report records 114 distinct passing cases on a clean clone of 363c484, including standalone acceptance of the candidate and rejection of the genuine UMM 0.33.0-compiled v0.1.3 DLL with its manifest lowered. Git history confirms that only documentation and evidence changed afterward.",
+      "I matched all 16 indexed Git-blob digests, all 42 recorded product source hashes, and the package-input and packaging-rule digests. The build, tests, package, standalone validation, static audit and profile records identify the same DLL.",
+      "I evaluated the candidate\u2019s qualification predicates in memory against the exported records. Matching contract records received credit. A different run ID, changed loader hash and earlier core-record format each lost credit. The test predicate still returned true with the matching DLL and all three configured loader hashes missing."
+    ],
+    "inspected": [
+      "The mission, AGENTS.md, developer report, transcript notice, prior ledger, controller gate receipt and log, and the full 4,622-line feature diff. The supplied diff matched Git\u2019s merge-base-to-candidate diff.",
+      "The production project and loader targets, reference acquisition, build and package receipts, standalone validator and installation preview, test runner, qualification scripts, managed verifiers, boundary fixtures and compatibility documentation.",
+      "The exported static audit reports 9 types and 25 members resolved on UMM 0.31.1, 0.32.4, owner-installed 0.33.0 and newest-selected 0.33.4. The managed profile records report four passes on frozen DLL bytes and refusal of the mismatched Harmony2 profile."
+    ],
+    "limitations": [
+      "The review snapshot was read-only. Only the exact-candidate gate had a controller command receipt and raw log. The controller withheld the mixed-project foreground transcript. The other run results are attributed to the committed machine-readable exports.",
+      "The full qualification export at 363c484 records a dirty worktree. The clean boundary clone records the same DLL and ZIP hashes, and the controller gate rebuilt the same DLL at the clean candidate.",
+      "Native preservation, recovery, fresh-process reload and manual-deletion controls were NOT RUN on all four loaders. No disposable game copy was available. No combined-stack run is recorded."
+    ],
+    "required_gaps": [
+      "Demonstrate stale-build refusal for the omitted compiler option and file-backed input in R1-F1.",
+      "Demonstrate that package receipts describe the archived documents and a refused replacement preserves the previous validated ZIP.",
+      "Demonstrate that the requested test stage identifies the DLL executed and that partial qualification cannot present a pass from a different test environment as current."
+    ],
+    "source_inspection_only": [
+      "The omitted compiler inputs, the shared staging-directory interleaving, deletion of the previous ZIP on staging refusal, and the post-exit test DLL hash were established from the candidate source. I did not execute those build or filesystem scenarios."
+    ]
+  },
+  "findings": [
+    {
+      "acceptance_ids": [
+        "\u00a75",
+        "\u00a76"
+      ],
+      "actual": "WriteCompilerReferenceList enumerates 38 settings and omits BaseAddress, which controls the DLL\u2019s PE image base. It records Win32Resource as a path string with an empty digest. Replacing a valid external resource at that path changes compiler input bytes without changing the receipt. Both the production and comparison inventories use this same incomplete list.",
+      "blocking_rationale": "Package.ps1 can accept the old DLL when rebuilding the selected project would produce different bytes.",
+      "blocks_readiness": true,
+      "category": "defect",
+      "expected": "A change that affects the compiler output must invalidate frozen-binary reuse. A runtime-only profile change should preserve it.",
+      "id": "R1-F1",
+      "location": {
+        "file": "LoaderReferences.targets",
+        "line": 44
+      },
+      "priority": "P1",
+      "requested_correction": "Bind reuse to the effective compiler options and the contents of file-valued inputs. A conservative invalidation for unaccounted imported inputs is also sufficient. Preserve the existing control for byte-identical Managed references in another directory.",
+      "requested_evidence": "Change BaseAddress in GamePath.props after a genuine build, then separately replace an external Win32Resource at the same path. Show that packaging refuses each old receipt and accepts each matching rebuild. Record the changed image base or resource and DLL hash.",
+      "title": "Cover compiler options and file-backed inputs omitted from the build receipt",
+      "trigger": "Change BaseAddress in the imported GamePath.props, or update a Win32Resource file outside the fingerprinted source tree while keeping its configured path."
+    },
+    {
+      "acceptance_ids": [
+        "\u00a75",
+        "\u00a76",
+        "\u00a78"
+      ],
+      "actual": "Package.ps1 checks the shared artifacts/staging tree at line 34, then reopens each staged file while writing the ZIP. A second package invocation can restage README.md between those operations. The validator accepts valid UTF-8 README content and checks the DLL digest. The package receipt retains the first README fingerprint.",
+      "blocking_rationale": "A successful package receipt can identify different documentation from the archive it accompanies. Restoring the first source README can then give that archive current package credit.",
+      "blocks_readiness": true,
+      "category": "defect",
+      "expected": "The document fingerprint credited to a package must describe the bytes in that ZIP.",
+      "id": "R1-F2",
+      "location": {
+        "file": "scripts/Package.ps1",
+        "line": 34
+      },
+      "priority": "P2",
+      "requested_correction": "Use staging private to the invocation or compute and compare the non-DLL fingerprint from the same archive snapshot that passes validation.",
+      "requested_evidence": "In a disposable checkout, restage a different valid README after the staging comparison and before its archive read. Show that the package either contains the originally verified bytes or is refused. Keep the matching-package control.",
+      "title": "Bind the document fingerprint to the archived bytes",
+      "trigger": "Two packaging invocations overlap while the packaged README changes, and the second invocation replaces the first invocation\u2019s staged copy."
+    },
+    {
+      "acceptance_ids": [
+        "\u00a74",
+        "\u00a76"
+      ],
+      "actual": "The runner emits test counts. After it exits, Test.ps1 prints its output and hashes the DLL currently beside the executable. If another build restores the selected DLL in that interval, tests run on a different DLL acquire the selected DLL\u2019s digest and pass Qualify\u2019s comparison.",
+      "blocking_rationale": "The requested test stage can credit a candidate that the runner did not exercise.",
+      "blocks_readiness": true,
+      "category": "defect",
+      "expected": "The test receipt must identify the product assembly used by the running tests.",
+      "id": "R4-F1",
+      "location": {
+        "file": "scripts/Test.ps1",
+        "line": 34
+      },
+      "priority": "P2",
+      "requested_correction": "Have the runner report the identity of its loaded product assembly, or keep the tested copy immutable across execution and hashing.",
+      "requested_evidence": "Extend the existing inert-class substitution case by restoring the selected DLL after the runner exits and before the wrapper records the result. Qualification must still identify the substitute or refuse credit.",
+      "title": "Capture the tested DLL identity before its output path can be reused",
+      "trigger": "The test-output DLL is replaced after the child process exits and before Test.ps1 hashes that path."
+    },
+    {
+      "acceptance_ids": [
+        "\u00a76",
+        "\u00a77",
+        "\u00a78"
+      ],
+      "actual": "The reuse predicate checks only the product DLL hash and passed status. With the supplied tests.json it returned true even when the configured loader hashes were missing. Test.ps1 itself requires the loader directory and uses it to resolve dependencies. The same predicate also credits old results after a test-only source change.",
+      "blocking_rationale": "A build-only summary can report 84 passing tests for a configuration in which the test command cannot start, or for a suite that has since changed.",
+      "blocks_readiness": true,
+      "category": "defect",
+      "expected": "A partial qualification should credit tests only for the suite and environment that ran, or report the test stage as unrun.",
+      "id": "R4-F2",
+      "location": {
+        "file": "scripts/Qualify.ps1",
+        "line": 106
+      },
+      "priority": "P2",
+      "requested_correction": "Report skipped tests as unrun, or include the tested suite and required runtime identities in the receipt and compare them before reuse.",
+      "requested_evidence": "After a passing test run, use the same DLL for a build-only qualification with the runtime loader directory absent. Show zero current test credit. If cached test credit is retained, also exercise a test-only source change and a matching control.",
+      "title": "Scope cached test results to the suite and loader that ran",
+      "trigger": "Keep the product DLL unchanged and switch UnityModManagerDir or change only the tests before a build-only qualification."
+    },
+    {
+      "acceptance_ids": [
+        "\u00a75",
+        "\u00a76"
+      ],
+      "actual": "Package.ps1 removes the existing ZIP at line 30. The new staging check can throw at line 34 before a replacement ZIP is created. The recovery test runs Qualify -Package again, which recreates the ZIP and does not check what survived the refusal.",
+      "blocking_rationale": "An ordinary packaging refusal deletes the previous validated candidate and leaves its successful package record pointing to a missing file.",
+      "blocks_readiness": true,
+      "category": "defect",
+      "expected": "A rejected replacement should preserve the last validated ZIP and its matching record.",
+      "id": "R4-F3",
+      "location": {
+        "file": "scripts/Package.ps1",
+        "line": 30
+      },
+      "priority": "P2",
+      "requested_correction": "Stage and validate the replacement before replacing the current ZIP and publishing its receipt.",
+      "requested_evidence": "Start with a validated ZIP, trigger the existing document-change refusal, and verify the previous ZIP and receipt immediately afterward without repackaging.",
+      "title": "Preserve the accepted ZIP when staging validation fails",
+      "trigger": "A validated ZIP already exists and a repository document changes during the next staging operation."
+    },
+    {
+      "acceptance_ids": [
+        "\u00a78"
+      ],
+      "actual": "In Windows PowerShell 5.1 the displayed git-to-sha256sum pipeline produced digests starting 22488ba2 and f3089682 for the two auditor exports. A native byte-preserving pipe reproduced the indexed be870827 and 93989652 digests.",
+      "blocking_rationale": "The index identifies the correct bytes and also gives a byte-preserving Python recipe. This affects the first example\u2019s usability.",
+      "blocks_readiness": false,
+      "category": "optional_polish",
+      "expected": "Readers should know which shell can run the first checksum example verbatim.",
+      "id": "R4-F4",
+      "location": {
+        "file": "docs/evidence/umm-0311/INDEX.md",
+        "line": 12
+      },
+      "priority": "P3",
+      "requested_correction": "Label the first pipeline for Git Bash or cmd.exe and identify the Python example for Windows PowerShell.",
+      "requested_evidence": "The command designated for Windows PowerShell should reproduce both indexed auditor hashes.",
+      "title": "Identify the shell for the Git-blob checksum pipeline",
+      "trigger": "Run the first documented verification command in the repository\u2019s Windows PowerShell 5.1 environment."
+    }
+  ],
+  "prior_finding_assessments": [
+    {
+      "assessment": "fix_rejected",
+      "finding_id": "R1-F1",
+      "rationale": "The overflow-setting control now rejects the old receipt, produces a different DLL on rebuild, and accepts the rebuilt output. The 11 recorded references also match the recorded Csc inputs. BaseAddress and external resource contents still escape the inventory."
+    },
+    {
+      "assessment": "fix_rejected",
+      "finding_id": "R1-F2",
+      "rationale": "The producing-build and packaging-rule comparisons now work, and the suite catches a README change before staging completes. The shared staged files can still change between the new digest check and the archive read."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R2-F3",
+      "rationale": "The two reports share a verification run ID and record binding and loader evidence. The exported controls and my in-memory checks reject older records, mixed runs and changed profiles, while the matching pair receives credit."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F1",
+      "rationale": "The production overwrite hook is gone and private-copy creation is within the cleanup scope. The suite records an intact caller ZIP after standalone validation and installation preview, consistent snapshot reporting during harness replacement, and cleanup after a locked-input failure."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F2",
+      "rationale": "Build and package resolve compiler inputs independently of the runtime loader directory. The missing-directory control built the same DLL and packaged it successfully. The managed verifier reported its missing loader prerequisite."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F3",
+      "rationale": "Qualify now fails when a requested stage\u2019s recorded identity disagrees with the selected candidate. The stable substitute-DLL case exited 1, the matching run passed, and a build-only run on a changed DLL credited zero tests. R4-F1 and R4-F2 address how the new test identity is collected and reused."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F4",
+      "rationale": "Both verifiers check the loaded Harmony modules before crediting ownership. The one-host control recorded the baseline Harmony2 MVID and refused the second profile on a binding mismatch. Separate processes passed on the two distinct stacks."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F5",
+      "rationale": "The validator checks decoded emptiness. The verified level-zero fixture contained six files and an allowed directory with five compressed bytes and zero decoded bytes. It passed, while data-bearing directory controls were refused."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F6",
+      "rationale": "The clone starts on disposable 0.31.1. Switching to known-distinct 0.33.4 withdrew contract credit, and moving to a byte-identical baseline copy retained it."
+    },
+    {
+      "assessment": "fix_verified",
+      "finding_id": "R3-F7",
+      "rationale": "The index now specifies LF Git-blob bytes and gives a raw-byte subprocess method. All 16 blob hashes matched, including both auditor sources. R4-F4 concerns the shell used for the additional pipeline example."
+    }
+  ],
+  "request_id": "klap-umm0311-codex-umm-0311-baseline-20261123-20261123162452-aa01-r04-c60519",
+  "round": 4,
+  "schema_version": "agent-review.review.v1",
+  "summary": {
+    "delivered_behavior": "The shipping manifest declares UMM 0.31.1. The Release DLL has SHA-256 fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248, MVID 4bcbb685-5152-4399-98e2-19fb6d19c6cd, and AssemblyRefs to UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1. The recorded six-file ZIP has SHA-256 83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc. Static and out-of-game managed observations cover all four selected loader versions.",
+    "pending_later_phase_work": [],
+    "remaining_owner_review": [
+      "Disposition of draft PR #7 after the blocking tooling findings are resolved.",
+      "Owner acceptance of disposable-campaign defeat, preservation, recovery, fresh-process reload and manual-deletion controls before any native compatibility claim."
+    ],
+    "scope_reviewed": "Final checkpoint for the Preserver enrollment, including all ten pending findings, the correction commits, their directly affected consumers and the supplied validation evidence.",
+    "unresolved_questions": []
+  }
+}
+```
+</details>
+
+_Model-generated review by Codex using the requested model, posted by the agent-review controller through the owner's GitHub account. Not a human review or approval._
