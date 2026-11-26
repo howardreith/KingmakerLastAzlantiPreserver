@@ -39,7 +39,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Package.ps1 -Configuration Release
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Validate-Package.ps1 `
-  -PackagePath .\artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip
+  -PackagePath .\artifacts\packages\KingmakerLastAzlantiPreserver-0.1.4.zip
 ```
 
 One non-runtime qualification command:
@@ -58,7 +58,7 @@ The core verifier writes `contracts.json`. The chained optional verifier writes 
 The one permitted candidate archive is:
 
 ```text
-artifacts/packages/KingmakerLastAzlantiPreserver-0.1.3.zip
+artifacts/packages/KingmakerLastAzlantiPreserver-0.1.4.zip
 ```
 
 It contains exactly one top-level `KingmakerLastAzlantiPreserver/` directory and six allowlisted files. Package validation also requires the exact branded manifest (`DisplayName` **Mr. Bard's Second to Last Azlanti**, `Author` **Mr. Bard**) together with the unchanged `Id`, `AssemblyName`, and `EntryMethod`; the expected values live in `Get-ExpectedProductManifest` in `scripts/Common.ps1`. It excludes PDBs, game/UMM/Harmony DLLs, source, settings, saves, logs, paths, and recovery data.
@@ -120,3 +120,7 @@ The published v0.1.0 and v0.1.1 tags, releases, assets, and checksums stay uncha
 ### v0.1.3
 
 v0.1.3 is published from clean `main` with the same owner-authorized pre-runtime command. The published v0.1.0, v0.1.1, and v0.1.2 tags, releases, assets, and checksums stay unchanged.
+
+### v0.1.4
+
+v0.1.4 publishes the UMM 0.31.1 loader baseline (PR #7, merged to `main` at `abe1b4b5e429aa5ed09b4bffe4b4abab3944935d`) from a fresh clone of clean `main` with the same owner-authorized pre-runtime command, authorized on 2026-11-26. The published v0.1.0 through v0.1.3 tags, releases, assets, and checksums stay unchanged.

@@ -114,7 +114,7 @@ function Get-ExpectedProductManifest {
         Id = 'KingmakerLastAzlantiPreserver'
         DisplayName = "Mr. Bard's Second to Last Azlanti"
         Author = 'Mr. Bard'
-        Version = '0.1.3'
+        Version = '0.1.4'
         ManagerVersion = '0.31.1'
         AssemblyName = 'KingmakerLastAzlantiPreserver.dll'
         EntryMethod = 'KingmakerLastAzlantiPreserver.Main.Load'
@@ -138,7 +138,7 @@ function Assert-RepositorySafety {
     if ($info.Id -ne 'KingmakerLastAzlantiPreserver' -or
         $info.AssemblyName -ne 'KingmakerLastAzlantiPreserver.dll' -or
         $info.EntryMethod -ne 'KingmakerLastAzlantiPreserver.Main.Load' -or
-        $info.Version -ne '0.1.3') {
+        $info.Version -ne '0.1.4') {
         throw 'Info.json product identity is inconsistent.'
     }
     Assert-ProductManifest $info 'Info.json'

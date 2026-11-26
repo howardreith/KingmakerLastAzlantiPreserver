@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4 - 2026-11-26
+
+- Declared Unity Mod Manager minimum lowered to **0.31.1** (0.1.3 required 0.33.0). The DLL is compiled against hash-pinned UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1 references; the build and package checks refuse a DLL compiled against any other UnityModManager.
+- Preservation, game-over loading, recovery, settings and the settings panel are unchanged from 0.1.3.
+- Owner-authorized stable release, **not runtime-qualified**: native gameplay and combined mod-stack runs were not performed, and the **MANUAL RUNTIME TEST REQUIRED** boundary still applies.
+
 ## 0.1.3 - 2026-10-15
 
 - Cleaner Unity Mod Manager settings panel: three plainly labelled settings, a one-line note that Last Azlanti's normal saving restrictions remain unchanged, and a short Ready/Off/Unavailable status for save protection, game-over loading, and the recovery backup. The duplicate name/version heading is gone.

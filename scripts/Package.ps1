@@ -14,7 +14,7 @@ $packageInputs = Get-PackageInputFingerprint
 $packageRules = Get-PackageRuleFingerprint
 
 $packageDirectory = Join-Path $root 'artifacts\packages'
-$zipPath = Join-Path $packageDirectory 'KingmakerLastAzlantiPreserver-0.1.3.zip'
+$zipPath = Join-Path $packageDirectory 'KingmakerLastAzlantiPreserver-0.1.4.zip'
 Assert-PathWithin $zipPath $root 'Package path'
 # Staging, the new archive and its validation report live in a folder private to this invocation. The accepted ZIP and
 # its records are replaced only after the new archive passed validation and its archived documents match the repository
@@ -34,7 +34,7 @@ try {
 
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $newZip = Join-Path $private 'KingmakerLastAzlantiPreserver-0.1.3.zip'
+    $newZip = Join-Path $private 'KingmakerLastAzlantiPreserver-0.1.4.zip'
     $zipStream = [IO.File]::Open($newZip, [IO.FileMode]::CreateNew, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
     try {
         $archive = [IO.Compression.ZipArchive]::new($zipStream, [IO.Compression.ZipArchiveMode]::Create, $true)

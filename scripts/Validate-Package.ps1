@@ -104,7 +104,7 @@ try {
             throw "Archived DLL SHA-256 $dllSha256 does not match the build receipt's $ExpectedDllSha256."
         }
         $assemblyName = [Reflection.AssemblyName]::GetAssemblyName($temporaryDll)
-        if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.3.0') {
+        if ($assemblyName.Name -ne 'KingmakerLastAzlantiPreserver' -or $assemblyName.Version.ToString() -ne '0.1.4.0') {
             throw "Packaged assembly identity is invalid: $($assemblyName.FullName)"
         }
     }

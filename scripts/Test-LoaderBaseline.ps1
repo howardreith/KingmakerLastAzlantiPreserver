@@ -702,6 +702,10 @@ try {
         $t = Get-ZipEntryText $a "$modFolder/Info.json"
         $c = $t -replace '"ManagerVersion":\s*"[0-9.]+"', '"ManagerVersion": "0.31.1"'
         if ($c -eq $t) { throw 'Legacy manifest was not lowered.' }
+        # Only the manifest is edited: it also names the current product version, so the validator's manifest identity
+        # check passes and the refusal must come from the genuine legacy DLL's UnityModManager 0.33.0 reference.
+        $currentProductVersion = [string](Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot '..\Info.json') | ConvertFrom-Json).Version
+        $c = $c -replace '"Version":\s*"[0-9A-Za-z.+-]+"', ('"Version": "' + $currentProductVersion + '"')
         Set-ZipEntryText $a "$modFolder/Info.json" $c }
     Expect-Rejected 'package-legacy-0.33.0-dll-with-lowered-manifest-rejected' (& $v $lowered) 'must reference pinned UnityModManager 0\.31\.1\.0'
     foreach ($order in @(@($candidateZip, $lowered), @($lowered, $candidateZip))) {
@@ -728,17 +732,17 @@ try {
     $q = Invoke-Isolated @('-File', $qualify, '-Package')
     if (-not (Test-Path -LiteralPath $summaryPath)) { throw "Qualify -Package wrote no summary (exit $($q.ExitCode)): $($q.Output)" }
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
-    Add-Case 'qualify-credits-current-package' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip"))) ("package_validation $($qs.package_validation); package $($qs.package_sha256)")
+    Add-Case 'qualify-credits-current-package' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.4.zip"))) ("package_validation $($qs.package_validation); package $($qs.package_sha256)")
     # A standalone validation of another archive never writes the published validation receipt (Package.ps1 owns it), so
     # Qualify still credits exactly the published package and nothing of the other archive.
     $publishedReceiptBefore = Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')
     $otherValidation = Invoke-Isolated @('-File', $validator, '-PackagePath', $secondZip)
     $q = Invoke-Isolated @('-File', $qualify)
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
-    Add-Case 'qualify-ignores-validation-of-another-zip' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Validation report not written' -and (Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore -and $q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip")) -and $qs.package_sha256 -ne (Get-Sha256 $secondZip)) ("after validating the changed-source ZIP $(Get-Sha256 $secondZip): published receipt unchanged $((Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore); package_validation '$($qs.package_validation)' for $($qs.package_sha256)")
-    Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip") -Force
+    Add-Case 'qualify-ignores-validation-of-another-zip' ($otherValidation.ExitCode -eq 0 -and $otherValidation.Output -match 'Validation report not written' -and (Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore -and $q.ExitCode -eq 0 -and $qs.package_validation -eq 'passed' -and $qs.package_sha256 -eq (Get-Sha256 (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.4.zip")) -and $qs.package_sha256 -ne (Get-Sha256 $secondZip)) ("after validating the changed-source ZIP $(Get-Sha256 $secondZip): published receipt unchanged $((Get-Sha256 (Join-Path $base 'artifacts\qualification\package-validation.json')) -ceq $publishedReceiptBefore); package_validation '$($qs.package_validation)' for $($qs.package_sha256)")
+    Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.4.zip") -Force
     Invoke-Isolated @('-File', $qualify, '-Package') | Out-Null
-    Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip") -Force
+    Copy-Item -LiteralPath $secondZip -Destination (Join-Path $base "artifacts\packages\KingmakerLastAzlantiPreserver-0.1.4.zip") -Force
     $q = Invoke-Isolated @('-File', $qualify)
     $qs = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
     Add-Case 'qualify-ignores-replaced-zip-on-disk' ($q.ExitCode -eq 0 -and $qs.package_validation -eq 'not run for the current DLL') ("ZIP replaced after packaging: package_validation '$($qs.package_validation)'")
@@ -790,7 +794,7 @@ try {
     & git -C $base checkout -q -- scripts/Validate-Package.ps1
     # A packaged document changed during staging (by a disposable instrumented Package.ps1) is refused before archiving.
     $stagingEdit = New-InstrumentedScript 'Package' '$packageRules = Get-PackageRuleFingerprint' ('[IO.File]::AppendAllText((Join-Path $root ''README.md''), "`r`n<!-- edited during staging -->`r`n")')
-    $acceptedZip = Join-Path $base 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.3.zip'
+    $acceptedZip = Join-Path $base 'artifacts\packages\KingmakerLastAzlantiPreserver-0.1.4.zip'
     $acceptedRecords = @($acceptedZip, (Join-Path $base 'artifacts\qualification\package.json'), (Join-Path $base 'artifacts\qualification\package-validation.json'))
     $before = @($acceptedRecords | ForEach-Object { if (Test-Path -LiteralPath $_) { Get-Sha256 $_ } else { 'missing' } }) -join ';'
     Expect-Rejected 'package-document-changed-during-staging-rejected' (Invoke-Isolated @('-File', $stagingEdit)) 'changed during staging'
