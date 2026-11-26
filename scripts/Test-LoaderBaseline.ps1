@@ -702,6 +702,10 @@ try {
         $t = Get-ZipEntryText $a "$modFolder/Info.json"
         $c = $t -replace '"ManagerVersion":\s*"[0-9.]+"', '"ManagerVersion": "0.31.1"'
         if ($c -eq $t) { throw 'Legacy manifest was not lowered.' }
+        # Only the manifest is edited: it also names the current product version, so the validator's manifest identity
+        # check passes and the refusal must come from the genuine legacy DLL's UnityModManager 0.33.0 reference.
+        $currentProductVersion = [string](Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot '..\Info.json') | ConvertFrom-Json).Version
+        $c = $c -replace '"Version":\s*"[0-9A-Za-z.+-]+"', ('"Version": "' + $currentProductVersion + '"')
         Set-ZipEntryText $a "$modFolder/Info.json" $c }
     Expect-Rejected 'package-legacy-0.33.0-dll-with-lowered-manifest-rejected' (& $v $lowered) 'must reference pinned UnityModManager 0\.31\.1\.0'
     foreach ($order in @(@($candidateZip, $lowered), @($lowered, $candidateZip))) {
