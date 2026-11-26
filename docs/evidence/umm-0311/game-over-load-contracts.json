@@ -1,0 +1,143 @@
+{
+    "status":  "passed",
+    "target":  "Pathfinder: Kingmaker 2.1.7b",
+    "assembly_csharp":  {
+                            "path":  "<game>\\Kingmaker_Data\\Managed\\Assembly-CSharp.dll",
+                            "identity":  "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                            "sha256":  "3b6450ffec440e296e586f71c711b195aed144b28d53e1cbb29406d18fef5afb",
+                            "mvid":  "07fa1e4d-8618-41b3-9b8d-faa17d3b26f7"
+                        },
+    "unity_mod_manager":  {
+                              "path":  "<game>\\Kingmaker_Data\\Managed\\UnityModManager\\UnityModManager.dll",
+                              "identity":  "UnityModManager, Version=0.33.0.0, Culture=neutral, PublicKeyToken=null",
+                              "sha256":  "63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691",
+                              "mvid":  "54059519-2754-445a-b5ee-fdb9326336e2"
+                          },
+    "loader_profile":  "0.33.0.0",
+    "verification_run_id":  "e78d0f22d22744dc83b33bc5bddbd262",
+    "harmony2":  {
+                     "path":  "<game>\\Kingmaker_Data\\Managed\\UnityModManager\\0Harmony.dll",
+                     "identity":  "0Harmony, Version=2.3.6.0, Culture=neutral, PublicKeyToken=null",
+                     "sha256":  "df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80",
+                     "loaded_location":  "<game>\\Kingmaker_Data\\Managed\\UnityModManager\\0Harmony.dll",
+                     "loaded_mvid":  "4dbb7cd6-acb5-43ef-8d7e-6fc104af5bdc"
+                 },
+    "mod_dll":  {
+                    "path":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+                    "sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
+                    "loaded_location":  "<repo>\\artifacts\\bin\\Release\\KingmakerLastAzlantiPreserver\\KingmakerLastAzlantiPreserver.dll",
+                    "loaded_mvid":  "4bcbb685-5152-4399-98e2-19fb6d19c6cd"
+                },
+    "legacy_harmony":  {
+                           "path":  "<game>\\Kingmaker_Data\\Managed\\UnityModManager\\0Harmony12.dll",
+                           "identity":  "0Harmony12, Version=1.2.0.1, Culture=neutral, PublicKeyToken=null",
+                           "sha256":  "aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292",
+                           "mvid":  "918c071f-383e-46dc-a374-6879300cbe15"
+                       },
+    "exact_ui_contract":  {
+                              "legacy_type":  "Kingmaker.UI.EndlessGameOver.EndlessGameOverView",
+                              "legacy_lifecycle":  "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.PreShow()",
+                              "patched_lifecycle":  "Kingmaker.UI.Canvases.GameOverCanvas.PreShow()",
+                              "exact_endless_view_field":  "Kingmaker.UI.Canvases.GameOverCanvas.m_EndlessGameOverView : Kingmaker.UI.EndlessGameOver.EndlessGameOverView",
+                              "legacy_fields":  [
+                                                    "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.m_LoadLastSaveButton : UnityEngine.UI.Button",
+                                                    "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.m_LoadGameButton : UnityEngine.UI.Button"
+                                                ],
+                              "legacy_callbacks":  [
+                                                       "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnLoadLastSave()",
+                                                       "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnLoadGame()",
+                                                       "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnRestartGame()",
+                                                       "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnMainMenu()"
+                                                   ],
+                              "controller_type":  "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm",
+                              "controller_lifecycle":  "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm..ctor()",
+                              "controller_fields":  [
+                                                        "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.LoadLastSaveVm : Kingmaker.UI._ConsoleUI.ContextMenu.ContextMenuEntityVM",
+                                                        "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.LoadVm : Kingmaker.UI._ConsoleUI.ContextMenu.ContextMenuEntityVM"
+                                                    ],
+                              "controller_predicates":  [
+                                                            "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm+\u003c\u003ec__DisplayClass4_0.\u003c.ctor\u003eb__2()",
+                                                            "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm+\u003c\u003ec__DisplayClass4_0.\u003c.ctor\u003eb__4()"
+                                                        ],
+                              "controller_callbacks":  [
+                                                           "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonLoadLastSave()",
+                                                           "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonLoad()",
+                                                           "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonNewGame()",
+                                                           "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonMainMenu()",
+                                                           "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.DisposeImplementation()"
+                                                       ],
+                              "native_load":  "Kingmaker.Game.LoadGame(Kingmaker.EntitySystem.Persistence.SaveInfo)",
+                              "game_mode_entry":  "Kingmaker.Game.DoStartMode(Kingmaker.GameModes.GameModeType)",
+                              "game_mode_notification":  "Kingmaker.Game.HandleGameModeChanged(Kingmaker.GameModes.GameModeType, Kingmaker.GameModes.GameModeType)",
+                              "game_over_view_dispatch":  "Kingmaker.UI.Canvases.BaseGameOverCanvas.OnGameModeStart(Kingmaker.GameModes.GameModeType)",
+                              "verified_il_relationships":  [
+                                                                "EndlessGameOverView.PreShow -\u003e SettingsRoot.Instance.OnlyOneSave.CurrentValue",
+                                                                "EndlessGameOverView.PreShow -\u003e m_LoadLastSaveButton/m_LoadGameButton -\u003e UnityEngine.UI.Button.interactable",
+                                                                "EndlessGameOverView.PreShow -\u003e SaveManager.GetLatestSave(DlcType.Endless)",
+                                                                "EndlessGameOverView.OnLoadLastSave -\u003e SaveManager.GetLatestSave(DlcType) -\u003e Game.LoadGame(SaveInfo)",
+                                                                "EndlessGameOverView.OnLoadGame generated callback -\u003e ISaveLoadWindowUIHandler.HandleOpenSaveLoadWindow(ScreenType)",
+                                                                "EndlessGameOverMenuPartVm constructor -\u003e OnlyOneSave/canLoad/LoadLastSaveVm/LoadVm",
+                                                                "Endless console load predicates -\u003e canLoad, with load-last also selecting GetLatestSave(DlcType.Endless)",
+                                                                "EndlessGameOverMenuPartVm.OnButtonLoadLastSave -\u003e SaveManager.GetLatestSave() -\u003e Game.LoadGame(SaveInfo)",
+                                                                "EndlessGameOverMenuPartVm.OnButtonLoad generated callback -\u003e ISaveLoadManagerUIHandler.HandleOpen(mode, bool)",
+                                                                "GameOverCanvas.PreShow -\u003e EndlessGameOverView.PreShow",
+                                                                "GameOverCanvas.IsEndless -\u003e Game.Player.StartPreset.DlcCampaign",
+                                                                "Game.DoStartMode -\u003e create/push current mode -\u003e OnStart -\u003e OnActivate -\u003e HandleGameModeChanged",
+                                                                "HandleGameModeChanged -\u003e IGameModeHandler.OnGameModeStart -\u003e BaseGameOverCanvas.PreShow",
+                                                                "SaveLoadWindow.HandleHardcodeMainMenuSaveLoad -\u003e Game.LoadGame(SaveInfo)",
+                                                                "CommonUiLoadService.Load generated action -\u003e Game.LoadGame(SaveInfo)",
+                                                                "Native load callbacks contain no OnlyOneSave rejection guard"
+                                                            ],
+                              "patch_targets":  [
+                                                    "Kingmaker.UI.Canvases.GameOverCanvas.PreShow()",
+                                                    "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnLoadLastSave()",
+                                                    "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnLoadGame()",
+                                                    "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnRestartGame()",
+                                                    "Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnMainMenu()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm..ctor()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm+\u003c\u003ec__DisplayClass4_0.\u003c.ctor\u003eb__2()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm+\u003c\u003ec__DisplayClass4_0.\u003c.ctor\u003eb__4()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonLoadLastSave()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonLoad()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonNewGame()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonMainMenu()",
+                                                    "Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.DisposeImplementation()",
+                                                    "Kingmaker.Game.LoadGame(Kingmaker.EntitySystem.Persistence.SaveInfo)",
+                                                    "Kingmaker.EntitySystem.Persistence.SaveManager.DeleteSave(Kingmaker.EntitySystem.Persistence.SaveInfo)"
+                                                ]
+                          },
+    "harmony_ownership":  {
+                              "core_owner":  "KingmakerLastAzlantiPreserver.ContractVerification.Core",
+                              "core_patch_count":  5,
+                              "core_targets":  [
+                                                   "prefix: Kingmaker.Controllers.GameOverIronmanController.Activate()",
+                                                   "postfix: Kingmaker.Controllers.GameOverIronmanController.Activate()",
+                                                   "prefix: Kingmaker.Controllers.GameOverIronmanController.Deactivate()",
+                                                   "postfix: Kingmaker.GameModes.GameMode.OnActivate()",
+                                                   "prefix: Kingmaker.EntitySystem.Persistence.SaveManager.DeleteSave(Kingmaker.EntitySystem.Persistence.SaveInfo)"
+                                               ],
+                              "optional_owner":  "KingmakerLastAzlantiPreserver.ContractVerification.GameOverLoadControls",
+                              "optional_patch_count":  15,
+                              "optional_targets":  [
+                                                       "postfix: Kingmaker.UI.Canvases.GameOverCanvas.PreShow()",
+                                                       "prefix: Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnLoadLastSave()",
+                                                       "prefix: Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnLoadGame()",
+                                                       "prefix: Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnRestartGame()",
+                                                       "prefix: Kingmaker.UI.EndlessGameOver.EndlessGameOverView.OnMainMenu()",
+                                                       "postfix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm..ctor()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm+\u003c\u003ec__DisplayClass4_0.\u003c.ctor\u003eb__2()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm+\u003c\u003ec__DisplayClass4_0.\u003c.ctor\u003eb__4()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonLoadLastSave()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonLoad()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonNewGame()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.OnButtonMainMenu()",
+                                                       "prefix: Kingmaker.UI._ConsoleUI.Endless.GameOver.EndlessGameOverMenuPartVm.DisposeImplementation()",
+                                                       "prefix: Kingmaker.Game.LoadGame(Kingmaker.EntitySystem.Persistence.SaveInfo)",
+                                                       "postfix: Kingmaker.EntitySystem.Persistence.SaveManager.DeleteSave(Kingmaker.EntitySystem.Persistence.SaveInfo)"
+                                                   ],
+                              "core_owned_after_application":  true,
+                              "optional_owned_after_application":  true,
+                              "optional_unpatch_removed_only_optional_owner":  true,
+                              "core_owned_after_optional_unpatch":  true
+                          }
+}

@@ -1,18 +1,25 @@
 [CmdletBinding()]
 param(
     [string] $GamePathProps,
-    [string] $OutputPath = 'artifacts\qualification\contracts.json'
+    [string] $OutputPath = 'artifacts\qualification\contracts.json',
+    # The candidate DLL to verify (Qualify.ps1 passes the selected configuration's DLL); default: the Release DLL.
+    [string] $DllPath,
+    [string] $GameOverOutputPath = 'artifacts\qualification\game-over-load-contracts.json',
+    # Shared by both reports of one verification, so a qualification summary can pair them.
+    [string] $VerificationRunId = ([Guid]::NewGuid().ToString('N'))
 )
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-RepositoryRoot
 if (-not $GamePathProps) { $GamePathProps = Join-Path $root 'GamePath.props' }
 $configuration = Get-KingmakerConfiguration $GamePathProps
+if (-not $DllPath) { $DllPath = Join-Path $root 'artifacts\bin\Release\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll' }
+$DllPath = [IO.Path]::GetFullPath($DllPath)
 $assemblyPath = Join-Path $configuration.ManagedDir 'Assembly-CSharp.dll'
 $resolverDirectories = @(
     $configuration.ManagedDir,
     $configuration.UnityModManagerDir,
-    (Join-Path $root 'artifacts\bin\Release\KingmakerLastAzlantiPreserver')
+    (Split-Path -Parent $DllPath)
 )
 $resolver = [ResolveEventHandler]{
     param($sender, $eventArgs)
@@ -157,12 +164,14 @@ try {
         throw "Unexpected game-over DeleteSave callers: $($gameOverCallers -join ', ')"
     }
 
+    $modAssembly = $null
     $patchOwnership = 'not-attempted'
     $activateReplacementKind = 'not-attempted'
-    $modDll = Join-Path $root 'artifacts\bin\Release\KingmakerLastAzlantiPreserver\KingmakerLastAzlantiPreserver.dll'
+    $modDll = $DllPath
     if (Test-Path -LiteralPath $modDll) {
         $harmonyAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $configuration.UnityModManagerDir '0Harmony12.dll'))
         $modAssembly = [Reflection.Assembly]::LoadFrom($modDll)
+        Assert-LoadedAssemblyIs $modAssembly $modDll
         $harmonyType = $harmonyAssembly.GetType('Harmony12.HarmonyInstance', $true)
         $harmonyMethodType = $harmonyAssembly.GetType('Harmony12.HarmonyMethod', $true)
         $createHarmony = $harmonyType.GetMethod('Create', [Reflection.BindingFlags]'Public,Static')
@@ -212,6 +221,7 @@ try {
             $deleteOwners -notcontains 'KingmakerLastAzlantiPreserver.ContractVerification') {
             throw 'Harmony application completed but patch ownership was not observable.'
         }
+        Assert-LoadedLoaderStack (Join-Path $configuration.UnityModManagerDir '0Harmony12.dll') (Join-Path $configuration.UnityModManagerDir '0Harmony.dll')
         $patchOwnership = 'verified-after-application'
     }
 
@@ -235,6 +245,13 @@ try {
         explicit_ui_deletion_methods = @((Format-Method $legacyDelete), (Format-Method $injectedDelete), (Format-Method $consoleDelete))
         patch_ownership = $patchOwnership
         harmony_activate_replacement_kind = $activateReplacementKind
+        mod_dll_path = $modDll
+        mod_dll_sha256 = if (Test-Path -LiteralPath $modDll) { Get-Sha256 $modDll } else { $null }
+        mod_dll_loaded_mvid = if ($modAssembly) { $modAssembly.ManifestModule.ModuleVersionId.ToString('D') } else { $null }
+        verification_run_id = $VerificationRunId
+        unity_mod_manager_sha256 = Get-Sha256 (Join-Path $configuration.UnityModManagerDir 'UnityModManager.dll')
+        legacy_harmony_sha256 = Get-Sha256 (Join-Path $configuration.UnityModManagerDir '0Harmony12.dll')
+        harmony2_sha256 = if (Test-Path -LiteralPath (Join-Path $configuration.UnityModManagerDir '0Harmony.dll')) { Get-Sha256 (Join-Path $configuration.UnityModManagerDir '0Harmony.dll') } else { $null }
     }
     $resolvedOutput = if ([IO.Path]::IsPathRooted($OutputPath)) { $OutputPath } else { Join-Path $root $OutputPath }
     Write-JsonFile $resolvedOutput $report
@@ -244,6 +261,7 @@ try {
     Write-Host "Game-over hook: $($report.game_over_hook)"
     Write-Host "Deletion hook: $($report.deletion_hook)"
     Write-Host "Harmony ownership: $patchOwnership"
+    Write-Host "Verified mod DLL: $($report.mod_dll_path) SHA-256 $($report.mod_dll_sha256)"
 }
 finally {
     if ($harmony) {
@@ -253,4 +271,4 @@ finally {
     [AppDomain]::CurrentDomain.remove_AssemblyResolve($resolver)
 }
 
-& (Join-Path $PSScriptRoot 'Verify-GameOverLoadContracts.ps1') -GamePathProps $GamePathProps -OutputPath 'artifacts\qualification\game-over-load-contracts.json'
+& (Join-Path $PSScriptRoot 'Verify-GameOverLoadContracts.ps1') -GamePathProps $GamePathProps -OutputPath $GameOverOutputPath -DllPath $DllPath -VerificationRunId $VerificationRunId

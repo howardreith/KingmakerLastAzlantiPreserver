@@ -1,11 +1,30 @@
 # Project state
 
+## UMM 0.31.1 baseline (2026-11-23)
+
+The current development change lowers the declared minimum from 0.33.0 to
+0.31.1 and pins compilation to verified upstream 0.31.1/Harmony12 bytes.
+Direct MSBuild verifies the pins, and packaging requires a matching build receipt.
+The game-over contract verifier accepts exact hashed 0.31.1, 0.32.4 and 0.33.0
+comparison inputs; accepting an input is not a runtime pass.
+
+Measured on Windows (2026-11-23): `Qualify.ps1 -Build -Test -VerifyContracts`
+passed (Release DLL `fadf2dab…1248` compiled against UnityModManager 0.31.1.0 and
+0Harmony12 1.2.0.1, 0 warnings/errors; 84/84 tests; Kingmaker and game-over load
+contracts against the installed UMM 0.33.0 environment). Direct MSBuild also checks the
+compiler's resolved loader inputs. `scripts/Test-LoaderBaseline.ps1` passed 128/128 on the round-5 tooling `5d00290` (records in `docs/evidence/umm-0311/`),
+including rejection of the genuine 0.33.0-compiled v0.1.3 DLL with only its manifest
+lowered. A static loader API audit resolved every reference on 0.31.1, 0.32.4, 0.33.0
+and 0.33.4 (static evidence only), and `scripts/Test-LoaderProfiles.ps1` applied and removed the product's Harmony patches out of game through each of those four loader stacks (a mismatched Harmony2 was refused). Native runtime on every loader version: NOT RUN.
+Higher-loader compatibility remains unqualified. Nothing was installed or released. The released 0.1.3 ZIP is unchanged and still requires UMM 0.33.0;
+its historical build/authorization records below do not qualify this change.
+
 ## Product
 
 - Product/UMM ID/assembly: `Last Azlanti Preserver` / `KingmakerLastAzlantiPreserver` / `KingmakerLastAzlantiPreserver.dll`
 - Public display name/author since v0.1.2: `Mr. Bard's Second to Last Azlanti` / `Mr. Bard` (UMM ID, assembly, entry point, Harmony owners, install folder, settings, and recovery path unchanged)
 - Release version: `0.1.3` (owner-authorized stable release; settings-panel presentation cleanup; previous release `v0.1.2`)
-- Target: Pathfinder: Kingmaker `2.1.7b`, owner-approved UMM `0.33.0`, installed `0Harmony12`/Harmony `1.2.0.1`, .NET Framework 4.7.2, C# 7.3
+- Development target: Pathfinder: Kingmaker `2.1.7b`, pinned UMM `0.31.1`, `0Harmony12` `1.2.0.1`, .NET Framework 4.7.2, C# 7.3. The released 0.1.3 build used the owner-approved UMM `0.33.0` environment.
 - v0.1.1 feature branch: `codex/game-over-load-controls-v0.1.1` (accepted base `main` at `a65dc113b1daddc8b2903fd6d29a19cecb125aad`)
 - v0.1.2 branch: `codex/mr-bard-branding` (base `main` at `380cba2b85e6959e9c654e36e31ef4fb4c6760e7`)
 - v0.1.3 branch: `claude/settings-panel-cleanup-v0.1.3` (base `main` at `0774f603aa8429c8b93d90e166b628ae8c826551`)

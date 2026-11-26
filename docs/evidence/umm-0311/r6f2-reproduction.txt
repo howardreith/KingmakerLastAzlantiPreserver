@@ -1,0 +1,4 @@
+old reader, external folder 'one': generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs | generated:Shared.AssemblyAttributes.cs
+old reader, external folder 'two': generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs | generated:Shared.AssemblyAttributes.cs
+new reader, external folder 'one': generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs | external:Shared.AssemblyAttributes.cs@path-sha256=a4b9cecedb4f30883c3f9103dbbab8a1fd468dfc1a3e2c7c969a1b454a8fa230
+new reader, external folder 'two': generated:.NETFramework,Version=v4.7.2.AssemblyAttributes.cs | external:Shared.AssemblyAttributes.cs@path-sha256=d8718bccd3d8d43a994213b44f407c157daf148de7fd9b2d7e4201802f8c4001

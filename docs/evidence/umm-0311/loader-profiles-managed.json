@@ -1,0 +1,58 @@
+{
+    "schema":  "klap.loader-profile-contracts.v2",
+    "configuration":  "Release",
+    "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
+    "frozen_copy_verified":  true,
+    "profiles":  [
+                     {
+                         "profile":  "0.31.1",
+                         "files":  [
+                                       "UnityModManager.dll 0.31.1.0 2e038ff23ab01d538dfef792096e1f5c04802d1edac3660db20d0d54c167c2c4",
+                                       "0Harmony.dll 2.3.1.1 5f7ad0df1eb08e81f66d4006d3a9e5cb40fc05e381f36d7bd0513f334f6a251f",
+                                       "0Harmony12.dll 1.2.0.1 aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                   ],
+                         "passed":  true,
+                         "detail":  "loader profile 0.31.1.0; Harmony2 0Harmony, Version=2.3.1.1, Culture=neutral, PublicKeyToken=null; core/optional patch ownership True/True; core kept after optional unpatch True; verified DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+                     },
+                     {
+                         "profile":  "0.32.4",
+                         "files":  [
+                                       "UnityModManager.dll 0.32.4.0 1387468bc3af41c50fe51859a3bb7af4922891aa8f13a6187e7a348ceaabfd88",
+                                       "0Harmony.dll 2.3.6.0 df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80",
+                                       "0Harmony12.dll 1.2.0.1 aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                   ],
+                         "passed":  true,
+                         "detail":  "loader profile 0.32.4.0; Harmony2 0Harmony, Version=2.3.6.0, Culture=neutral, PublicKeyToken=null; core/optional patch ownership True/True; core kept after optional unpatch True; verified DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+                     },
+                     {
+                         "profile":  "0.33.4",
+                         "files":  [
+                                       "UnityModManager.dll 0.33.4.0 c5ed5617457f597d7befb272f9fe311d7128c647fd427a114c197bea13475239",
+                                       "0Harmony.dll 2.4.3.0 ddc070b57f695ece6f92c43cf82cf4d863c69685de96a99ebd9d2fa1d8fa7a19",
+                                       "0Harmony12.dll 1.2.0.1 aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                   ],
+                         "passed":  true,
+                         "detail":  "loader profile 0.33.4.0; Harmony2 0Harmony, Version=2.4.3.0, Culture=neutral, PublicKeyToken=null; core/optional patch ownership True/True; core kept after optional unpatch True; verified DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+                     },
+                     {
+                         "profile":  "mismatch-umm-0.33.4-with-harmony-2.3.6",
+                         "files":  [
+                                       "UnityModManager.dll 0.33.4.0 c5ed5617457f597d7befb272f9fe311d7128c647fd427a114c197bea13475239",
+                                       "0Harmony.dll 2.3.6.0 df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80",
+                                       "0Harmony12.dll 1.2.0.1 aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                   ],
+                         "passed":  false,
+                         "detail":  "refused: df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80) does not match that loader profile\u0027s 0Harmony"
+                     },
+                     {
+                         "profile":  "owner-0.33.0",
+                         "files":  [
+                                       "UnityModManager.dll 0.33.0.0 63e5baf7b1738e4091b5fd17ccb738ecdb4d1dbf246061dfd55dc52835d52691",
+                                       "0Harmony.dll 2.3.6.0 df043f05c6e43602fa8e8f38f52a3a2cf962aab7a65a9d85573ea25f01a63e80",
+                                       "0Harmony12.dll 1.2.0.1 aa1cd48317254985d8b700cc74953477d1b40c3022ce9aa4c95ed2b8327e1292"
+                                   ],
+                         "passed":  true,
+                         "detail":  "loader profile 0.33.0.0; Harmony2 0Harmony, Version=2.3.6.0, Culture=neutral, PublicKeyToken=null; core/optional patch ownership True/True; core kept after optional unpatch True; verified DLL fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+                     }
+                 ]
+}

@@ -25,11 +25,13 @@ $temporary = [IO.Path]::GetFullPath((Join-Path $temporaryRoot ('KingmakerLastAzl
 Assert-PathWithin $temporary $temporaryRoot 'Install staging directory'
 [IO.Directory]::CreateDirectory($temporary) | Out-Null
 try {
-    [IO.Compression.ZipFile]::ExtractToDirectory($PackagePath, $temporary)
+    # Validate a private copy of the ZIP and extract that same copy; the extracted DLL must be the validated one.
+    $validatedDllHash = Expand-ValidatedPackage $PackagePath $temporary
     $source = Join-Path $temporary 'KingmakerLastAzlantiPreserver'
     Assert-DirectoryExists $source 'Extracted mod directory'
     $sourceDll = Join-Path $source 'KingmakerLastAzlantiPreserver.dll'
     $sourceHash = Get-Sha256 $sourceDll
+    if ($sourceHash -cne $validatedDllHash) { throw 'Extracted DLL does not match the validated package.' }
     $backup = Join-Path $temporary 'previous-installation'
     Assert-PathWithin $backup $temporary 'Install rollback directory'
     $oldMoved = $false

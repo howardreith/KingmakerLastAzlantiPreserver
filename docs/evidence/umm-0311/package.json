@@ -1,0 +1,14 @@
+{
+    "status":  "passed",
+    "package_path":  "<repo>\\artifacts\\packages\\KingmakerLastAzlantiPreserver-0.1.3.zip",
+    "package_sha256":  "83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc",
+    "dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248",
+    "build_inputs_sha256":  "3fbff2de554287cb8e3509f9daf5d8d538f776c7e6f5a43e007a24c30e59b275",
+    "package_inputs_sha256":  "17f0c7eee4c7cbf1d6a67681e096c6f92eca70c9a307a03035e15e10020cd512",
+    "package_rules_sha256":  "978f021e125c3ca11f79e7a149f8521fa4b1818947682c4e5226689fef0e8931",
+    "producing_commit":  "4b4b3ece8b84c17d38d9aeda12d19e398bd577d6",
+    "producing_dirty":  false,
+    "producing_configuration":  "Release",
+    "validated_package_sha256":  "83611dd565b69ac399b010fd57cc7f65e948fb7ece22417b8f82c19b65700adc",
+    "validated_dll_sha256":  "fadf2dab6ff3b8a92c81a3515b633f0de7482879ac5ca43a79ca9ac7c0031248"
+}
