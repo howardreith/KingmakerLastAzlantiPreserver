@@ -6,6 +6,16 @@
 - The release preparation advances the version-bound manifest, assembly, scripts, identity test and loader-baseline package paths to 0.1.4 and adds release documentation. Preservation, game-over loading, recovery and the settings panel are unchanged from v0.1.3.
 - Declared minimum: UMM 0.31.1. Compile baseline: hash-pinned UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1. Static loader API audit: every reference resolved on UMM 0.31.1, 0.32.4, 0.33.0 and 0.33.4. Out-of-game managed checks: `scripts/Test-LoaderProfiles.ps1` applied and removed the product's Harmony patches through each of those four loader stacks. Native gameplay and combined mod-stack runs: NOT RUN on every loader version.
 
+## v0.1.4 publication receipt
+
+- Published 2026-11-26T13:30:03Z: https://github.com/howardreith/KingmakerLastAzlantiPreserver/releases/tag/v0.1.4 (stable, non-draft, non-prerelease, GitHub latest; title `Mr. Bard's Second to Last Azlanti v0.1.4`).
+- Release commit: PR #8 merge `b64968fd0faa1e4bca11c10ede3deddc1e2ba959` (release preparation on top of PR #7 merge `abe1b4b5e429aa5ed09b4bffe4b4abab3944935d`); annotated tag `v0.1.4` peels to that commit.
+- Publisher: `Publish-Release.ps1 -Publish -ConfirmOwnerAuthorizedPreRuntimeRelease` from a fresh clone of `main`; two clean qualifications, each 84/84 tests, identical provenance; release manifest `runtime_qualified: false`, `owner_authorized_release_before_runtime_test: true`.
+- Asset `KingmakerLastAzlantiPreserver-0.1.4.zip` SHA-256 `f267c2c01df931614691b9e6a3641494622ffd554a6b4cab7d0b2385622fb392`; DLL SHA-256 `3f897b76d4aba1b885322fceb67bee83cad30c52ec258fe63584e44e216cabad` (assembly 0.1.4.0; loader references UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1).
+- Independent check after publication: the downloaded asset matched `SHA256SUMS.txt` and the release manifest; six entries under `KingmakerLastAzlantiPreserver/`; packaged manifest version 0.1.4, `ManagerVersion` 0.31.1. Static loader API audit of the released DLL: 9 types and 25 members resolved on UMM 0.31.1, 0.32.4, the owner's 0.33.0 and 0.33.4 (static only).
+- Release-preparation validation: `scripts/Test-LoaderBaseline.ps1` 166/166 on `8b4ff8b`.
+- Runtime qualification: **MANUAL RUNTIME TEST REQUIRED** (unchanged); native gameplay and combined mod-stack runs NOT RUN. Nexus Mods upload was not performed.
+
 ## UMM 0.31.1 baseline (2026-11-23)
 
 The current development change lowers the declared minimum from 0.33.0 to
