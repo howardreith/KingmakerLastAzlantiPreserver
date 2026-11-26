@@ -25,7 +25,7 @@ namespace KingmakerLastAzlantiPreserver.Tests
         public static void DisplayedNameAndVersionMatchBrandedCandidate()
         {
             AssertEx.Equal("Mr. Bard's Second to Last Azlanti", ReadMetadata("Name"));
-            AssertEx.Equal("0.1.3", ReadMetadata("Version"));
+            AssertEx.Equal("0.1.4", ReadMetadata("Version"));
             AssertEx.Equal(new Version(0, 1, 3, 0), typeof(Settings).Assembly.GetName().Version);
         }
 

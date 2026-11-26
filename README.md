@@ -20,6 +20,8 @@ Version 0.1.2 changes the name, author, and version shown in Unity Mod Manager a
 
 Version 0.1.3 simplifies the Unity Mod Manager settings panel: plain-language settings and status, with technical diagnostics moved into a collapsed **Troubleshooting** section. Settings, preservation, loading, and recovery behavior are unchanged from v0.1.2.
 
+Version 0.1.4 lowers the declared Unity Mod Manager minimum to 0.31.1 and is compiled against hash-pinned UnityModManager 0.31.1.0 and 0Harmony12 1.2.0.1 references. Preservation, loading, recovery, and the settings panel are unchanged from v0.1.3.
+
 The mod does not enable manual saving or quicksaving, add slots, change autosave timing or selection, alter difficulty or death rules, create a visible recovery save, skip the game-over screen, or reload automatically. Ordinary campaigns and deliberate deletion from the native load-game UI pass through unchanged.
 
 ## Core preservation
@@ -63,7 +65,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\Install.ps1
 ```
 
-Or install `KingmakerLastAzlantiPreserver-0.1.3.zip` with Unity Mod Manager. The archive has one top-level `KingmakerLastAzlantiPreserver` directory. Disable/remove the original FirstAzlanti mod before using this mod; do not test both together.
+Or install `KingmakerLastAzlantiPreserver-0.1.4.zip` with Unity Mod Manager 0.31.1 or newer. The archive has one top-level `KingmakerLastAzlantiPreserver` directory. Disable/remove the original FirstAzlanti mod before using this mod; do not test both together.
 
 ### Upgrading from Last Azlanti Preserver 0.1.0 or 0.1.1
 
@@ -87,5 +89,7 @@ The v0.1.1 UI enhancement remains **MANUAL RUNTIME TEST REQUIRED** until the dis
 Version 0.1.2 is an owner-authorized stable release (authorized 2026-10-15) published without a new human playtest. Its preservation and game-over loading code is the v0.1.1 code; its only functional change is recovery-format compatibility, which is covered by automated filesystem tests, including restoring the verbatim recovery files written by the published v0.1.1 DLL. The same **MANUAL RUNTIME TEST REQUIRED** boundary applies to 0.1.2, and it is not a runtime compatibility claim either.
 
 Version 0.1.3 is an owner-authorized stable release (authorized 2026-10-15) published before the new panel was inspected in-game. It changes only the settings panel's presentation and status reporting. Its panel states, warnings, and recovery controls are covered by automated tests, but the panel has not been displayed in a running game; its layout and the existing **MANUAL RUNTIME TEST REQUIRED** boundary remain.
+
+Version 0.1.4 is an owner-authorized stable release (authorized 2026-11-26) of the UMM 0.31.1 loader baseline. A static audit found every referenced loader member on UMM 0.31.1, 0.32.4, 0.33.0 and 0.33.4, and the product's Harmony patches were applied and removed out of game through each of those loader stacks; neither is an in-game test. Native gameplay and combined mod-stack runs were not performed, and the **MANUAL RUNTIME TEST REQUIRED** boundary remains.
 
 See [docs/RECONNAISSANCE.md](docs/RECONNAISSANCE.md) for the exact 2.1.7b call graph and [docs/RECOVERY.md](docs/RECOVERY.md) for recovery invariants.
